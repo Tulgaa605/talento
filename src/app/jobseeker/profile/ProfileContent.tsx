@@ -8,6 +8,7 @@ import ProfileImageUpload from "@/components/ProfileImageUpload";
 import ProfileCVUpload from "@/components/ProfileCVUpload";
 import CVList from "@/components/CVList";
 import SavedJobs from "@/components/SavedJobs";
+import { FiEdit } from "react-icons/fi";
 
 interface User {
   id: string;
@@ -135,7 +136,7 @@ export default function ProfileContent({ user }: ProfileContentProps) {
             }`}
             onClick={() => setActiveTab("saved")}
           >
-            Талагдсан
+            Таалагдсан
           </button>
         </nav>
       </div>
@@ -144,62 +145,65 @@ export default function ProfileContent({ user }: ProfileContentProps) {
       <main className="py-8">
         {activeTab === "profile" && (
           <div className="w-full bg-white rounded-none shadow-none p-0 mb-8 border-0">
-            <div className="w-full px-0 md:px-16 py-12">
-              <h2 className="text-2xl font-bold mb-4 text-[#0C213A]">
+            <div className="w-full px-4 md:px-16 lg:px-0 xl:px-0 2xl:px-0">
+              <h2 className="text-xl md:text-2xl font-bold mb-6 text-[#0C213A]">
                 Хувийн мэдээлэл
               </h2>
-              <div className="mb-4">
-                <span className="block text-gray-500 font-semibold mb-1">
-                  Нэр:
-                </span>
-                <span className="text-lg text-[#0C213A]">{user.name}</span>
-              </div>
-              <div className="mb-4">
-                <span className="block text-gray-500 font-semibold mb-1">
-                  И-мэйл:
-                </span>
-                <span className="text-lg text-[#0C213A]">{user.email}</span>
-              </div>
-              <div className="mb-4">
-                <span className="block text-gray-500 font-semibold mb-1">
-                  Утас:
-                </span>
-                <span className="text-lg text-[#0C213A]">
-                  {user.phoneNumber || "Тодорхойгүй"}
-                </span>
-              </div>
-              {user.facebookUrl && (
-                <div className="mb-4">
-                  <span className="block text-gray-500 font-semibold mb-1">
-                    Facebook:
-                  </span>
-                  <a
-                    href={user.facebookUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    {user.facebookUrl}
-                  </a>
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="space-y-6">
+                  <div className="mb-6">
+                    <span className="block text-sm text-gray-500 font-medium mb-2">
+                      Нэр
+                    </span>
+                    <span className="text-lg text-[#0C213A] font-medium">{user.name}</span>
+                  </div>
+                  <div className="mb-6">
+                    <span className="block text-sm text-gray-500 font-medium mb-2">
+                      И-мэйл
+                    </span>
+                    <span className="text-lg text-[#0C213A] font-medium">{user.email}</span>
+                  </div>
+                  <div className="mb-6">
+                    <span className="block text-sm text-gray-500 font-medium mb-2">
+                      Утас
+                    </span>
+                    <span className="text-lg text-[#0C213A] font-medium">
+                      {user.phoneNumber || "Тодорхойгүй"}
+                    </span>
+                  </div>
+                  {user.facebookUrl && (
+                    <div className="mb-6">
+                      <span className="block text-sm text-gray-500 font-medium mb-2">
+                        Facebook
+                      </span>
+                      <a
+                        href={user.facebookUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 hover:underline text-lg"
+                      >
+                        {user.facebookUrl}
+                      </a>
+                    </div>
+                  )}
+                  <div className="mt-8">
+                    <Link
+                      href="/jobseeker/profile/edit"
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium px-6 py-2.5 rounded-lg shadow-sm hover:shadow transition-all duration-200 inline-flex items-center gap-2"
+                    >
+                      <FiEdit className="w-4 h-4" />
+                      Засах
+                    </Link>
+                  </div>
                 </div>
-              )}
-              <div className="mt-6">
-                <Link
-                  href="/jobseeker/profile/edit"
-                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold px-6 py-2 rounded-lg shadow transition"
-                >
-                  Засах
-                </Link>
               </div>
             </div>
           </div>
         )}
 
         {activeTab === "cvs" && (
-          <div className="w-full px-0 md:px-16 py-12">
-            <h2 className="text-2xl font-bold mb-4 text-[#0C213A]">
-              CV жагсаалт
-            </h2>
+          <div className="w-full px-4 md:px-16 lg:px-0 xl:px-0 2xl:px-0">
+            
             <CVList cvs={formattedCVs} />
             <div className="mt-6">
               <ProfileCVUpload />
@@ -208,9 +212,9 @@ export default function ProfileContent({ user }: ProfileContentProps) {
         )}
 
         {activeTab === "saved" && (
-          <div className="w-full px-0 md:px-16 py-12">
+          <div className="w-full px-4 md:px-16 lg:px-0 xl:px-0 2xl:px-0">
             <h2 className="text-2xl font-bold mb-4 text-[#0C213A]">
-              Талагдсан ажлын байр
+              Таалагдсан ажлын байр
             </h2>
             <SavedJobs jobs={user.savedJobs} />
           </div>
