@@ -76,20 +76,23 @@ model User {
   cvs           CV[]
   jobApplications JobApplication[]
   savedJobs     SavedJob[]
+  questionnaireResponses QuestionnaireResponse[]
+  notifications Notification[]
 }
 
 model Company {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  description String?
-  location    String?
-  website     String?
-  logoUrl     String?
-  coverImageUrl String? @db.String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  users       User[]
-  jobs        Job[]
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  description   String?
+  location      String?
+  website       String?
+  logoUrl       String?
+  coverImageUrl String?  @db.String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  users         User[]
+  jobs          Job[]
+  questionnaires Questionnaire[]
 }
 
 model Job {
@@ -141,6 +144,8 @@ model JobApplication {
   userId    String   @db.ObjectId
   cv        CV?      @relation(fields: [cvId], references: [id])
   cvId      String?  @db.ObjectId
+  questionnaire Questionnaire? @relation(fields: [questionnaireId], references: [id])
+  questionnaireId String? @db.ObjectId
 
   @@unique([jobId, userId])
 }
@@ -154,4 +159,60 @@ model SavedJob {
   jobId     String   @db.ObjectId
 
   @@unique([userId, jobId])
+}
+
+model Questionnaire {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  company     Company    @relation(fields: [companyId], references: [id])
+  companyId   String     @db.ObjectId
+  questions   Question[]
+  responses   QuestionnaireResponse[]
+  applications JobApplication[]
+}
+
+model Question {
+  id             String     @id @default(auto()) @map("_id") @db.ObjectId
+  text           String
+  type           String     // "TEXT", "MULTIPLE_CHOICE", "SINGLE_CHOICE"
+  required       Boolean    @default(false)
+  options        String[]   // For multiple/single choice questions
+  order          Int
+  questionnaire  Questionnaire @relation(fields: [questionnaireId], references: [id])
+  questionnaireId String    @db.ObjectId
+  answers        Answer[]
+}
+
+model QuestionnaireResponse {
+  id             String     @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt      DateTime   @default(now())
+  questionnaire  Questionnaire @relation(fields: [questionnaireId], references: [id])
+  questionnaireId String    @db.ObjectId
+  user           User       @relation(fields: [userId], references: [id])
+  userId         String     @db.ObjectId
+  answers        Answer[]
+}
+
+model Answer {
+  id                    String     @id @default(auto()) @map("_id") @db.ObjectId
+  value                 String
+  question              Question   @relation(fields: [questionId], references: [id])
+  questionId            String     @db.ObjectId
+  questionnaireResponse QuestionnaireResponse @relation(fields: [responseId], references: [id])
+  responseId            String     @db.ObjectId
+}
+
+model Notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  title     String
+  message   String
+  type      String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 } 

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { Job, JobApplication, User, CV } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import QuestionnaireDropdown from "./QuestionnaireDropdown";
 
 interface PageProps {
   params: {
@@ -17,6 +18,22 @@ type JobWithApplications = Job & {
     user: User;
     cv: CV | null;
   })[];
+};
+
+type Questionnaire = {
+  id: string;
+  title: string;
+  description?: string;
+  questions: Question[];
+};
+
+type Question = {
+  id: string;
+  text: string;
+  type: "TEXT" | "MULTIPLE_CHOICE" | "SINGLE_CHOICE";
+  required: boolean;
+  options: string[];
+  order: number;
 };
 
 async function downloadCV(cvId: string) {
@@ -34,6 +51,57 @@ async function downloadCV(cvId: string) {
     url: cv.fileUrl,
     fileName: cv.fileName,
   };
+}
+
+async function sendQuestionnaire(
+  applicationId: string,
+  questionnaireId: string
+) {
+  "use server";
+
+  try {
+    const application = await prisma.jobApplication.findUnique({
+      where: { id: applicationId },
+      include: {
+        user: true,
+        job: true,
+      },
+    });
+
+    if (!application) {
+      throw new Error("Application not found");
+    }
+
+    const questionnaire = await prisma.questionnaire.findUnique({
+      where: { id: questionnaireId },
+    });
+
+    if (!questionnaire) {
+      throw new Error("Questionnaire not found");
+    }
+
+    // Create a notification for the applicant
+    await prisma.notification.create({
+      data: {
+        userId: application.userId,
+        title: "Шинэ асуулга ирлээ",
+        message: `${questionnaire.title} асуулгад хариулаарай`,
+        type: "QUESTIONNAIRE",
+        link: `/questionnaires/${questionnaireId}`,
+      },
+    });
+
+    // Update the application with the questionnaire ID
+    await prisma.jobApplication.update({
+      where: { id: applicationId },
+      data: { questionnaireId },
+    });
+
+    revalidatePath(`/employer/applications/${application.jobId}`);
+  } catch (error) {
+    console.error("Error sending questionnaire:", error);
+    throw error;
+  }
 }
 
 export default async function JobApplicationsPage({ params }: PageProps) {
@@ -70,6 +138,86 @@ export default async function JobApplicationsPage({ params }: PageProps) {
 
   if (!job) {
     notFound();
+  }
+
+  // Fetch questionnaires for the company
+  const questionnaires = await prisma.questionnaire.findMany({
+    where: {
+      companyId: job.companyId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  async function approveApplication(applicationId: string) {
+    "use server";
+
+    try {
+      const application = await prisma.jobApplication.findUnique({
+        where: { id: applicationId },
+        include: { job: true },
+      });
+
+      if (!application) {
+        throw new Error("Application not found");
+      }
+
+      await prisma.jobApplication.update({
+        where: { id: applicationId },
+        data: { status: "ACCEPTED" },
+      });
+
+      await prisma.notification.create({
+        data: {
+          userId: application.userId,
+          title: "Таны CV зөвшөөрөгдлөө",
+          message: `${application.job.title} ажлын байрт таны CV зөвшөөрөгдлөө`,
+          type: "APPLICATION",
+          link: `/jobs/${application.jobId}`,
+        },
+      });
+
+      revalidatePath(`/employer/applications/${jobId}`);
+    } catch (error) {
+      console.error("Error approving application:", error);
+      throw error;
+    }
+  }
+
+  async function rejectApplication(applicationId: string) {
+    "use server";
+
+    try {
+      const application = await prisma.jobApplication.findUnique({
+        where: { id: applicationId },
+        include: { job: true },
+      });
+
+      if (!application) {
+        throw new Error("Application not found");
+      }
+
+      await prisma.jobApplication.update({
+        where: { id: applicationId },
+        data: { status: "REJECTED" },
+      });
+
+      await prisma.notification.create({
+        data: {
+          userId: application.userId,
+          title: "Таны CV татгалзлаа",
+          message: `${application.job.title} ажлын байрт таны CV татгалзлаа`,
+          type: "APPLICATION",
+          link: `/jobs/${application.jobId}`,
+        },
+      });
+
+      revalidatePath(`/employer/applications/${jobId}`);
+    } catch (error) {
+      console.error("Error rejecting application:", error);
+      throw error;
+    }
   }
 
   return (
@@ -178,14 +326,32 @@ export default async function JobApplicationsPage({ params }: PageProps) {
                   )}
                   {application.status === "PENDING" && (
                     <>
-                      <button className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
-                        Зөвшөөрөх
-                      </button>
-                      <button className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
-                        Татгалзах
-                      </button>
+                      <form
+                        action={approveApplication.bind(null, application.id)}
+                      >
+                        <button
+                          type="submit"
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 w-full"
+                        >
+                          Зөвшөөрөх
+                        </button>
+                      </form>
+                      <form
+                        action={rejectApplication.bind(null, application.id)}
+                      >
+                        <button
+                          type="submit"
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 w-full"
+                        >
+                          Татгалзах
+                        </button>
+                      </form>
                     </>
                   )}
+                  <QuestionnaireDropdown
+                    applicationId={application.id}
+                    questionnaires={questionnaires}
+                  />
                 </div>
               </div>
             </div>

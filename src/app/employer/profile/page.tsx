@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Disclosure } from "@headlessui/react";
 import { ChevronUpIcon } from "@heroicons/react/24/solid";
 import { FiEdit, FiMapPin } from "react-icons/fi";
+import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 interface Company {
   id: string;
@@ -29,6 +30,51 @@ interface Job {
   status: string;
   createdAt: string;
   requirements?: string;
+}
+
+interface Question {
+  id: string;
+  text: string;
+  type: "TEXT" | "MULTIPLE_CHOICE" | "SINGLE_CHOICE";
+  required: boolean;
+  options: string[];
+  order: number;
+}
+
+interface Questionnaire {
+  id: string;
+  title: string;
+  description?: string;
+  questions: Question[];
+}
+
+interface QuestionnaireResponse {
+  id: string;
+  createdAt: string;
+  user: {
+    name: string;
+    email: string;
+  };
+  answers: {
+    question: {
+      text: string;
+      type: string;
+    };
+    value: string;
+  }[];
+}
+
+interface CV {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  createdAt: string;
+  status?: "PENDING" | "ACCEPTED" | "REJECTED";
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 export default function EmployerProfile() {
@@ -57,6 +103,22 @@ export default function EmployerProfile() {
   const [newApplicationsCount, setNewApplicationsCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
+  const [isCreatingQuestionnaire, setIsCreatingQuestionnaire] = useState(false);
+  const [newQuestionnaire, setNewQuestionnaire] = useState({
+    title: "",
+    description: "",
+    questions: [] as Question[],
+  });
+  const [editingQuestionnaire, setEditingQuestionnaire] =
+    useState<Questionnaire | null>(null);
+  const [responses, setResponses] = useState<QuestionnaireResponse[]>([]);
+  const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<
+    string | null
+  >(null);
+  const [cvs, setCvs] = useState<CV[]>([]);
+  const [selectedCV, setSelectedCV] = useState<string | null>(null);
+  const [isSendingQuestionnaire, setIsSendingQuestionnaire] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -126,6 +188,24 @@ export default function EmployerProfile() {
     };
     fetchNewCount();
   }, []);
+
+  useEffect(() => {
+    if (company) {
+      fetchQuestionnaires();
+    }
+  }, [company]);
+
+  useEffect(() => {
+    if (activeTab === "responses" && selectedQuestionnaire) {
+      fetchResponses(selectedQuestionnaire);
+    }
+  }, [activeTab, selectedQuestionnaire]);
+
+  useEffect(() => {
+    if (activeTab === "anketuud") {
+      fetchCVs();
+    }
+  }, [activeTab]);
 
   const fetchCompanyAndJobs = async () => {
     try {
@@ -394,6 +474,245 @@ export default function EmployerProfile() {
     }
   };
 
+  const fetchQuestionnaires = async () => {
+    try {
+      const response = await fetch(
+        `/api/employer/questionnaires?companyId=${company?.id}`
+      );
+      const data = await response.json();
+      setQuestionnaires(data);
+    } catch (error) {
+      console.error("Error fetching questionnaires:", error);
+    }
+  };
+
+  const handleCreateQuestionnaire = async () => {
+    try {
+      const response = await fetch("/api/employer/questionnaires", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...newQuestionnaire,
+          companyId: company?.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create questionnaire");
+      }
+
+      await fetchQuestionnaires();
+      setIsCreatingQuestionnaire(false);
+      setNewQuestionnaire({
+        title: "",
+        description: "",
+        questions: [],
+      });
+    } catch (error) {
+      console.error("Error creating questionnaire:", error);
+    }
+  };
+
+  const handleAddQuestion = () => {
+    setNewQuestionnaire((prev) => ({
+      ...prev,
+      questions: [
+        ...prev.questions,
+        {
+          id: Date.now().toString(),
+          text: "",
+          type: "TEXT" as const,
+          required: false,
+          options: [],
+          order: prev.questions.length,
+        },
+      ],
+    }));
+  };
+
+  const handleQuestionChange = (
+    index: number,
+    field: keyof Question,
+    value: string | boolean | string[]
+  ) => {
+    setNewQuestionnaire((prev) => ({
+      ...prev,
+      questions: prev.questions.map((q, i) =>
+        i === index ? { ...q, [field]: value } : q
+      ),
+    }));
+  };
+
+  const handleDeleteQuestion = (index: number) => {
+    setNewQuestionnaire((prev) => ({
+      ...prev,
+      questions: prev.questions.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleEditQuestionnaire = async () => {
+    if (!editingQuestionnaire) return;
+
+    try {
+      const response = await fetch("/api/employer/questionnaires", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editingQuestionnaire),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update questionnaire");
+      }
+
+      await fetchQuestionnaires();
+      setEditingQuestionnaire(null);
+    } catch (error) {
+      console.error("Error updating questionnaire:", error);
+    }
+  };
+
+  const handleDeleteQuestionnaire = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this questionnaire?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/employer/questionnaires?id=${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete questionnaire");
+      }
+
+      await fetchQuestionnaires();
+    } catch (error) {
+      console.error("Error deleting questionnaire:", error);
+    }
+  };
+
+  const fetchResponses = async (questionnaireId: string) => {
+    try {
+      const response = await fetch(
+        `/api/employer/questionnaires/${questionnaireId}/responses`
+      );
+      const data = await response.json();
+      setResponses(data);
+    } catch (error) {
+      console.error("Error fetching responses:", error);
+    }
+  };
+
+  const fetchCVs = async () => {
+    try {
+      const res = await fetch("/api/employer/cvs");
+      const data = await res.json();
+      setCvs(data);
+    } catch (error) {
+      console.error("Error fetching CVs:", error);
+    }
+  };
+
+  const handleSendQuestionnaire = async (
+    cvId: string,
+    questionnaireId: string
+  ) => {
+    try {
+      setIsSendingQuestionnaire(true);
+      const response = await fetch("/api/employer/questionnaires/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cvId,
+          questionnaireId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send questionnaire");
+      }
+
+      alert("Асуулга амжилттай илгээгдлээ");
+    } catch (error) {
+      console.error("Error sending questionnaire:", error);
+      alert("Асуулга илгээхэд алдаа гарлаа");
+    } finally {
+      setIsSendingQuestionnaire(false);
+    }
+  };
+
+  const handleApproveCV = async (applicationId: string) => {
+    try {
+      const response = await fetch(
+        `/api/employer/applications/${applicationId}/approve`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to approve CV");
+      }
+
+      const updatedApplication = await response.json();
+
+      // Update applications list
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId ? { ...app, status: "ACCEPTED" } : app
+        )
+      );
+
+      alert("CV амжилттай зөвшөөрөгдлөө");
+    } catch (error) {
+      console.error("Error approving CV:", error);
+      alert("CV зөвшөөрөхөд алдаа гарлаа");
+    }
+  };
+
+  const handleRejectCV = async (applicationId: string) => {
+    try {
+      const response = await fetch(
+        `/api/employer/applications/${applicationId}/reject`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to reject CV");
+      }
+
+      const updatedApplication = await response.json();
+
+      // Update applications list
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId ? { ...app, status: "REJECTED" } : app
+        )
+      );
+
+      alert("CV амжилттай татгалзлаа");
+    } catch (error) {
+      console.error("Error rejecting CV:", error);
+      alert("CV татгалзах үед алдаа гарлаа");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -633,6 +952,30 @@ export default function EmployerProfile() {
           >
             Нээлттэй ажлын байр
           </button>
+          <button
+            className={`px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-none border-b-2 transition-all duration-200 cursor-pointer whitespace-nowrap
+              ${
+                activeTab === "questionnaires"
+                  ? "border-[#0C213A] text-[#0C213A]"
+                  : "border-transparent text-[#0C213A]/60 hover:text-[#0C213A] hover:bg-[#0C213A]/5"
+              }
+            `}
+            onClick={() => setActiveTab("questionnaires")}
+          >
+            Асуулга
+          </button>
+          <button
+            className={`px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-none border-b-2 transition-all duration-200 cursor-pointer whitespace-nowrap
+              ${
+                activeTab === "responses"
+                  ? "border-[#0C213A] text-[#0C213A]"
+                  : "border-transparent text-[#0C213A]/60 hover:text-[#0C213A] hover:bg-[#0C213A]/5"
+              }
+            `}
+            onClick={() => setActiveTab("responses")}
+          >
+            Хариултууд
+          </button>
         </nav>
       </div>
 
@@ -668,7 +1011,10 @@ export default function EmployerProfile() {
                           className="w-full border border-gray-300 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg text-[#0C213A] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                           value={aboutEdit.name}
                           onChange={(e) =>
-                            setAboutEdit((a) => ({ ...a, name: e.target.value }))
+                            setAboutEdit((a) => ({
+                              ...a,
+                              name: e.target.value,
+                            }))
                           }
                         />
                       </div>
@@ -697,7 +1043,10 @@ export default function EmployerProfile() {
                           className="w-full border border-gray-300 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg text-blue-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                           value={aboutEdit.website}
                           onChange={(e) =>
-                            setAboutEdit((a) => ({ ...a, website: e.target.value }))
+                            setAboutEdit((a) => ({
+                              ...a,
+                              website: e.target.value,
+                            }))
                           }
                         />
                       </div>
@@ -775,8 +1124,18 @@ export default function EmployerProfile() {
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-2 text-base sm:text-lg"
                           >
-                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            <svg
+                              className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                              />
                             </svg>
                             {company.website}
                           </a>
@@ -894,6 +1253,656 @@ export default function EmployerProfile() {
               ))}
             </div>
           </>
+        )}
+        {activeTab === "questionnaires" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg sm:text-xl font-bold text-[#0C213A]">
+                Асуулга
+              </h2>
+              {!isCreatingQuestionnaire && !editingQuestionnaire && (
+                <button
+                  onClick={() => setIsCreatingQuestionnaire(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <PlusIcon className="w-5 h-5" />
+                  Шинэ асуулга
+                </button>
+              )}
+            </div>
+
+            {isCreatingQuestionnaire || editingQuestionnaire ? (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Гарчиг
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        editingQuestionnaire?.title || newQuestionnaire.title
+                      }
+                      onChange={(e) =>
+                        editingQuestionnaire
+                          ? setEditingQuestionnaire((prev) =>
+                              prev ? { ...prev, title: e.target.value } : null
+                            )
+                          : setNewQuestionnaire((prev) => ({
+                              ...prev,
+                              title: e.target.value,
+                            }))
+                      }
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Тайлбар
+                    </label>
+                    <textarea
+                      value={
+                        editingQuestionnaire?.description ||
+                        newQuestionnaire.description
+                      }
+                      onChange={(e) =>
+                        editingQuestionnaire
+                          ? setEditingQuestionnaire((prev) =>
+                              prev
+                                ? { ...prev, description: e.target.value }
+                                : null
+                            )
+                          : setNewQuestionnaire((prev) => ({
+                              ...prev,
+                              description: e.target.value,
+                            }))
+                      }
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Асуултууд
+                      </h3>
+                      <button
+                        onClick={() =>
+                          editingQuestionnaire
+                            ? setEditingQuestionnaire((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      questions: [
+                                        ...prev.questions,
+                                        {
+                                          id: Date.now().toString(),
+                                          text: "",
+                                          type: "TEXT" as const,
+                                          required: false,
+                                          options: [],
+                                          order: prev.questions.length,
+                                        },
+                                      ],
+                                    }
+                                  : null
+                              )
+                            : handleAddQuestion()
+                        }
+                        className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                      >
+                        <PlusIcon className="w-5 h-5" />
+                        Асуулт нэмэх
+                      </button>
+                    </div>
+
+                    {(
+                      editingQuestionnaire?.questions ||
+                      newQuestionnaire.questions
+                    ).map((question, index) => (
+                      <div
+                        key={question.id}
+                        className="border border-gray-200 rounded-lg p-4 space-y-4"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Асуулт
+                              </label>
+                              <input
+                                type="text"
+                                value={question.text}
+                                onChange={(e) =>
+                                  editingQuestionnaire
+                                    ? setEditingQuestionnaire((prev) =>
+                                        prev
+                                          ? {
+                                              ...prev,
+                                              questions: prev.questions.map(
+                                                (q, i) =>
+                                                  i === index
+                                                    ? {
+                                                        ...q,
+                                                        text: e.target.value,
+                                                      }
+                                                    : q
+                                              ),
+                                            }
+                                          : null
+                                      )
+                                    : handleQuestionChange(
+                                        index,
+                                        "text",
+                                        e.target.value
+                                      )
+                                }
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Төрөл
+                              </label>
+                              <select
+                                value={question.type}
+                                onChange={(e) => {
+                                  const value = e.target.value as
+                                    | "TEXT"
+                                    | "MULTIPLE_CHOICE"
+                                    | "SINGLE_CHOICE";
+                                  if (editingQuestionnaire) {
+                                    setEditingQuestionnaire((prev) =>
+                                      prev
+                                        ? {
+                                            ...prev,
+                                            questions: prev.questions.map(
+                                              (q, i) =>
+                                                i === index
+                                                  ? { ...q, type: value }
+                                                  : q
+                                            ),
+                                          }
+                                        : null
+                                    );
+                                  } else {
+                                    handleQuestionChange(index, "type", value);
+                                  }
+                                }}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              >
+                                <option value="TEXT">Текст</option>
+                                <option value="SINGLE_CHOICE">
+                                  Нэг сонголттой
+                                </option>
+                                <option value="MULTIPLE_CHOICE">
+                                  Олон сонголттой
+                                </option>
+                              </select>
+                            </div>
+                            {(question.type === "SINGLE_CHOICE" ||
+                              question.type === "MULTIPLE_CHOICE") && (
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Сонголтууд
+                                </label>
+                                <div className="space-y-2">
+                                  {question.options.map(
+                                    (option, optionIndex) => (
+                                      <div
+                                        key={optionIndex}
+                                        className="flex gap-2"
+                                      >
+                                        <input
+                                          type="text"
+                                          value={option}
+                                          onChange={(e) => {
+                                            const newOptions = [
+                                              ...question.options,
+                                            ];
+                                            newOptions[optionIndex] =
+                                              e.target.value;
+                                            if (editingQuestionnaire) {
+                                              setEditingQuestionnaire((prev) =>
+                                                prev
+                                                  ? {
+                                                      ...prev,
+                                                      questions:
+                                                        prev.questions.map(
+                                                          (q, i) =>
+                                                            i === index
+                                                              ? {
+                                                                  ...q,
+                                                                  options:
+                                                                    newOptions,
+                                                                }
+                                                              : q
+                                                        ),
+                                                    }
+                                                  : null
+                                              );
+                                            } else {
+                                              handleQuestionChange(
+                                                index,
+                                                "options",
+                                                newOptions
+                                              );
+                                            }
+                                          }}
+                                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                        <button
+                                          onClick={() => {
+                                            const newOptions =
+                                              question.options.filter(
+                                                (_, i) => i !== optionIndex
+                                              );
+                                            if (editingQuestionnaire) {
+                                              setEditingQuestionnaire((prev) =>
+                                                prev
+                                                  ? {
+                                                      ...prev,
+                                                      questions:
+                                                        prev.questions.map(
+                                                          (q, i) =>
+                                                            i === index
+                                                              ? {
+                                                                  ...q,
+                                                                  options:
+                                                                    newOptions,
+                                                                }
+                                                              : q
+                                                        ),
+                                                    }
+                                                  : null
+                                              );
+                                            } else {
+                                              handleQuestionChange(
+                                                index,
+                                                "options",
+                                                newOptions
+                                              );
+                                            }
+                                          }}
+                                          className="text-red-600 hover:text-red-700"
+                                        >
+                                          <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                      </div>
+                                    )
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      const newOptions = [
+                                        ...question.options,
+                                        "",
+                                      ];
+                                      if (editingQuestionnaire) {
+                                        setEditingQuestionnaire((prev) =>
+                                          prev
+                                            ? {
+                                                ...prev,
+                                                questions: prev.questions.map(
+                                                  (q, i) =>
+                                                    i === index
+                                                      ? {
+                                                          ...q,
+                                                          options: newOptions,
+                                                        }
+                                                      : q
+                                                ),
+                                              }
+                                            : null
+                                        );
+                                      } else {
+                                        handleQuestionChange(
+                                          index,
+                                          "options",
+                                          newOptions
+                                        );
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                                  >
+                                    <PlusIcon className="w-4 h-4" />
+                                    Сонголт нэмэх
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                id={`required-${question.id}`}
+                                checked={question.required}
+                                onChange={(e) =>
+                                  editingQuestionnaire
+                                    ? setEditingQuestionnaire((prev) =>
+                                        prev
+                                          ? {
+                                              ...prev,
+                                              questions: prev.questions.map(
+                                                (q, i) =>
+                                                  i === index
+                                                    ? {
+                                                        ...q,
+                                                        required:
+                                                          e.target.checked,
+                                                      }
+                                                    : q
+                                              ),
+                                            }
+                                          : null
+                                      )
+                                    : handleQuestionChange(
+                                        index,
+                                        "required",
+                                        e.target.checked
+                                      )
+                                }
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <label
+                                htmlFor={`required-${question.id}`}
+                                className="text-sm text-gray-700"
+                              >
+                                Заавал бөглөх
+                              </label>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() =>
+                              editingQuestionnaire
+                                ? setEditingQuestionnaire((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          questions: prev.questions.filter(
+                                            (_, i) => i !== index
+                                          ),
+                                        }
+                                      : null
+                                  )
+                                : handleDeleteQuestion(index)
+                            }
+                            className="text-red-600 hover:text-red-700 ml-4"
+                          >
+                            <TrashIcon className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end gap-4">
+                    <button
+                      onClick={() => {
+                        if (editingQuestionnaire) {
+                          setEditingQuestionnaire(null);
+                        } else {
+                          setIsCreatingQuestionnaire(false);
+                          setNewQuestionnaire({
+                            title: "",
+                            description: "",
+                            questions: [],
+                          });
+                        }
+                      }}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Цуцлах
+                    </button>
+                    <button
+                      onClick={
+                        editingQuestionnaire
+                          ? handleEditQuestionnaire
+                          : handleCreateQuestionnaire
+                      }
+                      className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Хадгалах
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {questionnaires.map((questionnaire) => (
+                  <div
+                    key={questionnaire.id}
+                    className="bg-white rounded-xl shadow-lg p-6 space-y-4"
+                  >
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {questionnaire.title}
+                    </h3>
+                    {questionnaire.description && (
+                      <p className="text-gray-600">
+                        {questionnaire.description}
+                      </p>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <div className="text-sm text-gray-500">
+                        {questionnaire.questions.length} асуулт
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedQuestionnaire(questionnaire.id);
+                          setActiveTab("responses");
+                        }}
+                        className="text-blue-600 hover:text-blue-700 text-sm"
+                      >
+                        Хариултуудыг харах
+                      </button>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => setEditingQuestionnaire(questionnaire)}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        Засах
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleDeleteQuestionnaire(questionnaire.id)
+                        }
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        Устгах
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {activeTab === "responses" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg sm:text-xl font-bold text-[#0C213A]">
+                Асуулгын хариултууд
+              </h2>
+              <select
+                value={selectedQuestionnaire || ""}
+                onChange={(e) => setSelectedQuestionnaire(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Асуулга сонгох</option>
+                {questionnaires.map((q) => (
+                  <option key={q.id} value={q.id}>
+                    {q.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedQuestionnaire ? (
+              <div className="space-y-6">
+                {responses.map((response) => (
+                  <div
+                    key={response.id}
+                    className="bg-white rounded-xl shadow-lg p-6 space-y-4"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {response.user.name}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {response.user.email}
+                        </p>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {new Date(response.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      {response.answers.map((answer, index) => (
+                        <div key={index} className="border-t pt-4">
+                          <h4 className="font-medium text-gray-900 mb-2">
+                            {answer.question.text}
+                          </h4>
+                          {answer.question.type === "MULTIPLE_CHOICE" ? (
+                            <div className="space-y-2">
+                              {answer.value.split(",").map((value, i) => (
+                                <div
+                                  key={i}
+                                  className="bg-gray-50 px-3 py-2 rounded-lg"
+                                >
+                                  {value.trim()}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-700">{answer.value}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {responses.length === 0 && (
+                  <div className="text-center text-gray-500 py-8">
+                    Энэ асуулгад одоогоор хариулт ирээгүй байна
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                Асуулга сонгоно уу
+              </div>
+            )}
+          </div>
+        )}
+        {activeTab === "anketuud" && (
+          <div className="space-y-6">
+            <h2 className="text-lg sm:text-xl font-bold text-[#0C213A]">
+              Ирсэн CV-үүд
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+              {applications.map((application) => (
+                <div
+                  key={application.id}
+                  className="bg-white rounded-xl shadow-lg p-6 space-y-4"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {application.user.name}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {application.user.email}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(application.createdAt).toLocaleDateString()}
+                      </p>
+                      {application.status && (
+                        <span
+                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                            application.status === "ACCEPTED"
+                              ? "bg-green-100 text-green-800"
+                              : application.status === "REJECTED"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {application.status === "ACCEPTED"
+                            ? "Зөвшөөрөгдсөн"
+                            : application.status === "REJECTED"
+                            ? "Татгалзсан"
+                            : "Хүлээгдэж буй"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <a
+                        href={application.cv.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        CV Татах
+                      </a>
+                      {(!application.status ||
+                        application.status === "PENDING") && (
+                        <>
+                          <button
+                            onClick={() => handleApproveCV(application.id)}
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            Зөвшөөрөх
+                          </button>
+                          <button
+                            onClick={() => handleRejectCV(application.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            Татгалзах
+                          </button>
+                        </>
+                      )}
+                      <div className="relative">
+                        <button
+                          onClick={() => setSelectedCV(application.id)}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          Асуулга Илгээх
+                        </button>
+                        {selectedCV === application.id && (
+                          <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-4 z-10">
+                            <h4 className="font-medium mb-2">Асуулга сонгох</h4>
+                            <div className="space-y-2">
+                              {questionnaires.map((q) => (
+                                <button
+                                  key={q.id}
+                                  onClick={() => {
+                                    handleSendQuestionnaire(
+                                      application.id,
+                                      q.id
+                                    );
+                                    setSelectedCV(null);
+                                  }}
+                                  disabled={isSendingQuestionnaire}
+                                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+                                >
+                                  {q.title}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {applications.length === 0 && (
+                <div className="text-center text-gray-500 py-8">
+                  Одоогоор ирсэн CV байхгүй байна
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </main>
     </div>
