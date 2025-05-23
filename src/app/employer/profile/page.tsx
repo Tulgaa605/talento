@@ -116,6 +116,9 @@ export default function EmployerProfile() {
   const [cvs, setCvs] = useState<CV[]>([]);
   const [selectedCV, setSelectedCV] = useState<string | null>(null);
   const [isSendingQuestionnaire, setIsSendingQuestionnaire] = useState(false);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -468,6 +471,192 @@ export default function EmployerProfile() {
       setError("Failed to upload cover image. Please try again.");
     } finally {
       setIsUploadingCover(false);
+    }
+  };
+
+  const fetchQuestionnaires = async () => {
+    try {
+      const response = await fetch("/api/employer/questionnaires");
+      if (!response.ok) throw new Error("Failed to fetch questionnaires");
+      const data = await response.json();
+      setQuestionnaires(data);
+    } catch (error) {
+      console.error("Error fetching questionnaires:", error);
+    }
+  };
+
+  const fetchResponses = async (questionnaireId: string) => {
+    try {
+      const response = await fetch(
+        `/api/employer/questionnaires/${questionnaireId}/responses`
+      );
+      if (!response.ok) throw new Error("Failed to fetch responses");
+      const data = await response.json();
+      setResponses(data);
+    } catch (error) {
+      console.error("Error fetching responses:", error);
+    }
+  };
+
+  const fetchCVs = async () => {
+    try {
+      const response = await fetch("/api/employer/cvs");
+      if (!response.ok) throw new Error("Failed to fetch CVs");
+      const data = await response.json();
+      setCvs(data);
+    } catch (error) {
+      console.error("Error fetching CVs:", error);
+    }
+  };
+
+  const handleAddQuestion = () => {
+    setNewQuestionnaire(prev => ({
+      ...prev,
+      questions: [
+        ...prev.questions,
+        {
+          id: Date.now().toString(),
+          text: "",
+          type: "TEXT" as const,
+          required: false,
+          options: [],
+          order: prev.questions.length
+        }
+      ]
+    }));
+  };
+
+  const handleQuestionChange = (questionId: string, field: string, value: any) => {
+    setNewQuestionnaire(prev => ({
+      ...prev,
+      questions: prev.questions.map(q =>
+        q.id === questionId ? { ...q, [field]: value } : q
+      )
+    }));
+  };
+
+  const handleDeleteQuestion = (questionId: string) => {
+    setNewQuestionnaire(prev => ({
+      ...prev,
+      questions: prev.questions.filter(q => q.id !== questionId)
+    }));
+  };
+
+  const handleEditQuestionnaire = (questionnaireId: string) => {
+    const questionnaire = questionnaires.find(q => q.id === questionnaireId);
+    if (!questionnaire) return;
+    
+    setEditingQuestionnaire(questionnaire);
+    setNewQuestionnaire({
+      title: questionnaire.title,
+      description: questionnaire.description || "",
+      questions: questionnaire.questions
+    });
+  };
+
+  const handleCreateQuestionnaire = async () => {
+    try {
+      const response = await fetch("/api/employer/questionnaires", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...newQuestionnaire,
+          questions: newQuestionnaire.questions.map((q, index) => ({
+            ...q,
+            order: index
+          }))
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to create questionnaire");
+      
+      const data = await response.json();
+      setQuestionnaires(prev => [...prev, data]);
+      setIsCreatingQuestionnaire(false);
+      setNewQuestionnaire({
+        title: "",
+        description: "",
+        questions: [],
+      });
+    } catch (error) {
+      console.error("Error creating questionnaire:", error);
+    }
+  };
+
+  const handleDeleteQuestionnaire = async (questionnaireId: string) => {
+    try {
+      const response = await fetch(`/api/employer/questionnaires/${questionnaireId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete questionnaire");
+      
+      setQuestionnaires(prev => prev.filter(q => q.id !== questionnaireId));
+    } catch (error) {
+      console.error("Error deleting questionnaire:", error);
+    }
+  };
+
+  const handleApproveCV = async (cvId: string) => {
+    try {
+      const response = await fetch(`/api/employer/cvs/${cvId}/approve`, {
+        method: "POST",
+      });
+
+      if (!response.ok) throw new Error("Failed to approve CV");
+
+      setCvs((prev) =>
+        prev.map((cv) => (cv.id === cvId ? { ...cv, status: "ACCEPTED" } : cv))
+      );
+    } catch (error) {
+      console.error("Error approving CV:", error);
+    }
+  };
+
+  const handleRejectCV = async (cvId: string) => {
+    try {
+      const response = await fetch(`/api/employer/cvs/${cvId}/reject`, {
+        method: "POST",
+      });
+
+      if (!response.ok) throw new Error("Failed to reject CV");
+
+      setCvs((prev) =>
+        prev.map((cv) => (cv.id === cvId ? { ...cv, status: "REJECTED" } : cv))
+      );
+    } catch (error) {
+      console.error("Error rejecting CV:", error);
+    }
+  };
+
+  const handleSendQuestionnaire = async (applicationId: string) => {
+    if (!selectedQuestionnaire) return;
+
+    try {
+      setIsSendingQuestionnaire(true);
+      const response = await fetch(
+        `/api/employer/applications/${applicationId}/send-questionnaire`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            questionnaireId: selectedQuestionnaire,
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to send questionnaire");
+
+      setSuccessMessage("Асуулга амжилттай илгээгдлээ");
+    } catch (error) {
+      console.error("Error sending questionnaire:", error);
+      setError("Асуулга илгээхэд алдаа гарлаа");
+    } finally {
+      setIsSendingQuestionnaire(false);
     }
   };
 
@@ -1151,7 +1340,8 @@ export default function EmployerProfile() {
                                           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         />
                                         <button
-                                          onClick={() => {
+                                          onClick={(e) => {
+                                            e.preventDefault();
                                             const newOptions =
                                               question.options.filter(
                                                 (_, i) => i !== optionIndex
@@ -1191,7 +1381,8 @@ export default function EmployerProfile() {
                                     )
                                   )}
                                   <button
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.preventDefault();
                                       const newOptions = [
                                         ...question.options,
                                         "",
@@ -1270,7 +1461,8 @@ export default function EmployerProfile() {
                             </div>
                           </div>
                           <button
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.preventDefault();
                               editingQuestionnaire
                                 ? setEditingQuestionnaire((prev) =>
                                     prev
@@ -1282,7 +1474,7 @@ export default function EmployerProfile() {
                                         }
                                       : null
                                   )
-                                : handleDeleteQuestion(index)
+                                : handleDeleteQuestion(question.id)
                             }
                             className="text-red-600 hover:text-red-700 ml-4"
                           >
@@ -1355,15 +1547,23 @@ export default function EmployerProfile() {
                     </div>
                     <div className="flex justify-end gap-2">
                       <button
-                        onClick={() => setEditingQuestionnaire(questionnaire)}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const questionnaireId = questionnaire.id;
+                          handleEditQuestionnaire(questionnaireId);
+                        }}
                         className="text-blue-600 hover:text-blue-700"
                       >
                         Засах
                       </button>
                       <button
-                        onClick={() =>
-                          handleDeleteQuestionnaire(questionnaire.id)
-                        }
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const questionnaireId = questionnaire.id;
+                          handleDeleteQuestionnaire(questionnaireId);
+                        }}
                         className="text-red-600 hover:text-red-700"
                       >
                         Устгах
