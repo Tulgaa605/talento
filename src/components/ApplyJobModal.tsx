@@ -67,7 +67,7 @@ export default function ApplyJobModal({
           </Transition.Child>
 
           <div className="fixed inset-0 z-10 overflow-y-auto">
-            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div className="flex min-h-full items-center justify-center p-4 text-center sm:items-center sm:p-0">
               <Transition.Child
                 as={Fragment}
                 enter="ease-out duration-300"
@@ -77,11 +77,11 @@ export default function ApplyJobModal({
                 leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                 leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
               >
-                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl sm:p-6">
                   <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
                     <button
                       type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0C213A] focus:ring-offset-2"
+                      className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0C213A] focus:ring-offset-2"
                       onClick={onClose}
                     >
                       <span className="sr-only">Close</span>
@@ -93,68 +93,71 @@ export default function ApplyJobModal({
                     <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
                       <Dialog.Title
                         as="h3"
-                        className="text-base font-semibold leading-6 text-gray-900"
+                        className="text-base sm:text-lg md:text-xl font-semibold leading-6 text-gray-900"
                       >
-                      {jobTitle} - Өргөдөл илгээх
+                        {jobTitle} - Өргөдөл илгээх
                       </Dialog.Title>
 
-                    <div className="mt-6 space-y-6">
+                      <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
                         <div>
-                          <label
-                            htmlFor="cv"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            CV сонгох
-                          </label>
-                          <select
-                            id="cv"
-                          name="cv"
-                            value={selectedCV}
-                            onChange={(e) => setSelectedCV(e.target.value)}
-                          className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-[#0C213A] focus:outline-none focus:ring-[#0C213A] sm:text-sm"
-                          >
-                          <option value="">CV сонгох</option>
-                            {cvs.map((cv) => (
-                              <option key={cv.id} value={cv.id}>
-                                {cv.fileName}
-                              </option>
-                            ))}
-                          </select>
+                          
+                          {cvs.length === 0 ? (
+                            <div className="mt-1 p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                              <p className="text-xs sm:text-sm md:text-base text-yellow-700">
+                                Таны CV жагсаалт хоосон байна. CV-гээ 'Профайл' хэсгийн 'CV жагсаалт' дотор нэмнэ үү.
+                              </p>
+                            </div>
+                          ) : (
+                            <select
+                              id="cv"
+                              name="cv"
+                              value={selectedCV}
+                              onChange={(e) => setSelectedCV(e.target.value)}
+                              className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-sm sm:text-base focus:border-[#0C213A] focus:outline-none focus:ring-[#0C213A] text-[#0C213A]"
+                            >
+                              <option value="">CV сонгох</option>
+                              {cvs.map((cv) => (
+                                <option key={cv.id} value={cv.id}>
+                                  {cv.fileName}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                         </div>
 
                         <div>
                           <label
                             htmlFor="message"
-                            className="block text-sm font-medium text-gray-700"
+                            className="block text-sm sm:text-base md:text-lg font-medium text-gray-700"
                           >
                             Нэмэлт мэдээлэл
                           </label>
                           <textarea
                             id="message"
-                          name="message"
-                          rows={4}
+                            name="message"
+                            rows={4}
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#0C213A] focus:ring-[#0C213A] sm:text-sm"
-                          placeholder="Өөрийн тухай товч танилцуулга..."
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm sm:text-base text-[#0C213A] p-2"
+                            placeholder="Өөрийн тухай товч танилцуулга..."
                           />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                  <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                  <div className="mt-4 sm:mt-5 sm:flex sm:flex-row-reverse">
                     <button
                       type="button"
-                    className="inline-flex w-full justify-center rounded-md bg-[#0C213A] px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#0C213A]/90 sm:ml-3 sm:w-auto"
+                      className="inline-flex w-full justify-center rounded-md bg-[#0C213A] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base font-semibold text-white shadow-sm hover:bg-[#0C213A]/90 sm:ml-3 sm:w-auto"
                       onClick={handleSubmit}
-                    disabled={sending}
+                      disabled={sending}
                     >
-                    {sending ? "Илгээж байна..." : "Илгээх"}
+                      {sending ? "Илгээж байна..." : "Илгээх"}
                     </button>
                     <button
                       type="button"
-                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
                       onClick={onClose}
                     >
                       Буцах

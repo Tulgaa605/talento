@@ -415,7 +415,7 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
-                  stroke="currentColor"
+                  stroke="#0C213A"
                   className="w-6 h-6"
                 >
                   <path
@@ -425,7 +425,7 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
                   />
                 </svg>
               </button>
-              <h2 className="text-lg font-semibold">Ажлын дэлгэрэнгүй</h2>
+              <h2 className="text-lg font-semibold text-[#0C213A]">Ажлын дэлгэрэнгүй</h2>
               <div className="w-10"></div>
             </div>
             <div className="p-4">
