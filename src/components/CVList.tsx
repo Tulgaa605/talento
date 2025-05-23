@@ -51,34 +51,47 @@ export default function CVList({ cvs: initialCvs }: CVListProps) {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-h-[40rem] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 rounded-2xl">
+    <div className="flex flex-col gap-4 sm:gap-6 max-h-[40rem] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 rounded-2xl">
       {cvs.map((cv) => (
         <div
           key={cv.id}
-          className="bg-white rounded-2xl p-7 shadow-lg flex flex-col sm:flex-row justify-between items-center text-black border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition duration-200"
+          className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-7 shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center text-black border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition duration-200"
         >
-          <div>
-            <div className="font-semibold text-base text-black">
+          <div className="w-full sm:w-auto">
+            <div className="font-semibold text-sm sm:text-base text-black">
               {cv.fileName}
             </div>
             <div className="text-xs text-gray-500 mt-1 text-black">
               Огноо: {new Date(cv.createdAt).toLocaleDateString()}
             </div>
           </div>
-          <div className="flex items-center gap-3 mt-2 sm:mt-0">
+          <div className="flex items-center gap-2 sm:gap-3 mt-3 sm:mt-0 w-full sm:w-auto">
             {cv.fileUrl ? (
               <a
                 href={cv.fileUrl}
                 download
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-5 py-2 bg-[#0a1931] text-white rounded-lg font-semibold shadow hover:bg-[#185adb] transition text-black text-center"
+                className="flex-1 sm:flex-none px-4 sm:px-5 py-2 bg-[#0a1931] text-white rounded-lg font-semibold shadow hover:bg-[#185adb] transition text-black text-center flex items-center justify-center gap-2 text-sm sm:text-base"
               >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
+                </svg>
                 Татах
               </a>
             ) : (
               <button
-                className="px-5 py-2 bg-gray-300 text-white rounded-lg font-semibold shadow cursor-not-allowed text-black"
+                className="flex-1 sm:flex-none px-4 sm:px-5 py-2 bg-gray-300 text-white rounded-lg font-semibold shadow cursor-not-allowed text-black text-sm sm:text-base"
                 disabled
               >
                 Татах

@@ -51,9 +51,6 @@ export default function EmployerProfile() {
     website: company?.website || "",
     description: company?.description || "",
   });
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [newApplicationsCount, setNewApplicationsCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -320,80 +317,6 @@ export default function EmployerProfile() {
     }
   };
 
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCoverFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleCoverUpload = async () => {
-    if (!coverFile) return;
-
-    try {
-      setIsUploadingCover(true);
-      setError(null);
-
-      const formData = new FormData();
-      formData.append("file", coverFile);
-
-      const uploadRes = await fetch("/api/upload/company-cover", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error("Failed to upload cover image");
-      }
-
-      const text = await uploadRes.text();
-      if (!text) {
-        throw new Error("Хоосон хариу ирлээ");
-      }
-      const uploadData = JSON.parse(text);
-
-      // Update company with new cover image URL
-      const response = await fetch("/api/employer/company/update", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: company?.name,
-          location: company?.location,
-          logoUrl: company?.logoUrl,
-          description: company?.description,
-          website: company?.website,
-          coverImageUrl: uploadData.url,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update company profile");
-      }
-
-      const textUpdatedCompany = await response.text();
-      if (!textUpdatedCompany) {
-        throw new Error("Хоосон хариу ирлээ");
-      }
-      const updatedCompany = JSON.parse(textUpdatedCompany);
-      setCompany(updatedCompany);
-      setCoverFile(null);
-      setCoverPreview(null);
-      setSuccessMessage("Cover image updated successfully");
-    } catch (error) {
-      console.error("Error uploading cover:", error);
-      setError("Failed to upload cover image. Please try again.");
-    } finally {
-      setIsUploadingCover(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -405,112 +328,12 @@ export default function EmployerProfile() {
   return (
     <div className="min-h-screen mt-16 bg-white px-0 sm:px-6 md:px-8 lg:px-32 text-[#0C213A] font-poppins">
       {/* Cover Image/Header */}
-      <div className="relative w-full h-32 sm:h-40 md:h-48 lg:h-64 group">
+      <div className="relative w-full h-32 sm:h-40 md:h-48 lg:h-64">
         <img
-          src={
-            coverPreview ||
-            company?.coverImageUrl ||
-            "/images/default-cover.jpg"
-          }
+          src="/images/cover.jpeg"
           alt="Company cover"
-          className="w-full h-full object-cover object-center transition-all duration-300"
+          className="w-full h-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-4">
-          <div className="relative">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleCoverChange}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            />
-            <div className="bg-white/90 hover:bg-white text-gray-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl text-sm sm:text-base">
-              <svg
-                className="w-3 h-3 sm:w-4 sm:h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              Зураг сонгох
-            </div>
-          </div>
-        </div>
-        {coverFile && (
-          <div className="absolute bottom-4 right-4 flex gap-2 z-20">
-            <button
-              onClick={handleCoverUpload}
-              disabled={isUploadingCover}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isUploadingCover ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Хадгалж байна...
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Хадгалах
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setCoverFile(null);
-                setCoverPreview(null);
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-              Цуцлах
-            </button>
-          </div>
-        )}
         <div className="absolute left-0 bottom-0 flex items-end gap-4 sm:gap-6 md:gap-8 px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8 w-full bg-gradient-to-t from-black/60 to-transparent">
           <div className="relative group">
             <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-xl shadow-lg flex items-center justify-center overflow-hidden">
