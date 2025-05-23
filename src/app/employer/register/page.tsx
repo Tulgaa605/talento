@@ -73,11 +73,10 @@ export default function EmployerRegister() {
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
-    const name = formData.get("name") as string;
     const companyName = formData.get("companyName") as string;
 
     // Validate required fields
-    if (!email || !password || !name || !companyName) {
+    if (!email || !password || !companyName) {
       setError("Бүх талбарыг бөглөнө үү");
       setIsLoading(false);
       return;
@@ -86,7 +85,6 @@ export default function EmployerRegister() {
     const data = {
       email,
       password,
-      name,
       companyName,
       companyDescription: `${companyName} - Ажил олгогч компани`,
       location: "Улаанбаатар",
