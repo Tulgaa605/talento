@@ -23,6 +23,9 @@ export default function QuestionnaireDropdown({
 }: QuestionnaireDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sentQuestionnaire, setSentQuestionnaire] = useState<string | null>(
+    null
+  );
   const router = useRouter();
 
   const handleSubmit = async (
@@ -46,6 +49,7 @@ export default function QuestionnaireDropdown({
         throw new Error("Failed to send questionnaire");
       }
 
+      setSentQuestionnaire(questionnaireTitle);
       setIsOpen(false);
       alert(`"${questionnaireTitle}" асуулга амжилттай илгээгдлээ`);
       router.refresh();
@@ -61,12 +65,12 @@ export default function QuestionnaireDropdown({
     <div className="relative">
       <button
         type="button"
-        className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 w-full"
+        className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200"
         onClick={() => setIsOpen(!isOpen)}
         disabled={isSubmitting}
       >
         <svg
-          className="w-5 h-5"
+          className="w-4 h-4"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -78,7 +82,11 @@ export default function QuestionnaireDropdown({
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
           />
         </svg>
-        {isSubmitting ? "Илгээж байна..." : "Асуулга Илгээх"}
+        {isSubmitting
+          ? "Илгээж байна..."
+          : sentQuestionnaire
+          ? `Илгээсэн: ${sentQuestionnaire}`
+          : "Асуулга Илгээх"}
       </button>
       {isOpen && (
         <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-4 z-10">

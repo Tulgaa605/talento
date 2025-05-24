@@ -221,65 +221,42 @@ export default async function JobApplicationsPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header Section */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                "{job.title}" ажлын анкетууд
-              </h1>
-              <p className="text-gray-600">
-                Нийт {job.applications.length} анкет ирүүлсэн
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium">
-                {job.type}
-              </div>
-              <div className="bg-green-50 text-green-700 px-4 py-2 rounded-full text-sm font-medium">
-                {job.location}
-              </div>
-            </div>
-          </div>
-        </div>
-
+    <div className="min-h-screen pt-20 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Applications List */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {job.applications.map((application) => (
             <div
               key={application.id}
-              className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200"
+              className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
             >
-              <div className="p-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+              <div className="p-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
                       {application.user.image ? (
                         <img
                           src={application.user.image}
                           alt={application.user.name || ""}
-                          className="w-12 h-12 rounded-full object-cover"
+                          className="w-10 h-10 rounded-full object-cover"
                         />
                       ) : (
-                        <span className="text-xl font-semibold text-gray-500">
+                        <span className="text-lg font-semibold text-gray-500">
                           {application.user.name?.charAt(0).toUpperCase()}
                         </span>
                       )}
                     </div>
                     <div>
-                      <h2 className="text-xl font-semibold text-gray-900">
+                      <h2 className="text-lg font-semibold text-gray-900">
                         {application.user.name}
                       </h2>
                       <p className="text-gray-500 text-sm">
-                        Ирүүлсэн:{" "}
                         {format(application.createdAt, "yyyy-MM-dd HH:mm")}
                       </p>
                     </div>
                   </div>
                   <div
-                    className={`px-4 py-2 rounded-full text-sm font-medium ${
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
                       application.status === "PENDING"
                         ? "bg-yellow-50 text-yellow-700"
                         : application.status === "ACCEPTED"
@@ -294,22 +271,21 @@ export default async function JobApplicationsPage({ params }: PageProps) {
                 </div>
 
                 {application.message && (
-                  <div className="mt-6 bg-gray-50 rounded-xl p-4">
-                    <h3 className="font-medium text-gray-900 mb-2">Мессеж</h3>
-                    <p className="text-gray-600 whitespace-pre-wrap">
+                  <div className="mt-3 bg-gray-50 rounded-lg p-3">
+                    <p className="text-gray-600 text-sm whitespace-pre-wrap">
                       {application.message}
                     </p>
                   </div>
                 )}
 
-                <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                <div className="mt-4 flex flex-wrap gap-2">
                   {application.cv && (
                     <a
                       href={`/api/cv/download?cvId=${application.cv.id}`}
-                      className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 w-full sm:w-auto"
+                      className="flex items-center justify-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200"
                     >
                       <svg
-                        className="w-5 h-5"
+                        className="w-4 h-4"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -331,7 +307,7 @@ export default async function JobApplicationsPage({ params }: PageProps) {
                       >
                         <button
                           type="submit"
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 w-full"
+                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200"
                         >
                           Зөвшөөрөх
                         </button>
@@ -341,7 +317,7 @@ export default async function JobApplicationsPage({ params }: PageProps) {
                       >
                         <button
                           type="submit"
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 w-full"
+                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200"
                         >
                           Татгалзах
                         </button>
@@ -358,11 +334,11 @@ export default async function JobApplicationsPage({ params }: PageProps) {
           ))}
 
           {job.applications.length === 0 && (
-            <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
               <div className="max-w-md mx-auto">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <svg
-                    className="w-8 h-8 text-gray-400"
+                    className="w-6 h-6 text-gray-400"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -375,10 +351,10 @@ export default async function JobApplicationsPage({ params }: PageProps) {
                     />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-base font-medium text-gray-900 mb-1">
                   Одоогоор анкет ирээгүй байна
                 </h3>
-                <p className="text-gray-500">
+                <p className="text-gray-500 text-sm">
                   Ажлын зар тавихад анкет ирэх болно.
                 </p>
               </div>
