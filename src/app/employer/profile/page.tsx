@@ -476,12 +476,31 @@ export default function EmployerProfile() {
 
   const fetchQuestionnaires = async () => {
     try {
-      const response = await fetch("/api/employer/questionnaires");
-      if (!response.ok) throw new Error("Failed to fetch questionnaires");
-      const data = await response.json();
+      if (!company?.id) {
+        setQuestionnaires([]);
+        return;
+      }
+
+      const response = await fetch(
+        `/api/employer/questionnaires?companyId=${company.id}`
+      );
+      const text = await response.text();
+
+      if (!response.ok) {
+        throw new Error("Асуулга татахад алдаа гарлаа");
+      }
+
+      if (!text) {
+        setQuestionnaires([]);
+        return;
+      }
+
+      const data = JSON.parse(text);
       setQuestionnaires(data);
     } catch (error) {
       console.error("Error fetching questionnaires:", error);
+      setQuestionnaires([]);
+      setError("Асуулга татахад алдаа гарлаа. Дараа дахин оролдоно уу.");
     }
   };
 
@@ -490,11 +509,15 @@ export default function EmployerProfile() {
       const response = await fetch(
         `/api/employer/questionnaires/${questionnaireId}/responses`
       );
-      if (!response.ok) throw new Error("Failed to fetch responses");
+      if (!response.ok) {
+        throw new Error("Failed to fetch responses");
+      }
       const data = await response.json();
       setResponses(data);
     } catch (error) {
       console.error("Error fetching responses:", error);
+      setError("Хариултуудыг татахад алдаа гарлаа. Дараа дахин оролдоно уу.");
+      setResponses([]);
     }
   };
 
@@ -510,7 +533,7 @@ export default function EmployerProfile() {
   };
 
   const handleAddQuestion = () => {
-    setNewQuestionnaire(prev => ({
+    setNewQuestionnaire((prev) => ({
       ...prev,
       questions: [
         ...prev.questions,
@@ -520,42 +543,93 @@ export default function EmployerProfile() {
           type: "TEXT" as const,
           required: false,
           options: [],
-          order: prev.questions.length
-        }
-      ]
+          order: prev.questions.length,
+        },
+      ],
     }));
   };
 
-  const handleQuestionChange = (questionId: string, field: string, value: any) => {
-    setNewQuestionnaire(prev => ({
+  const handleQuestionChange = (
+    questionId: string,
+    field: string,
+    value: any
+  ) => {
+    setNewQuestionnaire((prev) => ({
       ...prev,
-      questions: prev.questions.map(q =>
+      questions: prev.questions.map((q) =>
         q.id === questionId ? { ...q, [field]: value } : q
-      )
+      ),
     }));
   };
 
   const handleDeleteQuestion = (questionId: string) => {
-    setNewQuestionnaire(prev => ({
+    setNewQuestionnaire((prev) => ({
       ...prev,
-      questions: prev.questions.filter(q => q.id !== questionId)
+      questions: prev.questions.filter((q) => q.id !== questionId),
     }));
   };
 
-  const handleEditQuestionnaire = (questionnaireId: string) => {
-    const questionnaire = questionnaires.find(q => q.id === questionnaireId);
+  const startEditingQuestionnaire = (questionnaireId: string) => {
+    const questionnaire = questionnaires.find((q) => q.id === questionnaireId);
     if (!questionnaire) return;
-    
+
     setEditingQuestionnaire(questionnaire);
     setNewQuestionnaire({
       title: questionnaire.title,
       description: questionnaire.description || "",
-      questions: questionnaire.questions
+      questions: questionnaire.questions,
     });
+  };
+
+  const handleEditQuestionnaire = async () => {
+    try {
+      if (!editingQuestionnaire) return;
+
+      const response = await fetch("/api/employer/questionnaires", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: editingQuestionnaire.id,
+          title: editingQuestionnaire.title,
+          description: editingQuestionnaire.description,
+          questions: editingQuestionnaire.questions.map((q, index) => ({
+            ...q,
+            order: index,
+          })),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || data.details || "Асуулга засахад алдаа гарлаа"
+        );
+      }
+
+      setQuestionnaires((prev) =>
+        prev.map((q) => (q.id === editingQuestionnaire.id ? data : q))
+      );
+      setEditingQuestionnaire(null);
+      setSuccessMessage("Асуулга амжилттай засагдлаа");
+      setError(null);
+    } catch (error) {
+      console.error("Error updating questionnaire:", error);
+      setError(
+        error instanceof Error ? error.message : "Асуулга засахад алдаа гарлаа"
+      );
+      setSuccessMessage(null);
+    }
   };
 
   const handleCreateQuestionnaire = async () => {
     try {
+      if (!company?.id) {
+        throw new Error("Компанийн мэдээлэл олдсонгүй");
+      }
+
       const response = await fetch("/api/employer/questionnaires", {
         method: "POST",
         headers: {
@@ -563,39 +637,69 @@ export default function EmployerProfile() {
         },
         body: JSON.stringify({
           ...newQuestionnaire,
+          companyId: company.id,
           questions: newQuestionnaire.questions.map((q, index) => ({
             ...q,
-            order: index
-          }))
+            order: index,
+          })),
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to create questionnaire");
-      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Асуулга үүсгэхэд алдаа гарлаа");
+      }
+
       const data = await response.json();
-      setQuestionnaires(prev => [...prev, data]);
+      setQuestionnaires((prev) => [...prev, data]);
       setIsCreatingQuestionnaire(false);
       setNewQuestionnaire({
         title: "",
         description: "",
         questions: [],
       });
+      setSuccessMessage("Асуулга амжилттай үүслээ");
     } catch (error) {
       console.error("Error creating questionnaire:", error);
+      setError(
+        error instanceof Error ? error.message : "Асуулга үүсгэхэд алдаа гарлаа"
+      );
     }
   };
 
   const handleDeleteQuestionnaire = async (questionnaireId: string) => {
-    try {
-      const response = await fetch(`/api/employer/questionnaires/${questionnaireId}`, {
-        method: "DELETE",
-      });
+    if (!window.confirm("Энэ асуулгыг устгахдаа итгэлтэй байна уу?")) {
+      return;
+    }
 
-      if (!response.ok) throw new Error("Failed to delete questionnaire");
-      
-      setQuestionnaires(prev => prev.filter(q => q.id !== questionnaireId));
+    try {
+      const response = await fetch(
+        `/api/employer/questionnaires?id=${questionnaireId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || data.details || "Асуулга устгахад алдаа гарлаа"
+        );
+      }
+
+      setQuestionnaires((prev) => prev.filter((q) => q.id !== questionnaireId));
+      setSuccessMessage("Асуулга амжилттай устгагдлаа");
+      setError(null);
     } catch (error) {
       console.error("Error deleting questionnaire:", error);
+      setError(
+        error instanceof Error ? error.message : "Асуулга устгахад алдаа гарлаа"
+      );
+      setSuccessMessage(null);
     }
   };
 
@@ -1110,19 +1214,66 @@ export default function EmployerProfile() {
               {!isCreatingQuestionnaire && !editingQuestionnaire && (
                 <button
                   onClick={() => setIsCreatingQuestionnaire(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
-                  <PlusIcon className="w-5 h-5" />
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
                   Шинэ асуулга
                 </button>
               )}
             </div>
 
             {isCreatingQuestionnaire || editingQuestionnaire ? (
-              <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {editingQuestionnaire ? "Асуулга засах" : "Шинэ асуулга"}
+                  </h3>
+                  <button
+                    onClick={(e) => {
+                      if (editingQuestionnaire) {
+                        setEditingQuestionnaire(null);
+                      } else {
+                        setIsCreatingQuestionnaire(false);
+                        setNewQuestionnaire({
+                          title: "",
+                          description: "",
+                          questions: [],
+                        });
+                      }
+                    }}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
                 <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Гарчиг
                     </label>
                     <input
@@ -1140,11 +1291,13 @@ export default function EmployerProfile() {
                               title: e.target.value,
                             }))
                       }
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      placeholder="Асуулгын гарчиг"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Тайлбар
                     </label>
                     <textarea
@@ -1164,8 +1317,9 @@ export default function EmployerProfile() {
                               description: e.target.value,
                             }))
                       }
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                       rows={3}
+                      placeholder="Асуулгын тайлбар"
                     />
                   </div>
 
@@ -1175,7 +1329,7 @@ export default function EmployerProfile() {
                         Асуултууд
                       </h3>
                       <button
-                        onClick={() =>
+                        onClick={(e) =>
                           editingQuestionnaire
                             ? setEditingQuestionnaire((prev) =>
                                 prev
@@ -1197,9 +1351,9 @@ export default function EmployerProfile() {
                               )
                             : handleAddQuestion()
                         }
-                        className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
                       >
-                        <PlusIcon className="w-5 h-5" />
+                        <PlusIcon className="w-5 h-5 mr-2" />
                         Асуулт нэмэх
                       </button>
                     </div>
@@ -1210,13 +1364,13 @@ export default function EmployerProfile() {
                     ).map((question, index) => (
                       <div
                         key={question.id}
-                        className="border border-gray-200 rounded-lg p-4 space-y-4"
+                        className="bg-white border border-gray-200 rounded-lg p-6 space-y-4 shadow-sm hover:shadow-md transition"
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1 space-y-4">
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Асуулт
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Асуулт {index + 1}
                               </label>
                               <input
                                 type="text"
@@ -1240,58 +1394,107 @@ export default function EmployerProfile() {
                                           : null
                                       )
                                     : handleQuestionChange(
-                                        index,
+                                        question.id,
                                         "text",
                                         e.target.value
                                       )
                                 }
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                placeholder="Асуултаа бичнэ үү..."
                               />
                             </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Төрөл
-                              </label>
-                              <select
-                                value={question.type}
-                                onChange={(e) => {
-                                  const value = e.target.value as
-                                    | "TEXT"
-                                    | "MULTIPLE_CHOICE"
-                                    | "SINGLE_CHOICE";
-                                  if (editingQuestionnaire) {
-                                    setEditingQuestionnaire((prev) =>
-                                      prev
-                                        ? {
-                                            ...prev,
-                                            questions: prev.questions.map(
-                                              (q, i) =>
-                                                i === index
-                                                  ? { ...q, type: value }
-                                                  : q
-                                            ),
-                                          }
-                                        : null
-                                    );
-                                  } else {
-                                    handleQuestionChange(index, "type", value);
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Төрөл
+                                </label>
+                                <select
+                                  value={question.type}
+                                  onChange={(e) => {
+                                    const value = e.target.value as
+                                      | "TEXT"
+                                      | "MULTIPLE_CHOICE"
+                                      | "SINGLE_CHOICE";
+                                    if (editingQuestionnaire) {
+                                      setEditingQuestionnaire((prev) =>
+                                        prev
+                                          ? {
+                                              ...prev,
+                                              questions: prev.questions.map(
+                                                (q, i) =>
+                                                  i === index
+                                                    ? { ...q, type: value }
+                                                    : q
+                                              ),
+                                            }
+                                          : null
+                                      );
+                                    } else {
+                                      handleQuestionChange(
+                                        question.id,
+                                        "type",
+                                        value
+                                      );
+                                    }
+                                  }}
+                                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                >
+                                  <option value="TEXT">Текст</option>
+                                  <option value="SINGLE_CHOICE">
+                                    Нэг сонголттой
+                                  </option>
+                                  <option value="MULTIPLE_CHOICE">
+                                    Олон сонголттой
+                                  </option>
+                                </select>
+                              </div>
+
+                              <div className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  id={`required-${question.id}`}
+                                  checked={question.required}
+                                  onChange={(e) =>
+                                    editingQuestionnaire
+                                      ? setEditingQuestionnaire((prev) =>
+                                          prev
+                                            ? {
+                                                ...prev,
+                                                questions: prev.questions.map(
+                                                  (q, i) =>
+                                                    i === index
+                                                      ? {
+                                                          ...q,
+                                                          required:
+                                                            e.target.checked,
+                                                        }
+                                                      : q
+                                                ),
+                                              }
+                                            : null
+                                        )
+                                      : handleQuestionChange(
+                                          question.id,
+                                          "required",
+                                          e.target.checked
+                                        )
                                   }
-                                }}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              >
-                                <option value="TEXT">Текст</option>
-                                <option value="SINGLE_CHOICE">
-                                  Нэг сонголттой
-                                </option>
-                                <option value="MULTIPLE_CHOICE">
-                                  Олон сонголттой
-                                </option>
-                              </select>
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                />
+                                <label
+                                  htmlFor={`required-${question.id}`}
+                                  className="ml-2 block text-sm text-gray-700"
+                                >
+                                  Заавал бөглөх
+                                </label>
+                              </div>
                             </div>
+
                             {(question.type === "SINGLE_CHOICE" ||
                               question.type === "MULTIPLE_CHOICE") && (
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                              <div className="mt-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
                                   Сонголтууд
                                 </label>
                                 <div className="space-y-2">
@@ -1299,7 +1502,7 @@ export default function EmployerProfile() {
                                     (option, optionIndex) => (
                                       <div
                                         key={optionIndex}
-                                        className="flex gap-2"
+                                        className="flex gap-2 items-center"
                                       >
                                         <input
                                           type="text"
@@ -1331,13 +1534,16 @@ export default function EmployerProfile() {
                                               );
                                             } else {
                                               handleQuestionChange(
-                                                index,
+                                                question.id,
                                                 "options",
                                                 newOptions
                                               );
                                             }
                                           }}
-                                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                          className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                          placeholder={`Сонголт ${
+                                            optionIndex + 1
+                                          }`}
                                         />
                                         <button
                                           onClick={(e) => {
@@ -1367,13 +1573,13 @@ export default function EmployerProfile() {
                                               );
                                             } else {
                                               handleQuestionChange(
-                                                index,
+                                                question.id,
                                                 "options",
                                                 newOptions
                                               );
                                             }
                                           }}
-                                          className="text-red-600 hover:text-red-700"
+                                          className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
                                         >
                                           <TrashIcon className="w-5 h-5" />
                                         </button>
@@ -1406,59 +1612,20 @@ export default function EmployerProfile() {
                                         );
                                       } else {
                                         handleQuestionChange(
-                                          index,
+                                          question.id,
                                           "options",
                                           newOptions
                                         );
                                       }
                                     }}
-                                    className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
                                   >
-                                    <PlusIcon className="w-4 h-4" />
+                                    <PlusIcon className="w-4 h-4 mr-1" />
                                     Сонголт нэмэх
                                   </button>
                                 </div>
                               </div>
                             )}
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                id={`required-${question.id}`}
-                                checked={question.required}
-                                onChange={(e) =>
-                                  editingQuestionnaire
-                                    ? setEditingQuestionnaire((prev) =>
-                                        prev
-                                          ? {
-                                              ...prev,
-                                              questions: prev.questions.map(
-                                                (q, i) =>
-                                                  i === index
-                                                    ? {
-                                                        ...q,
-                                                        required:
-                                                          e.target.checked,
-                                                      }
-                                                    : q
-                                              ),
-                                            }
-                                          : null
-                                      )
-                                    : handleQuestionChange(
-                                        index,
-                                        "required",
-                                        e.target.checked
-                                      )
-                                }
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              />
-                              <label
-                                htmlFor={`required-${question.id}`}
-                                className="text-sm text-gray-700"
-                              >
-                                Заавал бөглөх
-                              </label>
-                            </div>
                           </div>
                           <button
                             onClick={(e) => {
@@ -1474,9 +1641,9 @@ export default function EmployerProfile() {
                                         }
                                       : null
                                   )
-                                : handleDeleteQuestion(question.id)
-                            }
-                            className="text-red-600 hover:text-red-700 ml-4"
+                                : handleDeleteQuestion(question.id);
+                            }}
+                            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition ml-4"
                           >
                             <TrashIcon className="w-5 h-5" />
                           </button>
@@ -1485,9 +1652,9 @@ export default function EmployerProfile() {
                     ))}
                   </div>
 
-                  <div className="flex justify-end gap-4">
+                  <div className="flex justify-end gap-4 pt-4 border-t">
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
                         if (editingQuestionnaire) {
                           setEditingQuestionnaire(null);
                         } else {
@@ -1499,17 +1666,20 @@ export default function EmployerProfile() {
                           });
                         }
                       }}
-                      className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                      className="px-6 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                     >
                       Цуцлах
                     </button>
                     <button
-                      onClick={
-                        editingQuestionnaire
-                          ? handleEditQuestionnaire
-                          : handleCreateQuestionnaire
-                      }
-                      className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (editingQuestionnaire) {
+                          handleEditQuestionnaire();
+                        } else {
+                          handleCreateQuestionnaire();
+                        }
+                      }}
+                      className="px-6 py-2.5 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                     >
                       Хадгалах
                     </button>
@@ -1521,53 +1691,88 @@ export default function EmployerProfile() {
                 {questionnaires.map((questionnaire) => (
                   <div
                     key={questionnaire.id}
-                    className="bg-white rounded-xl shadow-lg p-6 space-y-4"
+                    className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200"
                   >
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {questionnaire.title}
-                    </h3>
-                    {questionnaire.description && (
-                      <p className="text-gray-600">
-                        {questionnaire.description}
-                      </p>
-                    )}
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm text-gray-500">
-                        {questionnaire.questions.length} асуулт
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-black mb-2">
+                            {questionnaire.title}
+                          </h3>
+                          {questionnaire.description && (
+                            <p className="text-gray-600 text-sm line-clamp-2">
+                              {questionnaire.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const questionnaireId = questionnaire.id;
+                              startEditingQuestionnaire(questionnaireId);
+                            }}
+                            className="p-2 text-black hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                            title="Засах"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const questionnaireId = questionnaire.id;
+                              handleDeleteQuestionnaire(questionnaireId);
+                            }}
+                            className="p-2 text-black hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                            title="Устгах"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => {
-                          setSelectedQuestionnaire(questionnaire.id);
-                          setActiveTab("responses");
-                        }}
-                        className="text-blue-600 hover:text-blue-700 text-sm"
-                      >
-                        Хариултуудыг харах
-                      </button>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          const questionnaireId = questionnaire.id;
-                          handleEditQuestionnaire(questionnaireId);
-                        }}
-                        className="text-blue-600 hover:text-blue-700"
-                      >
-                        Засах
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          const questionnaireId = questionnaire.id;
-                          handleDeleteQuestionnaire(questionnaireId);
-                        }}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        Устгах
-                      </button>
+
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <svg
+                            className="w-5 h-5 text-black"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                          <span>{questionnaire.questions.length} асуулт</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1583,7 +1788,14 @@ export default function EmployerProfile() {
               </h2>
               <select
                 value={selectedQuestionnaire || ""}
-                onChange={(e) => setSelectedQuestionnaire(e.target.value)}
+                onChange={(e) => {
+                  setSelectedQuestionnaire(e.target.value);
+                  if (e.target.value) {
+                    fetchResponses(e.target.value);
+                  } else {
+                    setResponses([]);
+                  }
+                }}
                 className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Асуулга сонгох</option>
@@ -1597,58 +1809,172 @@ export default function EmployerProfile() {
 
             {selectedQuestionnaire ? (
               <div className="space-y-6">
-                {responses.map((response) => (
-                  <div
-                    key={response.id}
-                    className="bg-white rounded-xl shadow-lg p-6 space-y-4"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {response.user.name}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          {response.user.email}
-                        </p>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(response.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      {response.answers.map((answer, index) => (
-                        <div key={index} className="border-t pt-4">
-                          <h4 className="font-medium text-gray-900 mb-2">
-                            {answer.question.text}
-                          </h4>
-                          {answer.question.type === "MULTIPLE_CHOICE" ? (
-                            <div className="space-y-2">
-                              {answer.value.split(",").map((value, i) => (
-                                <div
-                                  key={i}
-                                  className="bg-gray-50 px-3 py-2 rounded-lg"
-                                >
-                                  {value.trim()}
+                {responses.length > 0 ? (
+                  responses.map((response) => (
+                    <div
+                      key={response.id}
+                      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100"
+                    >
+                      <Disclosure>
+                        {({ open }) => (
+                          <div>
+                            <Disclosure.Button className="w-full p-6">
+                              <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-semibold">
+                                    {response.user.name.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <h3 className="text-lg font-bold text-[#0C213A]">
+                                      {response.user.name}
+                                    </h3>
+                                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                                      <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                        />
+                                      </svg>
+                                      {response.user.email}
+                                    </div>
+                                  </div>
                                 </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-gray-700">{answer.value}</p>
-                          )}
-                        </div>
-                      ))}
+                                <div className="flex items-center gap-4">
+                                  <div className="text-sm text-gray-500">
+                                    {new Date(
+                                      response.createdAt
+                                    ).toLocaleDateString("mn-MN", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })}
+                                  </div>
+                                  <ChevronUpIcon
+                                    className={`${
+                                      open ? "transform rotate-180" : ""
+                                    } w-5 h-5 text-gray-500 transition-transform duration-200`}
+                                  />
+                                </div>
+                              </div>
+                            </Disclosure.Button>
+                            <Disclosure.Panel className="px-6 pb-6">
+                              <div className="space-y-4 pt-4 border-t border-gray-100">
+                                {response.answers.map((answer, index) => (
+                                  <div
+                                    key={index}
+                                    className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors"
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium flex-shrink-0">
+                                        {index + 1}
+                                      </div>
+                                      <div className="flex-1 space-y-2">
+                                        <h4 className="font-medium text-[#0C213A]">
+                                          {answer.question.text}
+                                        </h4>
+                                        {answer.question.type ===
+                                        "MULTIPLE_CHOICE" ? (
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {answer.value
+                                              .split(",")
+                                              .map((value, i) => (
+                                                <div
+                                                  key={i}
+                                                  className="bg-white px-4 py-2 rounded-lg border border-gray-200 flex items-center gap-2"
+                                                >
+                                                  <svg
+                                                    className="w-5 h-5 text-green-500 flex-shrink-0"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                  >
+                                                    <path
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      strokeWidth={2}
+                                                      d="M5 13l4 4L19 7"
+                                                    />
+                                                  </svg>
+                                                  <span className="text-gray-700">
+                                                    {value.trim()}
+                                                  </span>
+                                                </div>
+                                              ))}
+                                          </div>
+                                        ) : (
+                                          <div className="bg-white px-4 py-3 rounded-lg border border-gray-200">
+                                            <p className="text-gray-700 whitespace-pre-wrap">
+                                              {answer.value}
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </Disclosure.Panel>
+                          </div>
+                        )}
+                      </Disclosure>
                     </div>
-                  </div>
-                ))}
-                {responses.length === 0 && (
-                  <div className="text-center text-gray-500 py-8">
-                    Энэ асуулгад одоогоор хариулт ирээгүй байна
+                  ))
+                ) : (
+                  <div className="text-center py-16 bg-white rounded-2xl shadow-lg border border-gray-100">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg
+                        className="w-10 h-10 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Хариулт олдсонгүй
+                    </h3>
+                    <p className="text-gray-500">
+                      Энэ асуулгад одоогоор хариулт ирээгүй байна
+                    </p>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="text-center text-gray-500 py-8">
-                Асуулга сонгоно уу
+              <div className="text-center py-16 bg-white rounded-2xl shadow-lg border border-gray-100">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-10 h-10 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Асуулга сонгоно уу
+                </h3>
+                <p className="text-gray-500">
+                  Хариултуудыг харахын тулд дээрх жагсаалтаас асуулга сонгоно уу
+                </p>
               </div>
             )}
           </div>
@@ -1734,10 +2060,7 @@ export default function EmployerProfile() {
                                 <button
                                   key={q.id}
                                   onClick={() => {
-                                    handleSendQuestionnaire(
-                                      application.id,
-                                      q.id
-                                    );
+                                    handleSendQuestionnaire(application.id);
                                     setSelectedCV(null);
                                   }}
                                   disabled={isSendingQuestionnaire}

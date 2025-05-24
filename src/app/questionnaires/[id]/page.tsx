@@ -188,41 +188,77 @@ export default function QuestionnairePage({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-2xl shadow-lg p-8 sm:p-10">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-2xl shadow-xl p-8 sm:p-10">
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              {questionnaire.title}
-            </h1>
+            <div>
+              <h1 className="text-3xl font-bold text-[#0C213A] mb-2">
+                {questionnaire.title}
+              </h1>
+              <p className="text-gray-500">
+                Нийт {questionnaire.questions.length} асуулт
+              </p>
+            </div>
             <button
               onClick={() => router.push("/jobseeker/applications")}
-              className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+              className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm hover:shadow-md"
             >
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
               Өргөдлийн жагсаалт руу буцах
             </button>
           </div>
+
           {questionnaire.description && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-              <p className="text-blue-800 text-lg">
-                {questionnaire.description}
-              </p>
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 mb-8">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-6 w-6 text-blue-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <p className="ml-3 text-blue-800 text-lg">
+                  {questionnaire.description}
+                </p>
+              </div>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {questionnaire.questions
               .sort((a, b) => a.order - b.order)
               .map((question, index) => (
                 <div
                   key={question.id}
-                  className="bg-gray-50 rounded-xl p-8 transition-all duration-200 hover:shadow-md"
+                  className="bg-white rounded-xl border border-gray-100 p-6 transition-all duration-200 hover:shadow-md"
                 >
                   <div className="flex items-start space-x-4">
                     <span className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 text-blue-600 font-semibold text-lg">
                       {index + 1}
                     </span>
                     <div className="flex-1">
-                      <label className="block text-xl font-semibold text-gray-900 mb-4">
+                      <label className="block text-xl font-semibold text-[#0C213A] mb-4">
                         {question.text}
                         {question.required && (
                           <span className="text-red-500 ml-1">*</span>
@@ -236,7 +272,7 @@ export default function QuestionnairePage({
                             handleAnswerChange(question.id, e.target.value)
                           }
                           required={question.required}
-                          className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg"
+                          className="mt-1 block w-full rounded-xl border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg transition-all duration-200"
                           rows={4}
                           placeholder="Хариултаа энд бичнэ үү..."
                         />
@@ -247,7 +283,7 @@ export default function QuestionnairePage({
                           {question.options.map((option) => (
                             <label
                               key={option}
-                              className="flex items-center p-4 rounded-xl border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+                              className="flex items-center p-4 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer transition-all duration-200"
                             >
                               <input
                                 type="radio"
@@ -276,7 +312,7 @@ export default function QuestionnairePage({
                           {question.options.map((option) => (
                             <label
                               key={option}
-                              className="flex items-center p-4 rounded-xl border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+                              className="flex items-center p-4 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer transition-all duration-200"
                             >
                               <input
                                 type="checkbox"
@@ -312,11 +348,11 @@ export default function QuestionnairePage({
                 </div>
               ))}
 
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 -mx-8 mt-8">
+            <div className="sticky bottom-0 bg-white border-t border-gray-100 p-6 -mx-8 mt-8">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full flex justify-center py-4 px-6 border border-transparent rounded-xl shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                className="w-full flex justify-center py-4 px-6 border border-transparent rounded-xl shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
                 {isSubmitting ? (
                   <>
@@ -343,7 +379,22 @@ export default function QuestionnairePage({
                     Илгээж байна...
                   </>
                 ) : (
-                  "Илгээх"
+                  <>
+                    <svg
+                      className="w-6 h-6 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Илгээх
+                  </>
                 )}
               </button>
             </div>

@@ -107,7 +107,35 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Delete existing questions
+    // First check if the questionnaire exists
+    const existingQuestionnaire = await prisma.questionnaire.findUnique({
+      where: { id },
+      include: {
+        questions: {
+          include: {
+            answers: true,
+          },
+        },
+      },
+    });
+
+    if (!existingQuestionnaire) {
+      return NextResponse.json(
+        { error: "Questionnaire not found" },
+        { status: 404 }
+      );
+    }
+
+    // Delete existing answers first
+    for (const question of existingQuestionnaire.questions) {
+      await prisma.answer.deleteMany({
+        where: {
+          questionId: question.id,
+        },
+      });
+    }
+
+    // Then delete existing questions
     await prisma.question.deleteMany({
       where: {
         questionnaireId: id,
@@ -133,7 +161,11 @@ export async function PUT(request: Request) {
         },
       },
       include: {
-        questions: true,
+        questions: {
+          orderBy: {
+            order: "asc",
+          },
+        },
       },
     });
 
@@ -141,7 +173,10 @@ export async function PUT(request: Request) {
   } catch (error) {
     console.error("Error updating questionnaire:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
@@ -164,14 +199,63 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Delete questions first due to foreign key constraint
+    // First check if the questionnaire exists and get all related data
+    const questionnaire = await prisma.questionnaire.findUnique({
+      where: { id },
+      include: {
+        questions: {
+          include: {
+            answers: true,
+          },
+        },
+        responses: {
+          include: {
+            answers: true,
+          },
+        },
+      },
+    });
+
+    if (!questionnaire) {
+      return NextResponse.json(
+        { error: "Questionnaire not found" },
+        { status: 404 }
+      );
+    }
+
+    // Delete all answers first
+    for (const response of questionnaire.responses) {
+      await prisma.answer.deleteMany({
+        where: {
+          responseId: response.id,
+        },
+      });
+    }
+
+    // Delete all responses
+    await prisma.questionnaireResponse.deleteMany({
+      where: {
+        questionnaireId: id,
+      },
+    });
+
+    // Delete all question answers
+    for (const question of questionnaire.questions) {
+      await prisma.answer.deleteMany({
+        where: {
+          questionId: question.id,
+        },
+      });
+    }
+
+    // Delete all questions
     await prisma.question.deleteMany({
       where: {
         questionnaireId: id,
       },
     });
 
-    // Delete questionnaire
+    // Finally delete the questionnaire
     await prisma.questionnaire.delete({
       where: {
         id,
@@ -182,7 +266,10 @@ export async function DELETE(request: Request) {
   } catch (error) {
     console.error("Error deleting questionnaire:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
