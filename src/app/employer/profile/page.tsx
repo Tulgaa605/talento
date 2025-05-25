@@ -1215,7 +1215,7 @@ export default function EmployerProfile() {
               {!isCreatingQuestionnaire && !editingQuestionnaire && (
                 <button
                   onClick={() => setIsCreatingQuestionnaire(true)}
-                  className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  className="bg-[#0C213A] text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
                   <svg
                     className="w-5 h-5"
@@ -1292,7 +1292,7 @@ export default function EmployerProfile() {
                               title: e.target.value,
                             }))
                       }
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 transition focus:border-gray-200"
                       placeholder="Асуулгын гарчиг"
                     />
                   </div>
@@ -1318,7 +1318,8 @@ export default function EmployerProfile() {
                               description: e.target.value,
                             }))
                       }
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:border-emerald-950 transition duration-200
+"
                       rows={3}
                       placeholder="Асуулгын тайлбар"
                     />
@@ -1624,67 +1625,68 @@ export default function EmployerProfile() {
                       </div>
                     ))}
 
-                    <button
-                      onClick={(e) =>
-                        editingQuestionnaire
-                          ? setEditingQuestionnaire((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    questions: [
-                                      ...prev.questions,
-                                      {
-                                        id: Date.now().toString(),
-                                        text: "",
-                                        type: "TEXT" as const,
-                                        required: false,
-                                        options: [],
-                                        order: prev.questions.length,
-                                      },
-                                    ],
-                                  }
-                                : null
-                            )
-                          : handleAddQuestion()
-                      }
-                      className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition mt-4"
-                    >
-                      <PlusIcon className="w-5 h-5 mr-2" />
-                      Асуулт нэмэх
-                    </button>
-                  </div>
-
-                  <div className="flex justify-end gap-4 pt-4 border-t">
-                    <button
-                      onClick={(e) => {
-                        if (editingQuestionnaire) {
-                          setEditingQuestionnaire(null);
-                        } else {
-                          setIsCreatingQuestionnaire(false);
-                          setNewQuestionnaire({
-                            title: "",
-                            description: "",
-                            questions: [],
-                          });
+                    <div className="flex justify-between items-center gap-4 pt-4">
+                      <button
+                        onClick={(e) =>
+                          editingQuestionnaire
+                            ? setEditingQuestionnaire((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      questions: [
+                                        ...prev.questions,
+                                        {
+                                          id: Date.now().toString(),
+                                          text: "",
+                                          type: "TEXT" as const,
+                                          required: false,
+                                          options: [],
+                                          order: prev.questions.length,
+                                        },
+                                      ],
+                                    }
+                                  : null
+                              )
+                            : handleAddQuestion()
                         }
-                      }}
-                      className="px-6 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                    >
-                      Цуцлах
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (editingQuestionnaire) {
-                          handleEditQuestionnaire();
-                        } else {
-                          handleCreateQuestionnaire();
-                        }
-                      }}
-                      className="px-6 py-2.5 text-white bg-black rounded-lg hover:bg-gray-800 transition-colors font-medium"
-                    >
-                      Хадгалах
-                    </button>
+                        className="inline-flex items-center rounded-md bg-[#0C213A] px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transform transition-transform duration-200 hover:scale-110"
+                      >
+                        <PlusIcon className="w-5 h-5 mr-2" />
+                        Асуулт нэмэх
+                      </button>
+                      <div className="flex gap-4">
+                        <button
+                          onClick={(e) => {
+                            if (editingQuestionnaire) {
+                              setEditingQuestionnaire(null);
+                            } else {
+                              setIsCreatingQuestionnaire(false);
+                              setNewQuestionnaire({
+                                title: "",
+                                description: "",
+                                questions: [],
+                              });
+                            }
+                          }}
+                          className="px-6 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                        >
+                          Цуцлах
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (editingQuestionnaire) {
+                              handleEditQuestionnaire();
+                            } else {
+                              handleCreateQuestionnaire();
+                            }
+                          }}
+                          className="px-6 py-2.5 text-white bg-black rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                        >
+                          Хадгалах
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

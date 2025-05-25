@@ -231,9 +231,7 @@ export default function EditJobPage({
             {/* Logo and Small Fields Area (Spans 3 columns) */}
             <div className="lg:col-span-3 flex gap-6">
               {/* Logo Area */}
-              <div className="w-[201px] h-[201px] border border-slate-300 rounded-lg flex flex-col items-center justify-center p-4 flex-shrink-0 bg-slate-50">
-                {/* Лого байрлуулах боломжтой хэсэг (optional) */}
-              </div>
+
               {/* Input Fields Next to Logo */}
               <div className="flex-grow grid grid-cols-1 gap-y-4 content-start">
                 <div>
@@ -348,7 +346,7 @@ export default function EditJobPage({
               </div>
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-700">
               Шаардлагатай ур чадвар
             </label>
@@ -359,15 +357,33 @@ export default function EditJobPage({
                 onChange={(e) => setCurrentSkill(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ур чадвар нэмэх"
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-200 focus:outline-none focus:ring-1 text-[#0C213A] "
               />
               <button
                 type="button"
                 onClick={handleAddSkill}
-                className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                className="inline-flex items-center rounded-md bg-[#0C213A] px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transform transition-transform duration-200 hover:scale-110"
               >
                 Нэмэх
               </button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {Array.isArray(job.skills) &&
+                job.skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700"
+                  >
+                    {skill}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(skill)}
+                      className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-green-200"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
             </div>
             {/* Middle Section: Requirements Card */}
             <div className="rounded-lg mt-2">
@@ -394,25 +410,6 @@ export default function EditJobPage({
               />
             </div>
             {/* Skills Input */}
-
-            <div className="flex flex-wrap gap-2 mt-2">
-              {Array.isArray(job.skills) &&
-                job.skills.map((skill) => (
-                  <span
-                    key={skill}
-                    className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700"
-                  >
-                    {skill}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSkill(skill)}
-                      className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-green-200"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-            </div>
           </div>
           {/* Submit Buttons */}
           <div className="flex justify-end space-x-3">
@@ -425,7 +422,7 @@ export default function EditJobPage({
             <button
               type="submit"
               disabled={saving}
-              className="px-5 py-2.5 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-70 transition-colors"
+              className="px-5 py-2.5 bg-emerald-600 text-white rounded-md text-sm font-medium hover:bg-emerald-800 disabled:opacity-70 transition-colors"
             >
               {saving ? "Хадгалж байна..." : "Хадгалах"}
             </button>

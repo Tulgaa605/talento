@@ -371,15 +371,32 @@ export default function PostJobPageWithNewDesign() {
                 onChange={(e) => setCurrentSkill(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ур чадвар нэмэх"
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                className="flex-1 text-slate-700 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-200 focus:outline-none focus:ring-1 focus:ring-gray-500"
               />
               <button
                 type="button"
                 onClick={handleAddSkill}
-                className="inline-flex items-center rounded-md bg-[#0C213A] px-3 py-2 text-sm font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                className="inline-flex items-center rounded-md bg-[#0C213A] px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transform transition-transform duration-200 hover:scale-110"
               >
                 Нэмэх
               </button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {formData.skills.map((skill) => (
+                <span
+                  key={skill}
+                  className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700"
+                >
+                  {skill}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSkill(skill)}
+                    className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-green-200"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
             </div>
 
             {/* Middle Section: Requirements Card */}
@@ -405,24 +422,6 @@ export default function PostJobPageWithNewDesign() {
             </div>
 
             {/* Skills Input */}
-
-            <div className="flex flex-wrap gap-2 mt-2">
-              {formData.skills.map((skill) => (
-                <span
-                  key={skill}
-                  className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700"
-                >
-                  {skill}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveSkill(skill)}
-                    className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-green-200"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
           </div>
 
           {/* Submit Buttons - You might want to place these more prominently or differently */}

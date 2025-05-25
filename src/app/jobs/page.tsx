@@ -53,7 +53,7 @@ export default function JobsPage() {
       <main className="py-6 sm:py-8 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6 md:gap-8">
           {/* Left: Filters, Search, Job List */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)] lg:overflow-y-auto">
             <JobsList onJobSelect={setSelectedJob} />
           </div>
           {/* Right: Job Details */}
