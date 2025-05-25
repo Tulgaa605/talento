@@ -31,29 +31,6 @@ const MONGOLIA_PROVINCES = [
   "Улаанбаатар",
 ];
 
-const stats: StatCard[] = [
-  {
-    icon: "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/07d690b7a11fb6e9a72dafc120bf10db5aed2658?placeholderIfAbsent=true",
-    value: "1,234",
-    label: "Ажлын байр",
-  },
-  {
-    icon: "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/881d9c0c8ae8302d4f91f76ca0f7f67975fbeb6e?placeholderIfAbsent=true",
-    value: "567",
-    label: "Байгууллага",
-  },
-  {
-    icon: "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/6e1ae373b63cb8985cbb0338d0521a27bd9d3d7b?placeholderIfAbsent=true",
-    value: "8,901",
-    label: "Ажил хайж буй хүмүүс",
-  },
-  {
-    icon: "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/0530adb336adca5f8501fed8e0b22af603d45a6d?placeholderIfAbsent=true",
-    value: "234",
-    label: "Шинэ ажлын байр",
-  },
-];
-
 const StatCard = ({
   icon,
   value,
@@ -77,7 +54,13 @@ const StatCard = ({
   </article>
 );
 
-export const HeroSection = () => {
+interface Application {
+  id: string;
+  status: string;
+  viewedAt: string | null;
+}
+
+export default function HeroSection() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { addNotification } = useNotification();
@@ -87,10 +70,14 @@ export const HeroSection = () => {
   const [lastCount, setLastCount] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const notifTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasShownNotification = useRef(false);
+  const [stats, setStats] = useState<StatCard[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchNewApplications = async () => {
+    const checkNewApplications = async () => {
       try {
+        console.log("Checking for new applications...");
         const response = await fetch("/api/employer/applications");
         if (response.ok) {
           const data = await response.json();
@@ -106,15 +93,58 @@ export const HeroSection = () => {
           }
           setLastCount(newPending.length);
         }
-      } catch {}
+      } catch (error) {
+        console.error("Error checking applications:", error);
+      }
     };
-    fetchNewApplications();
-    const interval = setInterval(fetchNewApplications, 5000);
-    return () => {
-      clearInterval(interval);
-      if (notifTimeoutRef.current) clearTimeout(notifTimeoutRef.current);
+
+    console.log("Setting up application checker...");
+    checkNewApplications();
+    const interval = setInterval(checkNewApplications, 4000);
+    return () => clearInterval(interval);
+  }, [addNotification]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch("/api/stats");
+        if (!response.ok) {
+          throw new Error("Failed to fetch stats");
+        }
+        const data = await response.json();
+
+        setStats([
+          {
+            icon: "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/07d690b7a11fb6e9a72dafc120bf10db5aed2658?placeholderIfAbsent=true",
+            value: data.totalJobs.toString(),
+            label: "Ажлын байр",
+          },
+          {
+            icon: "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/881d9c0c8ae8302d4f91f76ca0f7f67975fbeb6e?placeholderIfAbsent=true",
+            value: data.totalCompanies.toString(),
+            label: "Байгууллага",
+          },
+          {
+            icon: "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/6e1ae373b63cb8985cbb0338d0521a27bd9d3d7b?placeholderIfAbsent=true",
+            value: data.totalJobSeekers.toString(),
+            label: "Ажил хайж буй хүмүүс",
+          },
+          {
+            icon: "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/0530adb336adca5f8501fed8e0b22af603d45a6d?placeholderIfAbsent=true",
+            value: data.newJobs.toString(),
+            label: "Шинэ ажлын байр",
+          },
+        ]);
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        addNotification("Статистик мэдээлэл ачаалахад алдаа гарлаа", "error");
+      } finally {
+        setLoading(false);
+      }
     };
-  }, [lastCount, addNotification]);
+
+    fetchStats();
+  }, [addNotification]);
 
   const handleSearch = () => {
     const queryParams = new URLSearchParams();
@@ -249,4 +279,4 @@ export const HeroSection = () => {
       </div>
     </section>
   );
-};
+}
