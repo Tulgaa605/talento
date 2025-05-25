@@ -360,31 +360,7 @@ export default function PostJobPageWithNewDesign() {
               </div>
             </div>
           </div>
-
-          {/* Middle Section: Requirements Card */}
-          <div className=" rounded-lg mt-2">
-            {/* <label htmlFor="requirements" className={`${labelBaseClass} font-medium mb-2 block`}>Үндсэн тавигдах шаардлага <span className="text-red-500">*</span></label> */}
-            <textarea
-              id="requirements"
-              name="requirements"
-              rows={10}
-              required
-              className={`${inputBaseClass} ${inputPadding}`}
-              placeholder="Үндсэн тавигдах шаардлага: Ажилтанд тавигдах гол шаардлагууд, туршлага, боловсрол, ур чадварууд, гэрчилгээ зэргийг дэлгэрэнгүй бичнэ үү..."
-            />
-          </div>
-          <div className=" rounded-lg">
-            <textarea
-              id="otherInfo"
-              name="otherInfo"
-              rows={10}
-              className={`${inputBaseClass} ${inputPadding}`}
-              placeholder="Бусад (Нэмэлт мэдээлэл): Ажлын байрны онцлог, компанийн соёл, ажиллах орчин, нөхцөл, хангамж, боломжууд болон бусад нэмэлт мэдээллийг энд оруулна уу..."
-            />
-          </div>
-
-          {/* Skills Input */}
-          <div className="space-y-2">
+          <div className="space-y-4 ">
             <label className="block text-sm font-medium text-gray-700">
               Шаардлагатай ур чадвар
             </label>
@@ -400,11 +376,36 @@ export default function PostJobPageWithNewDesign() {
               <button
                 type="button"
                 onClick={handleAddSkill}
-                className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                className="inline-flex items-center rounded-md bg-[#0C213A] px-3 py-2 text-sm font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
               >
                 Нэмэх
               </button>
             </div>
+
+            {/* Middle Section: Requirements Card */}
+            <div className=" rounded-lg mt-2">
+              {/* <label htmlFor="requirements" className={`${labelBaseClass} font-medium mb-2 block`}>Үндсэн тавигдах шаардлага <span className="text-red-500">*</span></label> */}
+              <textarea
+                id="requirements"
+                name="requirements"
+                rows={10}
+                required
+                className={`${inputBaseClass} ${inputPadding}`}
+                placeholder="Үндсэн тавигдах шаардлага: Ажилтанд тавигдах гол шаардлагууд, туршлага, боловсрол, ур чадварууд, гэрчилгээ зэргийг дэлгэрэнгүй бичнэ үү..."
+              />
+            </div>
+            <div className=" rounded-lg">
+              <textarea
+                id="otherInfo"
+                name="otherInfo"
+                rows={10}
+                className={`${inputBaseClass} ${inputPadding}`}
+                placeholder="Бусад (Нэмэлт мэдээлэл): Ажлын байрны онцлог, компанийн соёл, ажиллах орчин, нөхцөл, хангамж, боломжууд болон бусад нэмэлт мэдээллийг энд оруулна уу..."
+              />
+            </div>
+
+            {/* Skills Input */}
+
             <div className="flex flex-wrap gap-2 mt-2">
               {formData.skills.map((skill) => (
                 <span
@@ -435,7 +436,7 @@ export default function PostJobPageWithNewDesign() {
             <button
               type="submit"
               disabled={isLoading}
-              className="px-5 py-2.5 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-70 transition-colors"
+              className="px-5 py-2.5 bg-emerald-700 text-white rounded-md text-sm font-medium hover:bg-emerald-800 disabled:opacity-70 transition-colors"
             >
               {isLoading ? "Илгээж байна..." : "Нийтлэх"}
             </button>

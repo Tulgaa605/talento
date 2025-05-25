@@ -348,31 +348,6 @@ export default function EditJobPage({
               </div>
             </div>
           </div>
-          {/* Middle Section: Requirements Card */}
-          <div className="rounded-lg mt-2">
-            <textarea
-              id="requirements"
-              name="requirements"
-              rows={10}
-              required
-              className={`${inputBaseClass} ${inputPadding}`}
-              placeholder="Үндсэн тавигдах шаардлага: Ажилтанд тавигдах гол шаардлагууд, туршлага, боловсрол, ур чадварууд, гэрчилгээ зэргийг дэлгэрэнгүй бичнэ үү..."
-              value={job.requirements}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="rounded-lg">
-            <textarea
-              id="otherInfo"
-              name="otherInfo"
-              rows={10}
-              className={`${inputBaseClass} ${inputPadding}`}
-              placeholder="Бусад (Нэмэлт мэдээлэл): Ажлын байрны онцлог, компанийн соёл, ажиллах орчин, нөхцөл, хангамж, боломжууд болон бусад нэмэлт мэдээллийг энд оруулна уу..."
-              value={job.otherInfo || ""}
-              onChange={handleInputChange}
-            />
-          </div>
-          {/* Skills Input */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
               Шаардлагатай ур чадвар
@@ -394,6 +369,32 @@ export default function EditJobPage({
                 Нэмэх
               </button>
             </div>
+            {/* Middle Section: Requirements Card */}
+            <div className="rounded-lg mt-2">
+              <textarea
+                id="requirements"
+                name="requirements"
+                rows={10}
+                required
+                className={`${inputBaseClass} ${inputPadding}`}
+                placeholder="Үндсэн тавигдах шаардлага: Ажилтанд тавигдах гол шаардлагууд, туршлага, боловсрол, ур чадварууд, гэрчилгээ зэргийг дэлгэрэнгүй бичнэ үү..."
+                value={job.requirements}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="rounded-lg">
+              <textarea
+                id="otherInfo"
+                name="otherInfo"
+                rows={10}
+                className={`${inputBaseClass} ${inputPadding}`}
+                placeholder="Бусад (Нэмэлт мэдээлэл): Ажлын байрны онцлог, компанийн соёл, ажиллах орчин, нөхцөл, хангамж, боломжууд болон бусад нэмэлт мэдээллийг энд оруулна уу..."
+                value={job.otherInfo || ""}
+                onChange={handleInputChange}
+              />
+            </div>
+            {/* Skills Input */}
+
             <div className="flex flex-wrap gap-2 mt-2">
               {Array.isArray(job.skills) &&
                 job.skills.map((skill) => (
