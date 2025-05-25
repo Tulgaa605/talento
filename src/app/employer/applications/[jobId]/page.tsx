@@ -221,7 +221,7 @@ export default async function JobApplicationsPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen pt-20 bg-white">
+    <div className="min-h-screen pt-20 px-4 sm:px-6 md:px-8 lg:px-16 xl:px-32 bg-white">
       <div className="py-8 mt-20">
         {/* Applications List */}
         <div className="space-y-4">

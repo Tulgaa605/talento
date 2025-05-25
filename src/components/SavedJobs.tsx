@@ -51,7 +51,7 @@ export default function SavedJobs({ jobs }: SavedJobsProps) {
             </div>
             <div className="flex-1 min-w-0">
               <Link
-                href={`/jobs/`}
+                href={`/jobs?selectedJob=${job.id}`}
                 className="text-base sm:text-lg font-semibold text-[#0C213A] hover:text-blue-600 transition-colors block truncate"
               >
                 {job.title}

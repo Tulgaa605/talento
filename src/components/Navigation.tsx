@@ -7,13 +7,16 @@ import { useState, useEffect } from "react";
 
 const EmployerMenu = ({
   newApplicationsCount,
+  onClose,
 }: {
   newApplicationsCount: number;
+  onClose: () => void;
 }) => (
   <>
     <Link
       href="/employer/profile"
       className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]"
+      onClick={onClose}
     >
       <div className="w-5">
         <svg
@@ -35,6 +38,7 @@ const EmployerMenu = ({
     <Link
       href="/employer/post-job"
       className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]"
+      onClick={onClose}
     >
       <div className="w-5">
         <svg
@@ -56,6 +60,7 @@ const EmployerMenu = ({
     <Link
       href="/employer/applications"
       className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]"
+      onClick={onClose}
     >
       <div className="w-5">
         <svg
@@ -84,13 +89,16 @@ const EmployerMenu = ({
 
 const UserMenu = ({
   newApplicationsCount,
+  onClose,
 }: {
   newApplicationsCount: number;
+  onClose: () => void;
 }) => (
   <>
     <Link
       href="/jobseeker/profile"
       className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]"
+      onClick={onClose}
     >
       <div className="w-5">
         <svg
@@ -112,6 +120,7 @@ const UserMenu = ({
     <Link
       href="/jobseeker/applications"
       className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]"
+      onClick={onClose}
     >
       <div className="w-5">
         <svg
@@ -381,10 +390,12 @@ export const Header = () => {
                         {isEmployer ? (
                           <EmployerMenu
                             newApplicationsCount={newApplicationsCount}
+                            onClose={closeMenu}
                           />
                         ) : (
                           <UserMenu
                             newApplicationsCount={newApplicationsCount}
+                            onClose={closeMenu}
                           />
                         )}
                       </div>

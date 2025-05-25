@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { mn } from "date-fns/locale";
 import { BookmarkIcon as BookmarkOutline } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolid } from "@heroicons/react/24/solid";
+import { useSession } from "next-auth/react";
 import JobDetails from "./JobDetails";
 
 interface Job {
@@ -68,26 +69,38 @@ interface JobsListProps {
 export default function JobsList({ onJobSelect }: JobsListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
-  const [searchTerm, setSearchTerm] = useState(
-    searchParams.get("search") || ""
-  );
-  const [selectedProvince, setSelectedProvince] = useState(
-    searchParams.get("city") || ""
-  );
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
+  const [selectedProvince, setSelectedProvince] = useState(searchParams.get("city") || "");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [savingJobId, setSavingJobId] = useState<string | null>(null);
   const [showMobileDetails, setShowMobileDetails] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
+  // Fetch jobs and saved jobs on component mount
   useEffect(() => {
-    fetchJobs();
-    fetchSavedJobs();
+    const fetchInitialData = async () => {
+      await fetchJobs();
+      if (session?.user) {
+        await fetchSavedJobs();
+      }
+    };
+    fetchInitialData();
   }, []);
+
+  // Fetch saved jobs when session changes
+  useEffect(() => {
+    if (session?.user) {
+      fetchSavedJobs();
+    } else {
+      setSavedJobs(new Set());
+    }
+  }, [session]);
 
   const fetchJobs = async () => {
     try {
@@ -106,6 +119,7 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
         const job = data.find((j: Job) => j.id === selectedJobId);
         if (job) {
           setSelectedJobId(job.id);
+          setSelectedJob(job);
           onJobSelect(job);
         }
       }
@@ -118,14 +132,17 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
 
   const fetchSavedJobs = async () => {
     try {
-      const response = await fetch("/api/jobs/saved");
+      const response = await fetch("/api/jobs/saved", {
+        credentials: "include"
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch saved jobs");
       }
       const data = await response.json();
-      setSavedJobs(new Set(data.map((job: { id: string }) => job.id)));
+      setSavedJobs(new Set(data.map((job: { jobId: string }) => job.jobId)));
     } catch (error) {
       console.error("Error fetching saved jobs:", error);
+      setSavedJobs(new Set());
     }
   };
 
@@ -134,7 +151,6 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
     setSavingJobId(jobId);
 
     try {
-      console.log("Attempting to save job:", jobId);
       const response = await fetch("/api/jobs/save", {
         method: "POST",
         headers: {

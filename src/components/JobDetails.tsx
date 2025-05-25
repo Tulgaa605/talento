@@ -44,9 +44,14 @@ export default function JobDetails({ job }: JobDetailsProps) {
   const [cvs, setCVs] = useState<CV[]>([]);
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [messageType, setMessageType] = useState<"success" | "error">(
-    "success"
-  );
+  const [messageType, setMessageType] = useState<"success" | "error">("success");
+  const [jobData, setJobData] = useState<Job | null>(job);
+
+  useEffect(() => {
+    if (job) {
+      setJobData(job);
+    }
+  }, [job]);
 
   useEffect(() => {
     if (message) {
@@ -72,11 +77,11 @@ export default function JobDetails({ job }: JobDetailsProps) {
   };
 
   const handleApply = async (cvId: string, message: string) => {
-    if (!job) return;
+    if (!jobData) return;
     setSending(true);
     setMessage(null);
     try {
-      const res = await fetch(`/api/jobs/${job.id}/apply`, {
+      const res = await fetch(`/api/jobs/${jobData.id}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cvId, message }),
@@ -109,7 +114,7 @@ export default function JobDetails({ job }: JobDetailsProps) {
     setIsApplyModalOpen(true);
   };
 
-  if (!job) {
+  if (!jobData) {
     return (
       <div className="bg-white shadow rounded-lg p-8 min-h-[500px] flex items-center justify-center text-gray-400">
         Ажлын байр сонгогдоогүй байна
@@ -121,10 +126,10 @@ export default function JobDetails({ job }: JobDetailsProps) {
     <div className="bg-white shadow rounded-lg p-4 sm:p-6 md:p-8 min-h-[500px]">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-6">
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
-          {job.company.logoUrl ? (
+          {jobData.company.logoUrl ? (
             <img
-              src={job.company.logoUrl}
-              alt={`${job.company.name} logo`}
+              src={jobData.company.logoUrl}
+              alt={`${jobData.company.name} logo`}
               className="w-full h-full object-contain"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -141,31 +146,31 @@ export default function JobDetails({ job }: JobDetailsProps) {
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-xl sm:text-2xl font-bold text-[#0C213A] mb-1">
-            {job.title}
+            {jobData.title}
           </h2>
           <Link
-            href={`/company/${job.company.id}`}
+            href={`/company/${jobData.company.id}`}
             className="text-blue-600 hover:underline text-sm sm:text-base font-medium block mb-1"
           >
-            {job.company.name}
+            {jobData.company.name}
           </Link>
           <div className="flex flex-wrap gap-4 sm:gap-8 text-xs sm:text-sm text-[#0C213A] mb-2">
             <div>
               <span className="font-semibold">Үнэлгээ</span>{" "}
-              <span className="ml-1">{job.salary || "Тохиролцоно"}</span>
+              <span className="ml-1">{jobData.salary || "Тохиролцоно"}</span>
             </div>
             <div>
               <span className="font-semibold">Ажлын цаг</span>{" "}
               <span className="ml-1">
-                {job.type === "FULL_TIME"
+                {jobData.type === "FULL_TIME"
                   ? "БҮТЭН ЦАГ"
-                  : job.type === "PART_TIME"
+                  : jobData.type === "PART_TIME"
                   ? "ХАГАС ЦАГ"
-                  : job.type === "CONTRACT"
+                  : jobData.type === "CONTRACT"
                   ? "ГЭРЭЭТ"
-                  : job.type === "INTERNSHIP"
+                  : jobData.type === "INTERNSHIP"
                   ? "ДАДЛАГА"
-                  : job.type}
+                  : jobData.type}
               </span>
             </div>
           </div>
@@ -188,17 +193,17 @@ export default function JobDetails({ job }: JobDetailsProps) {
       <div className="space-y-4 sm:space-y-6">
         <div>
           <h3 className="text-base sm:text-lg font-semibold text-[#0C213A] mb-2">Байршил</h3>
-          <p className="text-sm sm:text-base text-[#0C213A]">{job.location}</p>
+          <p className="text-sm sm:text-base text-[#0C213A]">{jobData.location}</p>
         </div>
 
-        {job.skills && (
+        {jobData.skills && (
           <div>
             <h3 className="text-base sm:text-lg font-semibold text-[#0C213A] mb-2">
               Шаардлагатай ур чадварууд
             </h3>
             <div className="flex flex-wrap gap-2">
-              {Array.isArray(job.skills)
-                ? job.skills.map((skill: string) => (
+              {Array.isArray(jobData.skills)
+                ? jobData.skills.map((skill: string) => (
                     <span
                       key={skill}
                       className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-indigo-50 text-indigo-700 rounded-md text-xs sm:text-sm"
@@ -206,8 +211,8 @@ export default function JobDetails({ job }: JobDetailsProps) {
                       {skill}
                     </span>
                   ))
-                : typeof job.skills === "string"
-                ? JSON.parse(job.skills).map((skill: string) => (
+                : typeof jobData.skills === "string"
+                ? JSON.parse(jobData.skills).map((skill: string) => (
                     <span
                       key={skill}
                       className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-indigo-50 text-indigo-700 rounded-md text-xs sm:text-sm"
@@ -223,28 +228,28 @@ export default function JobDetails({ job }: JobDetailsProps) {
         <div>
           <h3 className="text-base sm:text-lg font-semibold text-[#0C213A] mb-2">Тайлбар</h3>
           <p className="text-sm sm:text-base text-[#0C213A] whitespace-pre-wrap">
-            {job.description}
+            {jobData.description}
           </p>
         </div>
 
-        {job.requirements && (
+        {jobData.requirements && (
           <div>
             <h3 className="text-base sm:text-lg font-semibold text-[#0C213A] mb-2">
               Шаардлага
             </h3>
             <p className="text-sm sm:text-base text-[#0C213A] whitespace-pre-wrap">
-              {job.requirements}
+              {jobData.requirements}
             </p>
           </div>
         )}
 
-        {job.company.description && (
+        {jobData.company.description && (
           <div>
             <h3 className="text-base sm:text-lg font-semibold text-[#0C213A] mb-2">
               Байгууллагын тухай
             </h3>
             <p className="text-sm sm:text-base text-[#0C213A] whitespace-pre-wrap">
-              {job.company.description}
+              {jobData.company.description}
             </p>
           </div>
         )}
@@ -253,21 +258,21 @@ export default function JobDetails({ job }: JobDetailsProps) {
           <div className="flex-1">
             <div className="font-semibold text-[#0C213A] mb-1 text-sm sm:text-base">Утас</div>
             <div className="text-[#0C213A] text-xs sm:text-sm">
-              {job.contactPhone || "Утас оруулаагүй"}
+              {jobData.contactPhone || "Утас оруулаагүй"}
             </div>
           </div>
           <div className="flex-1">
             <div className="font-semibold text-[#0C213A] mb-1 text-sm sm:text-base">
               Байгууллагын линк
             </div>
-            {job.company.url ? (
+            {jobData.company.url ? (
               <a
-                href={job.company.url}
+                href={jobData.company.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline text-xs sm:text-sm"
               >
-                {job.company.url}
+                {jobData.company.url}
               </a>
             ) : (
               <span className="text-[#0C213A] text-xs sm:text-sm">Линк оруулаагүй</span>
@@ -281,7 +286,7 @@ export default function JobDetails({ job }: JobDetailsProps) {
         onClose={() => setIsApplyModalOpen(false)}
         onApply={handleApply}
         cvs={cvs}
-        jobTitle={job.title}
+        jobTitle={jobData.title}
       />
 
       {message && (
