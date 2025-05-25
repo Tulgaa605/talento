@@ -90,7 +90,7 @@ export default function EmployerApplicationsPage() {
         const newApplications = data.filter(
           (app) => app.status === "PENDING" && !app.viewedAt
         );
-        if (newApplications.length > 0) {
+        if (newApplications.length > 0 && !hasShownNotification.current) {
           // Group applications by job
           const applicationsByJob = newApplications.reduce<JobApplications>(
             (acc, app) => {
@@ -111,16 +111,16 @@ export default function EmployerApplicationsPage() {
             addNotification(
               `${title} ажлын байрт ${count} шинэ өргөдөл ирлээ`,
               "info",
-              count
+              "applications"
             );
           });
+          hasShownNotification.current = true;
         }
       } else {
         throw new Error("Буруу өгөгдөл ирлээ");
       }
     } catch (err: any) {
       console.error("Error in fetchApplications:", err);
-      // Remove addNotification here as well
     } finally {
       setLoading(false);
     }

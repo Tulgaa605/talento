@@ -4,6 +4,7 @@ import type { StatCard } from "./types";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useNotification } from "@/providers/NotificationProvider";
 
 const MONGOLIA_PROVINCES = [
   "Архангай",
@@ -71,6 +72,7 @@ const StatCard = ({ icon, value, label, className }: StatCard & { className?: st
 export const HeroSection = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { addNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [showHeroNotif, setShowHeroNotif] = useState(false);
@@ -88,12 +90,10 @@ export const HeroSection = () => {
             (app: any) => app.status === "PENDING" && !app.viewedAt
           );
           if (newPending.length > 0 && newPending.length > lastCount) {
-            setShowHeroNotif(true);
-            if (notifTimeoutRef.current) clearTimeout(notifTimeoutRef.current);
-            notifTimeoutRef.current = setTimeout(
-              () => setShowHeroNotif(false),
-              5000
-            );
+            // Only show notification if we're on the employer dashboard
+            if (window.location.pathname === '/employer/dashboard') {
+              addNotification("Шинэ анкет ирлээ!", "info", "applications");
+            }
           }
           setLastCount(newPending.length);
         }
@@ -105,7 +105,7 @@ export const HeroSection = () => {
       clearInterval(interval);
       if (notifTimeoutRef.current) clearTimeout(notifTimeoutRef.current);
     };
-  }, [lastCount]);
+  }, [lastCount, addNotification]);
 
   const handleSearch = () => {
     const queryParams = new URLSearchParams();

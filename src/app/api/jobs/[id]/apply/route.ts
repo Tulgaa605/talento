@@ -55,7 +55,10 @@ export async function POST(
 
     if (existingApplication) {
       return NextResponse.json(
-        { error: "Та энэ ажлын байрт өргөдөл гаргасан байна" },
+        { 
+          error: "Та энэ ажлын байрт өргөдөл гаргасан байна",
+          isDuplicate: true 
+        },
         { status: 400 }
       );
     }
@@ -71,7 +74,22 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(application);
+    // Create a notification for the employer
+    await prisma.notification.create({
+      data: {
+        userId: job.companyId, // Send to company
+        title: "Шинэ өргөдөл ирлээ",
+        message: `${job.title} ажлын байрт шинэ өргөдөл ирлээ`,
+        type: "APPLICATION",
+        link: `/employer/applications/${job.id}`,
+      },
+    });
+
+    return NextResponse.json({
+      ...application,
+      success: true,
+      message: "Өргөдөл амжилттай илгээгдлээ"
+    });
   } catch (error) {
     console.error("Error applying for job:", error);
     return NextResponse.json({ error: "Алдаа гарлаа" }, { status: 500 });

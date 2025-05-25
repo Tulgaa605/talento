@@ -81,17 +81,24 @@ export default function JobDetails({ job }: JobDetailsProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cvId, message }),
       });
+      const data = await res.json();
+      
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Илгээхэд алдаа гарлаа");
+        // Check if it's a duplicate application
+        if (data.isDuplicate) {
+          setMessageType("error");
+          setMessage("Та энэ ажлын байрт өргөдөл гаргасан байна");
+        } else {
+          throw new Error(data.error || "Илгээхэд алдаа гарлаа");
+        }
+      } else {
+        setMessageType("success");
+        setMessage(data.message || "CV амжилттай илгээгдлээ!");
+        setIsApplyModalOpen(false);
       }
-      setMessageType("success");
-      setMessage("CV амжилттай илгээгдлээ!");
-      setIsApplyModalOpen(false);
     } catch (e: any) {
       setMessageType("error");
       setMessage(e.message || "Алдаа гарлаа");
-      throw e;
     } finally {
       setSending(false);
     }

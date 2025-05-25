@@ -34,7 +34,7 @@ export default function Notification({ message, type, duration = 3000, onClose }
   }[type];
 
   return (
-    <div className={`fixed top-4 right-4 z-50 p-4 rounded-md border-l-4 shadow-lg ${bgColor}`}>
+    <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 p-4 rounded-md border-l-4 shadow-lg ${bgColor}`}>
       <p className={`text-sm font-medium ${textColor}`}>{message}</p>
     </div>
   );
