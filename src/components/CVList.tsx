@@ -33,10 +33,12 @@ export default function CVList({ cvs: initialCvs }: CVListProps) {
       }
 
       // Remove the deleted CV from the list
-      setCVs(cvs.filter(cv => cv.id !== cvId));
+      setCVs(cvs.filter((cv) => cv.id !== cvId));
     } catch (error) {
       console.error("Error deleting CV:", error);
-      alert(error instanceof Error ? error.message : "CV устгахад алдаа гарлаа");
+      alert(
+        error instanceof Error ? error.message : "CV устгахад алдаа гарлаа"
+      );
     } finally {
       setIsDeleting(null);
     }
@@ -51,11 +53,11 @@ export default function CVList({ cvs: initialCvs }: CVListProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-6 max-h-[40rem] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 rounded-2xl">
+    <div className="flex flex-col gap-4 sm:gap-6 max-h-[40rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 rounded-2xl">
       {cvs.map((cv) => (
         <div
           key={cv.id}
-          className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-7 shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center text-black border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition duration-200"
+          className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-7 shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center text-black border border-gray-100"
         >
           <div className="w-full sm:w-auto">
             <div className="font-semibold text-sm sm:text-base text-black">
@@ -109,4 +111,4 @@ export default function CVList({ cvs: initialCvs }: CVListProps) {
       ))}
     </div>
   );
-} 
+}

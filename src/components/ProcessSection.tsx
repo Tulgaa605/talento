@@ -26,9 +26,19 @@ const steps: ProcessStep[] = [
 
 const ProcessIcon = () => (
   <div className="my-4 lg:hidden">
-    <img 
-      src="/icons/process.svg" 
-      alt="Process" 
+    <img
+      src="/icons/mobile.svg"
+      alt="Arrow"
+      className="w-8 h-8 object-contain"
+    />
+  </div>
+);
+
+const ProcessArrow = () => (
+  <div className="hidden lg:flex items-center justify-center mx-4">
+    <img
+      src="/icons/arrow.svg"
+      alt="Arrow"
       className="w-8 h-8 object-contain"
     />
   </div>
@@ -43,8 +53,12 @@ const ProcessStep = ({ icon, title, description }: ProcessStep) => (
         <img src={icon} className="w-8 h-8 object-contain" alt={title} />
       )}
     </div>
-    <h3 className="text-xl font-bold text-[#0C213A] text-center mb-1">{title}</h3>
-    <p className="text-base text-gray-600 text-center leading-relaxed font-thin max-w-[300px]">{description}</p>
+    <h3 className="text-xl font-bold text-[#0C213A] text-center mb-1">
+      {title}
+    </h3>
+    <p className="text-base text-gray-600 text-center leading-relaxed font-thin max-w-[300px]">
+      {description}
+    </p>
   </div>
 );
 
@@ -53,13 +67,19 @@ export default function ProcessSection() {
     <section className="w-full bg-white min-h-[93vh] flex items-center px-4 2xl:px-16 lg:px-32 py-16 md:py-20 lg:py-0">
       <div className="w-full">
         <h2 className="text-xl sm:text-3xl md:text-4xl font-semibold text-[#0C213A] text-center mb-12 md:mb-16 lg:mb-16 2xl:mb-30">
-          Өөрийн CV-д хэрхэн дүн шинжилгээ <br />хийлгэх вэ?
+          Өөрийн CV-д хэрхэн дүн шинжилгээ <br />
+          хийлгэх вэ?
         </h2>
         <div className="w-full flex flex-col lg:flex-row items-center justify-between gap-12 md:gap-16 lg:gap-8">
           {steps.map((step, idx) => (
             <div key={idx} className="flex flex-col lg:flex-row items-center">
               <ProcessStep {...step} />
-              {idx < steps.length - 1 && <ProcessIcon />}
+              {idx < steps.length - 1 && (
+                <>
+                  <ProcessIcon />
+                  <ProcessArrow />
+                </>
+              )}
             </div>
           ))}
         </div>

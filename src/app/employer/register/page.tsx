@@ -121,7 +121,7 @@ export default function EmployerRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center mt-7 px-4 sm:px-8 md:px-10 lg:px-32 mt-5 2xl:pt-15 2xl:mt-10 md:mt-10 lg:mt-10">
+    <div className="min-h-screen bg-white flex items-center mt-7 px-4 sm:px-8 md:px-10 lg:px-32 mt-5 2xl:pt-0 2xl:mt-10 md:mt-10 lg:mt-10">
       <div className="flex w-full max-w-[1900px] items-center justify-between flex-col lg:flex-row">
         {/* Зүүн талын illustration */}
         <div className="hidden lg:block w-[58%] flex items-center justify-start pt-10">
@@ -259,7 +259,7 @@ export default function EmployerRegister() {
                     </span>
                   </button>
                 </div>
-                <div className="flex flex-col gap-4 w-full 2xl:w-full md:w-full lg:w-full mt-10 2xl:mt-5 md:mt-10 lg:mt-10">
+                <div className="flex flex-col gap-4 w-full 2xl:w-full md:w-full lg:w-full mt-10 2xl:mt-5 md:mt-10 lg:mt-10 ">
                   <div className="flex items-center justify-end gap-2">
                     <span className="text-[#0C213A] text-[12px] sm:text-[14px] font-normal font-poppins">
                       Та аль хэдийн бүртгүүлсэн үү?
@@ -295,7 +295,9 @@ export default function EmployerRegister() {
       {error && (
         <div className="fixed top-[100px] left-1/2 transform -translate-x-1/2 z-50">
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 shadow-lg">
-            <p className="text-red-600 text-[14px] sm:text-[16px] font-poppins">{error}</p>
+            <p className="text-red-600 text-[14px] sm:text-[16px] font-poppins">
+              {error}
+            </p>
           </div>
         </div>
       )}

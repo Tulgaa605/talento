@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { JobCard } from "./JobCard";
 import { JobListing } from "./types";
+import { useRouter } from "next/navigation";
 
 export default function JobListingSection() {
+  const router = useRouter();
   const [jobs, setJobs] = useState<JobListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,14 +28,22 @@ export default function JobListingSection() {
           console.log("Job type from API:", job.type);
           return {
             title: job.title,
-            type: job.type === 'FULL_TIME' ? 'БҮТЭН ЦАГ' :
-                  job.type === 'PART_TIME' ? 'ЦАГИЙН' :
-                  job.type === 'CONTRACT' ? 'ГЭРЭЭТ' :
-                  job.type === 'INTERNSHIP' ? 'ДАДЛАГА' : 'БҮТЭН ЦАГ',
+            type:
+              job.type === "FULL_TIME"
+                ? "БҮТЭН ЦАГ"
+                : job.type === "PART_TIME"
+                ? "ЦАГИЙН"
+                : job.type === "CONTRACT"
+                ? "ГЭРЭЭТ"
+                : job.type === "INTERNSHIP"
+                ? "ДАДЛАГА"
+                : "БҮТЭН ЦАГ",
             salary: job.salary || "Цалин: Хэлэлцээрээр",
             company: {
               name: job.company.name,
-              logo: job.company.logoUrl || "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/23813725c8b2f39dd1d36d4e94e16d8ab78110aa?placeholderIfAbsent=true",
+              logo:
+                job.company.logoUrl ||
+                "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/23813725c8b2f39dd1d36d4e94e16d8ab78110aa?placeholderIfAbsent=true",
               location: job.location,
             },
           };
@@ -81,10 +91,10 @@ export default function JobListingSection() {
     <section className="pb-15 w-full px-4 md:px-10 lg:px-32 2xl:px-32">
       <div className="">
         <div className="text-center mb-10 md:mb-16 lg:mb-20">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-bold bg-gradient-to-r from-gray-800 to-gray-900 bg-clip-text text-transparent mb-3 md:mb-4">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl 2xl:text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-900 bg-clip-text text-transparent mb-3 md:mb-4">
             Онцлох компаниуд
           </h2>
-          <p className="text-base md:text-lg lg:text-xl 2xl:text-2xl text-gray-600 max-w-3xl mx-auto px-4 md:px-6 lg:px-8">
+          <p className="text-base md:text-lg lg:text-xl 2xl:text-xl text-gray-600 max-w-3xl mx-auto px-4 md:px-6 lg:px-8">
             Монгол улсын тэргүүний компаниудын санал болгож буй ажлын байр
           </p>
         </div>
@@ -107,7 +117,10 @@ export default function JobListingSection() {
         </div>
 
         <div className="mt-10 md:mt-14 lg:mt-16 text-center">
-          <button className="px-6 md:px-8 py-3 md:py-4 text-sm md:text-base lg:text-lg bg-gradient-to-r from-gray-800 to-gray-900 text-white font-medium rounded-lg shadow-lg hover:from-gray-900 hover:to-black transition-all duration-300 transform hover:scale-105">
+          <button
+            onClick={() => router.push("/jobs")}
+            className="px-6 md:px-8 py-3 md:py-4 text-sm md:text-base lg:text-lg bg-gradient-to-r from-gray-800 to-gray-900 text-white font-medium rounded-lg shadow-lg hover:from-gray-900 hover:to-black transition-all duration-300 transform hover:scale-105"
+          >
             Бүх ажлын байрыг харах
           </button>
         </div>

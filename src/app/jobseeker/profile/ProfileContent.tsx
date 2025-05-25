@@ -104,15 +104,19 @@ export default function ProfileContent({ user }: ProfileContentProps) {
               )}
             </div>
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl flex items-center justify-center">
-              <ProfileImageUpload 
+              <ProfileImageUpload
                 userId={user.id}
                 currentImageUrl={user.profileImageUrl}
               />
             </div>
           </div>
           <div>
-            <h1 className="text-sm md:text-2xl lg:text-2xl 2xl:text-2xl font-bold text-white">{user.name}</h1>
-            <div className="text-xs sm:text-base text-white/80">CV: {user.cvs.length}</div>
+            <h1 className="text-sm md:text-2xl lg:text-2xl 2xl:text-2xl font-bold text-white">
+              {user.name}
+            </h1>
+            <div className="text-xs sm:text-base text-white/80">
+              CV: {user.cvs.length}
+            </div>
           </div>
         </div>
       </div>
@@ -165,7 +169,7 @@ export default function ProfileContent({ user }: ProfileContentProps) {
                 {!isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="w-full sm:w-auto bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg shadow-sm hover:shadow transition-all duration-200 inline-flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto bg-[#0C213A] text-white font-medium px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg shadow-sm hover:shadow transition-all duration-200 inline-flex items-center justify-center gap-2"
                   >
                     <FiEdit className="w-4 h-4" />
                     Засах

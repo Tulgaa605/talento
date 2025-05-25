@@ -225,7 +225,7 @@ export const Header = () => {
         <div className="flex items-center gap-4 pr-0">
           <Link
             href="/aij"
-            className="cursor-pointer hover:opacity-80 transition-opacity"
+            className="cursor-pointer hover:opacity-80 transition-all duration-300 hover:scale-120"
           >
             <Image
               src="/icons/AI.png"
@@ -346,7 +346,7 @@ export const Header = () => {
             {!isEmployer && status !== "authenticated" && (
               <Link
                 href="/employer/login"
-                className="hidden lg:flex gap-2.5 self-stretch px-4 py-2 my-auto font-medium rounded-lg border border-solid border-slate-900 text-slate-900 hover:bg-slate-50 transition-colors"
+                className="hidden lg:flex gap-2.5 self-stretch px-4 py-2 my-auto font-bold rounded-lg border border-solid border-slate-200 text-slate-300 hover:bg-[#0C213A] hover:text-white font-bold transition-all duration-300 hover:scale-105"
               >
                 Ажил олгогч
               </Link>
@@ -420,7 +420,7 @@ export const Header = () => {
             ) : (
               <Link
                 href="/jobseeker/login"
-                className="hidden lg:flex gap-2.5 self-stretch px-4 py-2 my-auto font-bold text-white whitespace-nowrap rounded-lg bg-[#0C213A] hover:bg-[#0C213A]/90 transition-colors"
+                className="hidden lg:flex gap-2.5 self-stretch px-4 py-2 my-auto font-bold text-white whitespace-nowrap rounded-lg bg-[#0C213A] transition-all duration-300 hover:scale-105"
               >
                 Нэвтрэх
               </Link>
