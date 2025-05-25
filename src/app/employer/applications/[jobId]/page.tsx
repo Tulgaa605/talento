@@ -221,8 +221,8 @@ export default async function JobApplicationsPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen pt-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen pt-20 bg-white">
+      <div className="py-8 mt-20">
         {/* Applications List */}
         <div className="space-y-4">
           {job.applications.map((application) => (

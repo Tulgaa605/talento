@@ -173,7 +173,7 @@ export default function JobDetails({ job }: JobDetailsProps) {
         {session?.user ? (
           <button
             onClick={handleApplyClick}
-            className="w-full sm:w-auto bg-[#0C213A] text-white border-2 border-[#0C213A] py-2 px-4 sm:px-6 rounded-lg hover:bg-[#0C213A]/80 transition-colors disabled:opacity-50 text-sm sm:text-base"
+            className="w-full sm:w-auto bg-[#0C213A] text-white border-2 border-[#0C213A] py-2 px-4 sm:px-6 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base"
             disabled={sending}
           >
             {sending ? "Илгээж байна..." : "Анкет илгээх"}
