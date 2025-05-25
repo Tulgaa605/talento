@@ -136,11 +136,11 @@ export default function JobseekerApplicationsPage() {
   }
 
   return (
-    <div className="min-h-screen pt-10 bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="md:flex md:items-center md:justify-between mb-8">
+    <div className="min-h-screen pt-10 bg-white py-8">
+      <div className="px-4 md:px-6 lg:px-16 2xl:px-32 pt-13 md:pt-20 lg:pt-20 2xl:pt-20">
+        <div className="md:flex md:items-center md:justify-between mb-6 md:mb-8">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+            <h1 className="text-xl md:text-2xl font-bold leading-7 sm:text-3xl sm:truncate text-[#0C213A]">
               Миний өргөдлүүд
             </h1>
             <p className="mt-1 text-sm text-gray-500">
@@ -150,10 +150,10 @@ export default function JobseekerApplicationsPage() {
         </div>
 
         {applications.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl shadow-lg border border-gray-100">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="text-center py-12 md:py-16 bg-white rounded-2xl shadow-lg border border-gray-100">
+            <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg
-                className="w-10 h-10 text-gray-400"
+                className="w-8 h-8 md:w-10 md:h-10 text-gray-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -166,10 +166,10 @@ export default function JobseekerApplicationsPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
               Өргөдөл байхгүй байна
             </h3>
-            <p className="text-gray-500">
+            <p className="text-sm md:text-base text-gray-500 px-4 md:px-0">
               Та одоогоор ямар нэгэн ажлын байрт өргөдөл гаргаагүй байна.
             </p>
             <div className="mt-6">
@@ -193,31 +193,31 @@ export default function JobseekerApplicationsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 gap-3">
             {applications.map((application) => (
               <div
                 key={application.id}
-                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
+                className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden"
               >
-                <div className="p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="p-4 md:p-6">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-xl font-bold text-[#0C213A]">
+                      <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3">
+                        <h3 className="text-lg md:text-xl font-bold text-[#0C213A]">
                           {application.job.title}
                         </h3>
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                          className={`inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-medium ${getStatusColor(
                             application.status
                           )}`}
                         >
                           {getStatusText(application.status)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4 text-gray-600 mb-4">
+                      <div className="flex flex-wrap items-center gap-3 md:gap-4 text-gray-600 mb-4">
                         <div className="flex items-center gap-2">
                           <svg
-                            className="w-5 h-5 text-gray-400"
+                            className="w-4 h-4 md:w-5 md:h-5 text-gray-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -229,11 +229,11 @@ export default function JobseekerApplicationsPage() {
                               d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                             />
                           </svg>
-                          <span>{application.job.company.name}</span>
+                          <span className="text-sm">{application.job.company.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <svg
-                            className="w-5 h-5 text-gray-400"
+                            className="w-4 h-4 md:w-5 md:h-5 text-gray-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -245,30 +245,27 @@ export default function JobseekerApplicationsPage() {
                               d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                             />
                           </svg>
-                          <span>
-                            {format(
-                              new Date(application.createdAt),
-                              "yyyy-MM-dd HH:mm"
-                            )}
+                          <span className="text-sm">
+                            {format(new Date(application.createdAt), "yyyy-MM-dd HH:mm")}
                           </span>
                         </div>
                       </div>
                       {application.message && (
-                        <p className="text-gray-600 bg-gray-50 rounded-lg p-4 mb-4">
+                        <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 md:p-4 mb-4">
                           {application.message}
                         </p>
                       )}
                     </div>
-                    <div className="flex flex-col gap-3 sm:items-end">
+                    <div className="flex flex-col gap-2 md:gap-3 md:items-end">
                       {application.cv && (
                         <a
                           href={application.cv.fileUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                          className="inline-flex items-center px-3 md:px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#0C213A] hover:bg-[#091C30] hover:scale-105 transform transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           <svg
-                            className="mr-2 h-5 w-5"
+                            className="mr-2 h-4 w-4 md:h-5 md:w-5"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -285,10 +282,10 @@ export default function JobseekerApplicationsPage() {
                       )}
                       <a
                         href={`/jobs/${application.job.id}`}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                        className="inline-flex items-center px-3 md:px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-[#0C213A] bg-orange-50 hover:bg-orange-100 hover:scale-105 transform transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                       >
                         <svg
-                          className="mr-2 h-5 w-5"
+                          className="mr-2 h-4 w-4 md:h-5 md:w-5"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -315,10 +312,10 @@ export default function JobseekerApplicationsPage() {
                               `/questionnaires/${application.questionnaire?.id}`
                             )
                           }
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                          className="inline-flex items-center px-3 md:px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-sky-950 hover:bg-sky-900 hover:scale-105 transform transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
                         >
                           <svg
-                            className="mr-2 h-5 w-5"
+                            className="mr-2 h-4 w-4 md:h-5 md:w-5"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -333,7 +330,7 @@ export default function JobseekerApplicationsPage() {
                           {application.questionnaire.title} асуулгад хариулах
                         </button>
                       ) : (
-                        <div className="text-sm text-gray-500 bg-gray-50 px-4 py-2 rounded-lg">
+                        <div className="text-xs md:text-sm text-[#0C213A]/80 bg-gray-50 px-3 md:px-4 py-2 rounded-lg">
                           Асуулга ирээгүй байна
                         </div>
                       )}

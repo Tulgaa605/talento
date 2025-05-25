@@ -149,7 +149,7 @@ export default function ApplyJobModal({
                   <div className="mt-4 sm:mt-5 sm:flex sm:flex-row-reverse">
                     <button
                       type="button"
-                      className="inline-flex w-full justify-center rounded-md bg-[#0C213A] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base font-semibold text-white shadow-sm hover:bg-[#0C213A]/90 sm:ml-3 sm:w-auto"
+                      className="inline-flex w-full justify-center rounded-md bg-[#0C213A] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base font-semibold text-white shadow-sm sm:ml-3 sm:w-auto"
                       onClick={handleSubmit}
                       disabled={sending}
                     >
