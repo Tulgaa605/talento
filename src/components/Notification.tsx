@@ -5,19 +5,30 @@ interface NotificationProps {
   type: 'success' | 'error' | 'info';
   duration?: number;
   onClose?: () => void;
+  id?: string;
 }
 
-export default function Notification({ message, type, duration = 3000, onClose }: NotificationProps) {
+export default function Notification({ message, type, duration = 3000, onClose, id }: NotificationProps) {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
+    // Check if this notification has been shown before
+    if (id) {
+      const shownNotifications = JSON.parse(localStorage.getItem('shown_notifications') || '[]');
+      if (shownNotifications.includes(id)) {
+        setIsVisible(false);
+        onClose?.();
+        return;
+      }
+    }
+
     const timer = setTimeout(() => {
       setIsVisible(false);
       onClose?.();
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onClose]);
+  }, [duration, onClose, id]);
 
   if (!isVisible) return null;
 

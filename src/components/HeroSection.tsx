@@ -69,6 +69,12 @@ const StatCard = ({ icon, value, label, className }: StatCard & { className?: st
   </article>
 );
 
+interface Application {
+  id: string;
+  status: string;
+  viewedAt: string | null;
+}
+
 export const HeroSection = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -78,34 +84,40 @@ export const HeroSection = () => {
   const [showHeroNotif, setShowHeroNotif] = useState(false);
   const [lastCount, setLastCount] = useState(0);
   const notifTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasShownNotification = useRef(false);
 
   useEffect(() => {
-    const fetchNewApplications = async () => {
+    const checkNewApplications = async () => {
       try {
+        console.log('Checking for new applications...');
         const response = await fetch("/api/employer/applications");
-        if (response.ok) {
-          const data = await response.json();
-          // Only count PENDING and unviewed applications
-          const newPending = data.filter(
-            (app: any) => app.status === "PENDING" && !app.viewedAt
-          );
-          if (newPending.length > 0 && newPending.length > lastCount) {
-            // Only show notification if we're on the employer dashboard
-            if (window.location.pathname === '/employer/dashboard') {
-              addNotification("Шинэ анкет ирлээ!", "info", "applications");
-            }
-          }
-          setLastCount(newPending.length);
+        if (!response.ok) {
+          console.log('Failed to fetch applications');
+          return;
         }
-      } catch {}
+        
+        const data = await response.json();
+        console.log('Fetched applications:', data);
+        
+        const pendingApps = data.filter((app: Application) => app.status === "PENDING" && !app.viewedAt);
+        console.log('Pending applications:', pendingApps);
+        
+        if (pendingApps.length > 0 && window.location.pathname === '/employer/dashboard') {
+          console.log('Showing notification for', pendingApps.length, 'new applications');
+          addNotification(`${pendingApps.length} шинэ анкет ирлээ!`, "info", "applications");
+        } else {
+          console.log('No new applications or not on dashboard');
+        }
+      } catch (error) {
+        console.error('Error checking applications:', error);
+      }
     };
-    fetchNewApplications();
-    const interval = setInterval(fetchNewApplications, 5000);
-    return () => {
-      clearInterval(interval);
-      if (notifTimeoutRef.current) clearTimeout(notifTimeoutRef.current);
-    };
-  }, [lastCount, addNotification]);
+
+    console.log('Setting up application checker...');
+    checkNewApplications();
+    const interval = setInterval(checkNewApplications, 4000);
+    return () => clearInterval(interval);
+  }, [addNotification]);
 
   const handleSearch = () => {
     const queryParams = new URLSearchParams();
@@ -130,23 +142,6 @@ export const HeroSection = () => {
 
   return (
     <section className="px-4 lg:px-32 md:px-10">
-      {isEmployer && showHeroNotif && (
-        <div className="fixed top-8 right-8 z-50 flex justify-end items-start">
-          <div className="bg-blue-500 text-white px-5 py-3 rounded-xl shadow-lg font-semibold text-base flex items-center gap-3 animate-fade-in-out relative min-w-[200px]">
-            <span>Шинэ анкет ирлээ!</span>
-            <button
-              onClick={() => setShowHeroNotif(false)}
-              className="ml-2 text-white/80 hover:text-white text-lg font-bold absolute top-2 right-2"
-              aria-label="Хаах"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-      
-
-      {/* Content container */}
       <div className="container relative z-10">
         <div className="flex flex-col lg:flex-row items-center justify-between min-h-[80vh]">
           {/* Left side - Text content */}

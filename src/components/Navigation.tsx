@@ -142,7 +142,7 @@ export const Header = () => {
           >
             Talento
           </Link>
-          <div className="hidden lg:flex gap-8 items-center text-sm font-medium">
+          <div className="hidden lg:flex gap-8 items-center ml-15 text-sm font-medium">
             <Link
               href="/"
               className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A]"
