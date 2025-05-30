@@ -204,7 +204,7 @@ export const Header = () => {
           <div className="hidden lg:flex gap-8 items-center text-sm font-medium">
             <Link
               href="/"
-              className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A]"
+              className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A] ml-20"
             >
               <span className="group-hover:text-[#0C213A]/80 transition-colors font-poppins font-medium">
                 Нүүр

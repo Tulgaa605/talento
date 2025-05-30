@@ -61,7 +61,6 @@ const FILTERS = [
   { label: "Гэрээт", icon: "📝", type: "CONTRACT" },
   { label: "Дадлага", icon: "🎓", type: "INTERNSHIP" },
 ];
-
 interface JobsListProps {
   onJobSelect: (job: Job) => void;
 }
@@ -75,8 +74,12 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
   const [error, setError] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
-  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
-  const [selectedProvince, setSelectedProvince] = useState(searchParams.get("city") || "");
+  const [searchTerm, setSearchTerm] = useState(
+    searchParams.get("search") || ""
+  );
+  const [selectedProvince, setSelectedProvince] = useState(
+    searchParams.get("city") || ""
+  );
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [savingJobId, setSavingJobId] = useState<string | null>(null);
   const [showMobileDetails, setShowMobileDetails] = useState(false);
@@ -133,7 +136,7 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
   const fetchSavedJobs = async () => {
     try {
       const response = await fetch("/api/jobs/saved", {
-        credentials: "include"
+        credentials: "include",
       });
       if (!response.ok) {
         throw new Error("Failed to fetch saved jobs");
@@ -187,10 +190,9 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
     }
   };
 
-  // Dummy filter logic for UI only
-  const toggleFilter = (label: string) => {
+  const toggleFilter = (type: string) => {
     setActiveFilters((prev) =>
-      prev.includes(label) ? prev.filter((f) => f !== label) : [...prev, label]
+      prev.includes(type) ? prev.filter((f) => f !== type) : [...prev, type]
     );
   };
 
@@ -198,30 +200,160 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
     setSelectedJobId(job.id);
     setSelectedJob(job);
     onJobSelect(job);
-    
+
     // Mobile дээр modal харуулах
-    if (window.innerWidth < 1024) { // lg breakpoint
+    if (window.innerWidth < 1024) {
+      // lg breakpoint
       setShowMobileDetails(true);
     }
   };
 
-  const filteredJobs = jobs.filter((job) => {
-    const matchesSearch = job.title
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesProvince =
-      !selectedProvince || job.location.includes(selectedProvince);
+  const filteredJobs = jobs
+    .filter((job) => {
+      // Apply job type filters
+      if (activeFilters.length > 0) {
+        return activeFilters.includes(job.type);
+      }
+      return true;
+    })
+    .map((job) => {
+      // Calculate match percentage
+      let matchScore = {
+        title: 0,
+        skills: 0,
+        requirements: 0,
+        experience: 0,
+        education: 0,
+        overall: 0,
+      };
 
-    // Apply job type filters
-    const matchesType =
-      activeFilters.length === 0 ||
-      activeFilters.some((filter) => {
-        const filterType = FILTERS.find((f) => f.label === filter)?.type;
-        return filterType ? job.type === filterType : true;
+      const searchTerms = searchTerm
+        .toLowerCase()
+        .split(" ")
+        .filter((term) => term.length > 0);
+      const jobTitle = job.title.toLowerCase();
+      const jobDescription = job.description.toLowerCase();
+      const jobRequirements = job.requirements.toLowerCase();
+
+      // Match criteria weights
+      const weights = {
+        title: 0.3, // 30%
+        skills: 0.25, // 25%
+        requirements: 0.25, // 25%
+        experience: 0.1, // 10%
+        education: 0.1, // 10%
+      };
+
+      // Title matching (30%)
+      searchTerms.forEach((term) => {
+        // Exact title match
+        if (jobTitle === term) {
+          matchScore.title += 100;
+        }
+        // Title starts with search term
+        else if (jobTitle.startsWith(term)) {
+          matchScore.title += 80;
+        }
+        // Title contains search term as a whole word
+        else if (jobTitle.split(" ").some((word) => word === term)) {
+          matchScore.title += 60;
+        }
+        // Partial match in title
+        else if (jobTitle.includes(term)) {
+          matchScore.title += 40;
+        }
+      });
+      matchScore.title = Math.min(matchScore.title, 100);
+
+      // Skills matching (25%)
+      if (job.skills) {
+        const jobSkills = job.skills
+          .toLowerCase()
+          .split(",")
+          .map((s) => s.trim());
+        const matchedSkills = new Set();
+
+        searchTerms.forEach((term) => {
+          jobSkills.forEach((skill) => {
+            if (skill === term) {
+              matchedSkills.add(skill);
+              matchScore.skills += 20;
+            } else if (skill.includes(term)) {
+              matchedSkills.add(skill);
+              matchScore.skills += 10;
+            }
+          });
+        });
+
+        // Calculate skills match percentage
+        matchScore.skills = Math.min(matchScore.skills, 100);
+      }
+
+      // Requirements matching (25%)
+      const requirements = jobRequirements.split(/[.,]/).map((r) => r.trim());
+      const matchedRequirements = new Set();
+
+      searchTerms.forEach((term) => {
+        requirements.forEach((req) => {
+          if (req.toLowerCase().includes(term)) {
+            matchedRequirements.add(req);
+            matchScore.requirements += 10;
+          }
+        });
       });
 
-    return matchesSearch && matchesProvince && matchesType;
-  });
+      matchScore.requirements = Math.min(matchScore.requirements, 100);
+
+      // Experience matching (10%)
+      if (
+        jobRequirements.toLowerCase().includes("туршлага") ||
+        jobRequirements.toLowerCase().includes("experience")
+      ) {
+        matchScore.experience = 50; // Default score if experience is mentioned
+      } else {
+        matchScore.experience = 100; // No experience required
+      }
+
+      // Education matching (10%)
+      if (
+        jobRequirements.toLowerCase().includes("боловсрол") ||
+        jobRequirements.toLowerCase().includes("education")
+      ) {
+        matchScore.education = 50; // Default score if education is mentioned
+      } else {
+        matchScore.education = 100; // No education required
+      }
+
+      // Calculate overall match percentage
+      matchScore.overall = Math.round(
+        matchScore.title * weights.title +
+          matchScore.skills * weights.skills +
+          matchScore.requirements * weights.requirements +
+          matchScore.experience * weights.experience +
+          matchScore.education * weights.education
+      );
+
+      return {
+        ...job,
+        matchScore,
+        relevanceScore: matchScore.overall, // Use match percentage as relevance score
+      };
+    })
+    .filter((job) => {
+      const searchTerms = searchTerm
+        .toLowerCase()
+        .split(" ")
+        .filter((term) => term.length > 0);
+      const matchesSearch =
+        searchTerms.length === 0 || job.matchScore.overall > 0;
+      const matchesProvince =
+        !selectedProvince || job.location.includes(selectedProvince);
+      const matchesType =
+        activeFilters.length === 0 || job.matchScore.overall > 0;
+
+      return matchesSearch && matchesProvince && matchesType;
+    })
+    .sort((a, b) => b.matchScore.overall - a.matchScore.overall);
 
   if (loading) {
     return (
@@ -243,21 +375,19 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
   return (
     <div>
       {/* Filter buttons */}
-      <div className="flex flex-wrap gap-2 mb-4 justify-between">
+      <div className="flex gap-6 mb-4 overflow-x-auto pb-2">
         {FILTERS.map((filter) => (
           <button
-            key={filter.label}
-            className={`flex items-center px-2 sm:px-4 py-1.5 sm:py-2 rounded-md border text-xs sm:text-sm font-medium transition-colors
-              ${
-                activeFilters.includes(filter.label)
-                  ? "bg-green-50 border-green-500 text-green-700"
-                  : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-              }
-            `}
-            onClick={() => toggleFilter(filter.label)}
+            key={filter.type}
+            onClick={() => toggleFilter(filter.type)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
+              activeFilters.includes(filter.type)
+                ? "bg-[#0BA02C] text-white shadow-sm hover:bg-[#0a8c26]"
+                : "bg-white text-gray-700 border border-gray-200 hover:border-[#0BA02C] hover:text-[#0BA02C]"
+            }`}
           >
-            <span>{filter.icon}</span>
-            {filter.label}
+            <span className="text-sm">{filter.icon}</span>
+            <span>{filter.label}</span>
           </button>
         ))}
       </div>
@@ -313,7 +443,9 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
       <div className="h-[calc(100vh-16rem)] sm:h-[calc(100vh-18rem)] overflow-y-auto pr-2 sm:pr-4 scrollbar-hide">
         {filteredJobs.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-sm sm:text-base text-gray-600">Ажлын байр олдсонгүй.</p>
+            <p className="text-sm sm:text-base text-gray-600">
+              Ажлын байр олдсонгүй.
+            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-3 sm:gap-4">
@@ -441,7 +573,9 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
                   />
                 </svg>
               </button>
-              <h2 className="text-lg font-semibold text-[#0C213A]">Ажлын дэлгэрэнгүй</h2>
+              <h2 className="text-lg font-semibold text-[#0C213A]">
+                Ажлын дэлгэрэнгүй
+              </h2>
               <div className="w-10"></div>
             </div>
             <div className="p-4">

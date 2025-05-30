@@ -180,6 +180,66 @@ const professions: Professions = {
       "брэндийн мэдрэмж",
     ],
   },
+  service: {
+    mainTitles: [
+      "service",
+      "үйлчилгээ",
+      "customer service",
+      "үйлчлэгч",
+      "cashier",
+      "касс",
+      "waiter",
+      "офицант",
+      "hostess",
+      "хостэс",
+      "staff",
+      "ажилтан",
+    ],
+    subTitles: [
+      "service staff",
+      "үйлчилгээний ажилтан",
+      "customer service representative",
+      "үйлчилгээний төлөөлөгч",
+      "front desk",
+      "урд талбайн ажилтан",
+      "service assistant",
+      "үйлчилгээний туслах",
+    ],
+    requiredSkills: [
+      "communication",
+      "харилцаа",
+      "customer service",
+      "үйлчилгээ",
+      "teamwork",
+      "багаар ажиллах",
+      "responsible",
+      "хариуцлагатай",
+      "clean",
+      "цэвэр",
+      "fast",
+      "түргэн",
+      "friendly",
+      "найрсаг",
+      "polite",
+      "эелдэг",
+      "organized",
+      "нямбай",
+      "efficient",
+      "шуурхай",
+    ],
+    relatedKeywords: [
+      "hospitality",
+      "зочид үйлчилгээ",
+      "retail",
+      "жижиглэн",
+      "food service",
+      "хоолны үйлчилгээ",
+      "customer care",
+      "үйлчлүүлэгчийн үйлчилгээ",
+      "service quality",
+      "үйлчилгээний чанар",
+    ],
+  },
 };
 
 export async function calculateJobMatches(
@@ -213,8 +273,8 @@ export async function calculateJobMatches(
           );
           console.log("Match details for", job.title, ":", matchDetails);
 
-          // Only include matches with overall score >= 60%
-          if (matchDetails.overall < 60) {
+          // Only include matches with overall score >= 50%
+          if (matchDetails.overall < 50) {
             console.log(
               "Match score too low for",
               job.title,
@@ -249,7 +309,7 @@ export async function calculateJobMatches(
     const validMatches = matches.filter(
       (match) => match !== null
     ) as JobMatch[];
-    console.log("Valid matches with score >= 60%:", validMatches.length);
+    console.log("Valid matches with score >= 50%:", validMatches.length);
 
     const sortedMatches = validMatches.sort(
       (a, b) => b.matchScore - a.matchScore
@@ -263,229 +323,166 @@ export async function calculateJobMatches(
   }
 }
 
-async function calculateDetailedMatchScore(
+function calculateDetailedMatchScore(
   cvContent: string,
   jobRequirements: string,
   jobTitle: string
 ) {
   try {
     console.log("Calculating match score...");
-    console.log("CV Content length:", cvContent.length);
-    console.log("Job Requirements:", jobRequirements);
-    console.log("Job Title:", jobTitle);
 
-    // First, determine the profession category
     const cvLower = cvContent.toLowerCase();
     const reqLower = jobRequirements.toLowerCase();
     const jobTitleLower = jobTitle.toLowerCase();
 
-    // Find profession match
-    let professionMatch = null;
-    let professionScore = 0;
-    let maxScore = 0;
+    // Simplified matching logic
+    let matchScore = {
+      requirements: 0,
+      skills: 0,
+      experience: 0,
+      overall: 0,
+    };
 
-    for (const [profession, criteria] of Object.entries(professions)) {
-      let score = 0;
+    // Requirements matching (50% of total)
+    const requirements = reqLower.split(/[.,]/).map((r) => r.trim());
+    let matchedRequirements = 0;
+    let totalRequirements = 0;
 
-      // Check main titles (highest weight)
-      for (const title of criteria.mainTitles) {
-        if (cvLower.includes(title)) score += 10;
-        if (jobTitleLower.includes(title)) score += 10;
+    requirements.forEach((req) => {
+      if (req.length > 3) {
+        // Ignore very short requirements
+        totalRequirements++;
+        if (cvLower.includes(req)) {
+          matchedRequirements++;
+        } else {
+          // Check for partial matches
+          const words = req.split(/\s+/);
+          const matchedWords = words.filter(
+            (word) => word.length > 3 && cvLower.includes(word)
+          );
+          if (matchedWords.length >= words.length * 0.5) {
+            matchedRequirements += 0.5;
+          }
+        }
       }
+    });
 
-      // Check sub titles (high weight)
-      for (const title of criteria.subTitles) {
-        if (cvLower.includes(title)) score += 8;
-        if (jobTitleLower.includes(title)) score += 8;
+    matchScore.requirements =
+      totalRequirements > 0
+        ? (matchedRequirements / totalRequirements) * 100
+        : 80; // Default score if no specific requirements
+
+    // Skills matching (30% of total)
+    const skills = [
+      "communication",
+      "харилцаа",
+      "харилцааны соёл",
+      "teamwork",
+      "багаар ажиллах",
+      "хамтран ажиллах",
+      "responsible",
+      "хариуцлагатай",
+      "хариуцлага",
+      "clean",
+      "цэвэр",
+      "цэвэрч",
+      "fast",
+      "түргэн",
+      "шуурхай",
+      "friendly",
+      "найрсаг",
+      "эелдэг",
+      "polite",
+      "эелдэг",
+      "соёлтой",
+      "organized",
+      "нямбай",
+      "зохион байгуулалт",
+      "efficient",
+      "шуурхай",
+      "үр дүнтэй",
+      "customer service",
+      "үйлчилгээ",
+      "үйлчлэгч",
+      "service",
+      "үйлчилгээ",
+      "үйлчлэл",
+      "cashier",
+      "касс",
+      "кассир",
+      "sales",
+      "борлуулалт",
+      "зар",
+      "retail",
+      "жижиглэн",
+      "худалдаа",
+    ];
+
+    let matchedSkills = 0;
+    let requiredSkills = 0;
+
+    skills.forEach((skill) => {
+      if (reqLower.includes(skill)) {
+        requiredSkills++;
+        if (cvLower.includes(skill)) {
+          matchedSkills++;
+        } else {
+          // Check for partial matches
+          const words = skill.split(/\s+/);
+          const matchedWords = words.filter(
+            (word) => word.length > 3 && cvLower.includes(word)
+          );
+          if (matchedWords.length >= words.length * 0.5) {
+            matchedSkills += 0.5;
+          }
+        }
       }
+    });
 
-      // Check required skills (medium weight)
-      for (const skill of criteria.requiredSkills) {
-        if (cvLower.includes(skill)) score += 5;
-        if (reqLower.includes(skill)) score += 5;
-      }
+    matchScore.skills =
+      requiredSkills > 0 ? (matchedSkills / requiredSkills) * 100 : 70; // Default score if no specific skills required
 
-      // Check related keywords (low weight)
-      for (const keyword of criteria.relatedKeywords) {
-        if (cvLower.includes(keyword)) score += 3;
-        if (reqLower.includes(keyword)) score += 3;
-      }
+    // Experience matching (20% of total)
+    const noExperienceRequired =
+      reqLower.includes("туршлага шаардахгүй") ||
+      reqLower.includes("no experience required") ||
+      reqLower.includes("сургалт хийнэ");
 
-      if (score > maxScore) {
-        maxScore = score;
-        professionMatch = profession;
-        professionScore = score;
+    if (noExperienceRequired) {
+      matchScore.experience = 100;
+    } else {
+      const yearsPattern =
+        /(\d+)\s*(?:жил|year|years?)\s*(?:туршлага|experience)/i;
+      const cvYears = parseInt(cvLower.match(yearsPattern)?.[1] || "0");
+      const reqYears = parseInt(reqLower.match(yearsPattern)?.[1] || "0");
+
+      if (reqYears === 0) {
+        matchScore.experience = 80;
+      } else if (cvYears >= reqYears) {
+        matchScore.experience = 100;
+      } else {
+        matchScore.experience = (cvYears / reqYears) * 100;
       }
     }
 
-    // If no strong profession match or professions don't match
-    if (!professionMatch || professionScore < 20) {
-      console.log("No strong profession match found");
-      return {
-        experience: 0,
-        skills: 0,
-        education: 0,
-        overall: 0,
-      };
-    }
-
-    // If CV profession and job profession don't match
-    const cvProfession = getProfessionFromContent(cvLower, professions);
-    const jobProfession = getProfessionFromContent(
-      jobTitleLower + " " + reqLower,
-      professions
+    // Calculate overall score
+    matchScore.overall = Math.round(
+      matchScore.requirements * 0.5 +
+        matchScore.skills * 0.3 +
+        matchScore.experience * 0.2
     );
 
-    if (cvProfession !== jobProfession) {
-      console.log("Profession mismatch:", cvProfession, "vs", jobProfession);
-      return {
-        experience: 0,
-        skills: 0,
-        education: 0,
-        overall: 0,
-      };
+    // Ensure minimum score for good matches
+    if (matchScore.requirements > 70 && matchScore.skills > 70) {
+      matchScore.overall = Math.max(matchScore.overall, 80);
     }
 
-    // Continue with normal scoring only if professions match
-    try {
-      const response = await fetch(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-            "HTTP-Referer": process.env.NEXTAUTH_URL || "http://localhost:3000",
-            "X-Title": "Job Matcher",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "mistralai/mistral-7b-instruct:free",
-            max_tokens: 500,
-            temperature: 0.3,
-            messages: [
-              {
-                role: "system",
-                content: `You are a job matching expert for ${professionMatch} roles. Analyze the CV content and job requirements, then provide ONLY a JSON object with match scores. The CV and job are already confirmed to be in the same profession category. Do not include any explanatory text.
-
-The response must be a valid JSON object in this exact format:
-{
-  "experience": number,
-  "skills": number,
-  "education": number,
-  "overall": number
-}
-
-Calculate the scores based on:
-
-1. Experience Match (35% of total):
-   - Years of experience
-   - Relevant experience
-   - Project experience
-   - Industry experience
-
-2. Skills Match (45% of total):
-   - Core skills for ${professionMatch}
-   - Technical skills
-   - Software proficiency
-   - Industry knowledge
-
-3. Education Match (20% of total):
-   - Relevant degree
-   - Certifications
-   - Training
-   - Portfolio (if applicable)
-
-Each score should be between 0 and 100.
-The overall score should be: (experience * 0.35) + (skills * 0.45) + (education * 0.20)
-
-Return ONLY the JSON object, no other text.`,
-              },
-              {
-                role: "user",
-                content: `CV Content: ${cvContent}\n\nJob Requirements: ${jobRequirements}\n\nReturn match scores as JSON:`,
-              },
-            ],
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ error: "Failed to parse error response" }));
-        console.error("OpenRouter error:", errorData);
-
-        // Check if it's a rate limit error
-        if (errorData.error?.code === 429) {
-          console.log("Rate limit exceeded, using fallback matching");
-          return calculateFallbackMatchScore(
-            cvContent,
-            jobRequirements,
-            professionMatch
-          );
-        }
-
-        throw new Error("Failed to calculate match score");
-      }
-
-      const data = await response.json();
-      console.log("OpenRouter response:", data);
-
-      if (!data?.choices?.[0]?.message?.content) {
-        console.error("Invalid response format:", data);
-        return calculateFallbackMatchScore(
-          cvContent,
-          jobRequirements,
-          professionMatch
-        );
-      }
-
-      let scores;
-      try {
-        const content = data.choices[0].message.content.trim();
-        // Try to extract JSON if it's wrapped in other text
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        const jsonStr = jsonMatch ? jsonMatch[0] : content;
-        scores = JSON.parse(jsonStr);
-
-        // Validate the scores object has all required fields
-        if (
-          !scores.experience ||
-          !scores.skills ||
-          !scores.education ||
-          !scores.overall
-        ) {
-          console.error("Invalid scores object:", scores);
-          return calculateFallbackMatchScore(
-            cvContent,
-            jobRequirements,
-            professionMatch
-          );
-        }
-      } catch (error) {
-        console.error("Error parsing match scores:", error);
-        return calculateFallbackMatchScore(
-          cvContent,
-          jobRequirements,
-          professionMatch
-        );
-      }
-
-      // Ensure all scores are between 0 and 100
-      return {
-        experience: Math.min(Math.max(scores.experience, 0), 100),
-        skills: Math.min(Math.max(scores.skills, 0), 100),
-        education: Math.min(Math.max(scores.education, 0), 100),
-        overall: Math.min(Math.max(scores.overall, 0), 100),
-      };
-    } catch (error) {
-      console.error("Error calculating match score:", error);
-      return calculateFallbackMatchScore(
-        cvContent,
-        jobRequirements,
-        professionMatch
-      );
-    }
+    return {
+      experience: Math.round(matchScore.experience),
+      skills: Math.round(matchScore.skills),
+      education: Math.round(matchScore.requirements),
+      overall: matchScore.overall,
+    };
   } catch (error) {
     console.error("Error in match calculation:", error);
     return {
@@ -554,26 +551,26 @@ function calculateFallbackMatchScore(
       };
     }
 
-    // Calculate experience score
+    // Calculate experience score - More lenient scoring
     let experienceScore = calculateExperienceScore(
       cvLower,
       requirementsLower,
       criteria
     );
 
-    // Calculate skills score
+    // Calculate skills score - More lenient matching
     let skillsScore = calculateSkillsScore(
       cvLower,
       requirementsLower,
       criteria
     );
 
-    // Calculate education score
+    // Calculate education score - More lenient education matching
     let educationScore = calculateEducationScore(cvLower, requirementsLower);
 
-    // Calculate overall score
+    // Calculate overall score with adjusted weights
     const overallScore =
-      experienceScore * 0.35 + skillsScore * 0.45 + educationScore * 0.2;
+      experienceScore * 0.3 + skillsScore * 0.4 + educationScore * 0.3;
 
     return {
       experience: Math.round(experienceScore),
@@ -599,24 +596,45 @@ function calculateExperienceScore(
 ): number {
   let score = 0;
 
-  // Extract years of experience
-  const yearsPattern = /(\d+)\s*(?:жил|year|years?)\s*(?:туршлага|experience)/i;
-  const cvYears = parseInt(cv.match(yearsPattern)?.[1] || "0");
-  const reqYears = parseInt(requirements.match(yearsPattern)?.[1] || "0");
+  // Check if experience is required
+  const noExperienceRequired =
+    requirements.toLowerCase().includes("туршлага шаардахгүй") ||
+    requirements.toLowerCase().includes("no experience required") ||
+    requirements.toLowerCase().includes("сургалт хийнэ");
 
-  if (reqYears === 0 || cvYears >= reqYears) {
-    score += 40;
+  if (noExperienceRequired) {
+    score += 80; // High base score when no experience required
   } else {
-    score += (cvYears / reqYears) * 40;
+    // More lenient years of experience matching
+    const yearsPattern =
+      /(\d+)\s*(?:жил|year|years?)\s*(?:туршлага|experience)/i;
+    const cvYears = parseInt(cv.match(yearsPattern)?.[1] || "0");
+    const reqYears = parseInt(requirements.match(yearsPattern)?.[1] || "0");
+
+    if (reqYears === 0) {
+      score += 70;
+    } else if (cvYears >= reqYears) {
+      score += 70;
+    } else {
+      score += (cvYears / reqYears) * 70;
+    }
   }
 
-  // Check for relevant experience keywords
+  // Check for relevant experience keywords - More lenient matching
   for (const title of [...criteria.mainTitles, ...criteria.subTitles]) {
-    if (cv.includes(title)) score += 20;
+    if (cv.toLowerCase().includes(title.toLowerCase())) score += 15;
   }
 
-  // Check for project experience
-  if (cv.includes("project") || cv.includes("төсөл")) score += 20;
+  // Check for project experience - More lenient
+  if (
+    cv.toLowerCase().includes("project") ||
+    cv.toLowerCase().includes("төсөл") ||
+    cv.toLowerCase().includes("experience") ||
+    cv.toLowerCase().includes("туршлага") ||
+    cv.toLowerCase().includes("сургалт")
+  ) {
+    score += 15;
+  }
 
   return Math.min(score, 100);
 }
@@ -628,23 +646,89 @@ function calculateSkillsScore(
 ): number {
   let score = 0;
   let reqSkillsFound = 0;
+  let matchedSkills = 0;
 
-  // Check required skills
-  for (const skill of criteria.requiredSkills) {
-    if (requirements.includes(skill)) {
+  // Check for soft skills first
+  const softSkills = [
+    "communication",
+    "харилцаа",
+    "харилцааны соёл",
+    "teamwork",
+    "багаар ажиллах",
+    "хамтран ажиллах",
+    "responsible",
+    "хариуцлагатай",
+    "хариуцлага",
+    "clean",
+    "цэвэр",
+    "цэвэрч",
+    "fast",
+    "түргэн",
+    "шуурхай",
+    "friendly",
+    "найрсаг",
+    "эелдэг",
+    "polite",
+    "эелдэг",
+    "соёлтой",
+    "organized",
+    "нямбай",
+    "зохион байгуулалт",
+    "efficient",
+    "шуурхай",
+    "үр дүнтэй",
+  ];
+
+  // Count matching soft skills
+  softSkills.forEach((skill) => {
+    if (requirements.toLowerCase().includes(skill.toLowerCase())) {
       reqSkillsFound++;
-      if (cv.includes(skill)) score += 30;
+      if (cv.toLowerCase().includes(skill.toLowerCase())) {
+        score += 15;
+        matchedSkills++;
+      }
     }
-  }
+  });
 
-  // Normalize score based on number of required skills
-  if (reqSkillsFound > 0) {
-    score = (score / reqSkillsFound) * 60;
+  // Check required skills - More lenient matching
+  for (const skill of criteria.requiredSkills) {
+    if (requirements.toLowerCase().includes(skill.toLowerCase())) {
+      reqSkillsFound++;
+      // Check for exact match or partial match
+      if (cv.toLowerCase().includes(skill.toLowerCase())) {
+        score += 20;
+        matchedSkills++;
+      } else {
+        // Check for partial matches
+        const skillWords = skill.split(/\s+/);
+        if (
+          skillWords.some((word) =>
+            cv.toLowerCase().includes(word.toLowerCase())
+          )
+        ) {
+          score += 10;
+          matchedSkills++;
+        }
+      }
+    }
   }
 
   // Add bonus for additional relevant skills
   for (const keyword of criteria.relatedKeywords) {
-    if (cv.includes(keyword)) score += 10;
+    if (cv.toLowerCase().includes(keyword.toLowerCase())) score += 10;
+  }
+
+  // If no required skills found, give a base score
+  if (reqSkillsFound === 0) {
+    score = 70; // Higher base score when no specific skills required
+  } else {
+    // Normalize score based on matched skills
+    score = Math.max(score, (matchedSkills / reqSkillsFound) * 80);
+  }
+
+  // Additional bonus for matching all soft skills
+  if (matchedSkills >= reqSkillsFound * 0.8) {
+    score += 20;
   }
 
   return Math.min(score, 100);
@@ -653,19 +737,55 @@ function calculateSkillsScore(
 function calculateEducationScore(cv: string, requirements: string): number {
   let score = 0;
 
-  // Check education level
-  if (cv.includes("master") || cv.includes("магистр")) score += 40;
-  else if (cv.includes("bachelor") || cv.includes("бакалавр")) score += 30;
-  else if (cv.includes("degree") || cv.includes("зэрэг")) score += 20;
+  // More lenient education level matching
+  if (
+    cv.includes("master") ||
+    cv.includes("магистр") ||
+    cv.includes("masters")
+  ) {
+    score += 50;
+  } else if (
+    cv.includes("bachelor") ||
+    cv.includes("бакалавр") ||
+    cv.includes("bachelors")
+  ) {
+    score += 40;
+  } else if (
+    cv.includes("degree") ||
+    cv.includes("зэрэг") ||
+    cv.includes("diploma")
+  ) {
+    score += 30;
+  } else {
+    score += 20; // Base score for any education
+  }
 
-  // Check for relevant certifications
-  if (cv.includes("certification") || cv.includes("гэрчилгээ")) score += 30;
+  // More lenient certification matching
+  if (
+    cv.includes("certification") ||
+    cv.includes("гэрчилгээ") ||
+    cv.includes("certificate")
+  ) {
+    score += 30;
+  }
 
-  // Check for training
-  if (cv.includes("training") || cv.includes("сургалт")) score += 20;
+  // More lenient training matching
+  if (
+    cv.includes("training") ||
+    cv.includes("сургалт") ||
+    cv.includes("course")
+  ) {
+    score += 20;
+  }
 
-  // Check for portfolio
-  if (cv.includes("portfolio") || cv.includes("портфолио")) score += 10;
+  // More lenient portfolio matching
+  if (
+    cv.includes("portfolio") ||
+    cv.includes("портфолио") ||
+    cv.includes("projects")
+  ) {
+    score += 20;
+  }
 
   return Math.min(score, 100);
 }

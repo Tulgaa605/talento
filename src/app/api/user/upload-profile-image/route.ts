@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { writeFile } from 'fs/promises';
-import path from 'path';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions); // Optional: Add auth check if needed
@@ -11,46 +11,50 @@ export async function POST(request: NextRequest) {
   // Basic auth check (ensure user is logged in)
   // You might want more robust checks depending on your needs
   if (!session || !session.user) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File | null;
-    const userId = formData.get('userId') as string | null;
+    const file = formData.get("file") as File | null;
+    const userId = formData.get("userId") as string | null;
 
     if (!file) {
-      return NextResponse.json({ message: 'Файл олдсонгүй' }, { status: 400 });
+      return NextResponse.json({ message: "Файл олдсонгүй" }, { status: 400 });
     }
     if (!userId) {
-      return NextResponse.json({ message: 'Хэрэглэгчийн ID олдсонгүй' }, { status: 400 });
+      return NextResponse.json(
+        { message: "Хэрэглэгчийн ID олдсонгүй" },
+        { status: 400 }
+      );
     }
 
     // Ensure the logged-in user matches the userId being updated (security check)
     if (session.user.id !== userId) {
-       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
     // Create a safe filename (e.g., timestamp + original name)
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const filename = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+    const filename = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
+
+    // Create uploads directory if it doesn't exist
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "images");
+    try {
+      await mkdir(uploadDir, { recursive: true });
+    } catch (mkdirError) {
+      console.error("Failed to create directory:", mkdirError);
+      return NextResponse.json(
+        { message: "Серверийн дотоод алдаа (mkdir)" },
+        { status: 500 }
+      );
+    }
 
     // Define the path to save the file
     // IMPORTANT: Ensure this directory exists and the server has write permissions
     // For production, use a proper file storage service (S3, Cloudinary, etc.)
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'images');
     const filePath = path.join(uploadDir, filename);
-
-    // --- Ensure directory exists (add this if needed) ---
-    // import { mkdir } from 'fs/promises';
-    // try {
-    //   await mkdir(uploadDir, { recursive: true });
-    // } catch (mkdirError) {
-    //   console.error("Failed to create directory:", mkdirError);
-    //   return NextResponse.json({ message: 'Серверийн дотоод алдаа (mkdir)' }, { status: 500 });
-    // }
-    // -----------------------------------------------------
 
     // Write the file to the server filesystem
     await writeFile(filePath, buffer);
@@ -65,10 +69,19 @@ export async function POST(request: NextRequest) {
       data: { profileImageUrl: imageUrl },
     });
 
-    return NextResponse.json({ message: 'Зураг амжилттай хуулагдлаа', imageUrl }, { status: 200 });
-
+    return NextResponse.json(
+      {
+        message: "Зураг амжилттай хуулагдлаа",
+        imageUrl,
+        user: updatedUser,
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('Upload failed:', error);
-    return NextResponse.json({ message: 'Зураг хуулах үед алдаа гарлаа' }, { status: 500 });
+    console.error("Upload failed:", error);
+    return NextResponse.json(
+      { message: "Зураг хуулах үед алдаа гарлаа" },
+      { status: 500 }
+    );
   }
-} 
+}
