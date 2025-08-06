@@ -7,13 +7,15 @@ export async function PUT(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "EMPLOYER") {
+    if (
+      !session ||
+      !["EMPLOYER", "ADMIN"].includes(session.user.role)
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const data = await request.json();
-    const { name, location, logoUrl, description, website, coverImageUrl } =
-      data;
+    const { name, location, logoUrl, description, website, coverImageUrl } = data;
 
     // First get the user to find their companyId
     const user = await prisma.user.findUnique({

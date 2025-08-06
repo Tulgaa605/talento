@@ -3,33 +3,49 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get("companyId");
-
-    if (!companyId) {
-      return NextResponse.json(
-        { error: "Company ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const questionnaires = await prisma.questionnaire.findMany({
+    // Get the user's company
+    const user = await prisma.user.findUnique({
       where: {
-        companyId,
+        id: session.user.id,
       },
       include: {
-        questions: {
+        company: true,
+      },
+    });
+
+    if (!user?.company) {
+      return NextResponse.json({ error: "Company not found" }, { status: 404 });
+    }
+
+    // Get questionnaires for the company with responses
+    const questionnaires = await prisma.questionnaire.findMany({
+      where: {
+        companyId: user.company.id,
+      },
+      include: {
+        responses: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
           orderBy: {
-            order: "asc",
+            createdAt: 'desc',
           },
         },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
 
@@ -51,7 +67,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, description, questions, companyId } = body;
+    const { title, description, questions, companyId, attachmentFile, attachmentUrl } = body;
 
     if (!title || !companyId || !questions || !Array.isArray(questions)) {
       return NextResponse.json(
@@ -64,6 +80,8 @@ export async function POST(request: Request) {
       data: {
         title,
         description,
+        attachmentFile,
+        attachmentUrl,
         companyId,
         questions: {
           create: questions.map((q: any) => ({
@@ -98,7 +116,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { id, title, description, questions } = body;
+    const { id, title, description, questions, attachmentFile, attachmentUrl } = body;
 
     if (!id || !title || !questions || !Array.isArray(questions)) {
       return NextResponse.json(
@@ -150,6 +168,8 @@ export async function PUT(request: Request) {
       data: {
         title,
         description,
+        attachmentFile,
+        attachmentUrl,
         questions: {
           create: questions.map((q: any) => ({
             text: q.text,

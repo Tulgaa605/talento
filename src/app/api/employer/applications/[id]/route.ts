@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,6 +16,7 @@ export async function PATCH(
       );
     }
 
+    const { id: applicationId } = await params;
     const { status } = await request.json();
     if (!status) {
       return NextResponse.json({ error: "Статус оруулна уу" }, { status: 400 });
@@ -34,7 +35,7 @@ export async function PATCH(
     // Check if application exists and belongs to company's job
     const application = await prisma.jobApplication.findFirst({
       where: {
-        id: params.id,
+        id: applicationId,
         job: {
           companyId: user.company.id,
         },
@@ -47,7 +48,7 @@ export async function PATCH(
 
     // Update application status and set viewedAt if not already set
     const updatedApplication = await prisma.jobApplication.update({
-      where: { id: params.id },
+      where: { id: applicationId },
       data: {
         status,
         viewedAt: application.viewedAt ? application.viewedAt : new Date(),

@@ -6,17 +6,19 @@ import { format } from "date-fns";
 import { Job, JobApplication, User, CV } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import QuestionnaireDropdown from "./QuestionnaireDropdown";
+import QuestionnaireResponseButton from "@/components/QuestionnaireResponseButton";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     jobId: string;
-  };
+  }>;
 }
 
 type JobWithApplications = Job & {
   applications: (JobApplication & {
     user: User;
     cv: CV | null;
+    questionnaireId?: string;
   })[];
 };
 
@@ -106,7 +108,7 @@ async function sendQuestionnaire(
 
 export default async function JobApplicationsPage({ params }: PageProps) {
   const session = await getServerSession(authOptions);
-  const { jobId } = params;
+  const { jobId } = await params;
 
   if (!jobId || !session?.user?.id) {
     notFound();
@@ -165,18 +167,19 @@ export default async function JobApplicationsPage({ params }: PageProps) {
 
       await prisma.jobApplication.update({
         where: { id: applicationId },
-        data: { status: "ACCEPTED" },
+        data: { status: "EMPLOYER_APPROVED" },
       });
 
-      await prisma.notification.create({
-        data: {
-          userId: application.userId,
-          title: "Таны CV зөвшөөрөгдлөө",
-          message: `${application.job.title} ажлын байрт таны CV зөвшөөрөгдлөө`,
-          type: "APPLICATION",
-          link: `/jobs/${application.jobId}`,
-        },
-      });
+      // Notification will be sent by admin when they approve
+      // await prisma.notification.create({
+      //   data: {
+      //     userId: application.userId,
+      //     title: "Таны CV зөвшөөрөгдлөө",
+      //     message: `${application.job.title} ажлын байрт таны CV зөвшөөрөгдлөө`,
+      //     type: "APPLICATION",
+      //     link: `/jobs/${application.jobId}`,
+      //   },
+      // });
 
       revalidatePath(`/employer/applications/${jobId}`);
     } catch (error) {
@@ -259,14 +262,20 @@ export default async function JobApplicationsPage({ params }: PageProps) {
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
                       application.status === "PENDING"
                         ? "bg-yellow-50 text-yellow-700"
-                        : application.status === "ACCEPTED"
+                        : application.status === "EMPLOYER_APPROVED"
+                        ? "bg-blue-50 text-blue-700"
+                        : application.status === "ADMIN_APPROVED"
                         ? "bg-green-50 text-green-700"
-                        : "bg-red-50 text-red-700"
+                        : application.status === "REJECTED"
+                        ? "bg-red-50 text-red-700"
+                        : "bg-gray-50 text-gray-700"
                     }`}
                   >
                     {application.status === "PENDING" && "Хүлээгдэж буй"}
-                    {application.status === "ACCEPTED" && "Зөвшөөрөгдсөн"}
+                    {application.status === "EMPLOYER_APPROVED" && "Ажил олгогч зөвшөөрсөн"}
+                    {application.status === "ADMIN_APPROVED" && "Зөвшөөрөгдсөн"}
                     {application.status === "REJECTED" && "Татгалзсан"}
+                    {!["PENDING", "EMPLOYER_APPROVED", "ADMIN_APPROVED", "REJECTED"].includes(application.status) && application.status}
                   </div>
                 </div>
 
@@ -328,6 +337,12 @@ export default async function JobApplicationsPage({ params }: PageProps) {
                     applicationId={application.id}
                     questionnaires={questionnaires}
                   />
+                  {application.questionnaireId && (
+                    <QuestionnaireResponseButton
+                      questionnaireId={application.questionnaireId}
+                      applicationId={application.id}
+                    />
+                  )}
                 </div>
               </div>
             </div>

@@ -14,11 +14,14 @@ export async function GET() {
       );
     }
 
-    // Get user with company info
-    const user = await prisma.user.findUnique({
+    // ✅ role нь EMPLOYER эсвэл ADMIN байх ёстой
+    const user = await prisma.user.findFirst({
       where: {
         email: session.user.email,
-        role: "EMPLOYER", // Ensure user is an employer
+        OR: [
+          { role: "EMPLOYER" },
+          { role: "ADMIN" }
+        ]
       },
       include: {
         company: true,
@@ -31,7 +34,7 @@ export async function GET() {
           error:
             "Та ажил олгогч эрхгүй байна. Эхлээд ажил олгогчоор бүртгүүлнэ үү.",
         },
-        { status: 404 }
+        { status: 403 }
       );
     }
 
@@ -42,11 +45,28 @@ export async function GET() {
       );
     }
 
-    // Get all applications for jobs posted by this company
+    // 1. Get all jobs posted by this company
+    const jobs = await prisma.job.findMany({
+      where: {
+        companyId: user.company.id,
+      },
+      select: {
+        id: true,
+        title: true,
+      },
+    });
+
+    const jobIds = jobs.map((job) => job.id);
+
+    if (jobIds.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    // 2. Get all applications for these jobs
     const applications = await prisma.jobApplication.findMany({
       where: {
-        job: {
-          companyId: user.company.id,
+        jobId: {
+          in: jobIds,
         },
       },
       include: {
@@ -78,7 +98,7 @@ export async function GET() {
 
     return NextResponse.json(applications);
   } catch (error) {
-    console.error("Error in GET /api/employer/applications:", error);
+    console.error("❌ Error in GET /api/employer/applications:", error);
     return NextResponse.json(
       { error: "Системийн алдаа гарлаа. Дараа дахин оролдоно уу." },
       { status: 500 }

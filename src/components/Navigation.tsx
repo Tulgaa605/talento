@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
+import NotificationBell from "./NotificationBell";
 
 const EmployerMenu = ({
   newApplicationsCount,
@@ -84,6 +85,28 @@ const EmployerMenu = ({
         </span>
       )}
     </Link>
+    <Link
+      href="/employer/questionnaires"
+      className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]"
+      onClick={onClose}
+    >
+      <div className="w-5">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+        </svg>
+      </div>
+      Асуулгууд
+    </Link>
   </>
 );
 
@@ -158,28 +181,31 @@ export const Header = () => {
     const fetchNewApplicationsCount = async () => {
       if (session?.user) {
         try {
-          const endpoint =
-            session.user.role === "EMPLOYER"
-              ? "/api/employer/applications/new-count"
-              : "/api/jobseeker/applications/new-count";
-
+          const isEmployerOrAdmin = ["EMPLOYER", "ADMIN"].includes(session.user.role);
+  
+          const endpoint = isEmployerOrAdmin
+            ? "/api/employer/applications/new-count"
+            : "/api/jobseeker/applications/new-count";
+  
           const response = await fetch(endpoint);
           if (response.ok) {
             const data = await response.json();
             setNewApplicationsCount(data.count || 0);
           }
         } catch (error) {
-          // Алдаа гарвал энд боловсруулна
+          console.error("Шинэ application авахад алдаа гарлаа:", error);
         }
       }
     };
-
+  
     fetchNewApplicationsCount();
-    // Set up polling every 30 seconds
+  
+    // 30 секунд тутамд дахин дуудах
     const interval = setInterval(fetchNewApplicationsCount, 30000);
-
+  
     return () => clearInterval(interval);
   }, [session]);
+  
 
   const handleSignOut = async () => {
     await signOut({ redirect: true, callbackUrl: "/" });
@@ -188,8 +214,8 @@ export const Header = () => {
   const closeMenu = () => {
     setShowProfileMenu(false);
   };
+  const isEmployer = ["EMPLOYER", "ADMIN"].includes(session?.user?.role);
 
-  const isEmployer = session?.user?.role === "EMPLOYER";
 
   return (
     <header className="flex flex-col justify-center px-4 md:px-10 lg:px-32 py-4 w-full bg-white min-h-[70px] shadow-[0_2px_8px_rgba(12,33,58,0.10)] fixed top-0 z-50 text-lg">
@@ -359,6 +385,12 @@ export const Header = () => {
               >
                 Ажил олгогч
               </Link>
+            )}
+
+            {status === "authenticated" && session && (
+              <div className="hidden lg:block">
+                <NotificationBell />
+              </div>
             )}
 
             {status === "authenticated" && session ? (

@@ -9,6 +9,7 @@ import { Disclosure } from "@headlessui/react";
 import { ChevronUpIcon } from "@heroicons/react/24/solid";
 import { FiEdit, FiMapPin } from "react-icons/fi";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { useNotification } from "@/providers/NotificationProvider";
 
 interface Company {
   id: string;
@@ -45,6 +46,8 @@ interface Questionnaire {
   id: string;
   title: string;
   description?: string;
+  attachmentFile?: string;
+  attachmentUrl?: string;
   questions: Question[];
   createdAt: string;
 }
@@ -81,6 +84,7 @@ interface CV {
 export default function EmployerProfile() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { addNotification } = useNotification();
   const [company, setCompany] = useState<Company | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,12 +124,15 @@ export default function EmployerProfile() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [selectedTemplateFile, setSelectedTemplateFile] = useState<File | null>(null);
+  const [uploadedTemplateFile, setUploadedTemplateFile] = useState<{ fileName: string; fileUrl: string } | null>(null);
+  const [isUploadingTemplate, setIsUploadingTemplate] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     } else if (status === "authenticated" && !hasLoaded) {
-      if (session?.user?.role === "EMPLOYER") {
+      if (["EMPLOYER", "ADMIN"].includes(session?.user?.role)) {
         fetchCompanyAndJobs();
         setHasLoaded(true);
       } else {
@@ -133,6 +140,7 @@ export default function EmployerProfile() {
       }
     }
   }, [status, session, hasLoaded]);
+  
 
   useEffect(() => {
     if (company) {
@@ -570,6 +578,66 @@ export default function EmployerProfile() {
     }));
   };
 
+  const handleTemplateFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check if it's a Word document
+      const validTypes = [
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/msword',
+        'application/vnd.ms-word'
+      ];
+      
+      if (!validTypes.includes(file.type)) {
+        setError('Зөвхөн Word файл (.doc, .docx) оруулна уу');
+        return;
+      }
+      
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Файлын хэмжээ 10MB-аас их байж болохгүй');
+        return;
+      }
+      
+      setSelectedTemplateFile(file);
+      setError(null);
+    }
+  };
+
+  const handleTemplateFileUpload = async () => {
+    if (!selectedTemplateFile) return;
+    
+    setIsUploadingTemplate(true);
+    setError(null);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedTemplateFile);
+      
+      const response = await fetch('/api/employer/questionnaires/upload-attachment', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Файл хадгалахад алдаа гарлаа');
+      }
+      
+      const data = await response.json();
+      setUploadedTemplateFile({
+        fileName: data.fileName,
+        fileUrl: data.fileUrl
+      });
+      setSelectedTemplateFile(null);
+      addNotification('Файл амжилттай хадгалагдлаа', 'success');
+    } catch (error) {
+      console.error('Error uploading template file:', error);
+      addNotification('Файл хадгалахад алдаа гарлаа. Дахин оролдоно уу.', 'error');
+    } finally {
+      setIsUploadingTemplate(false);
+    }
+  };
+
   const startEditingQuestionnaire = (questionnaireId: string) => {
     const questionnaire = questionnaires.find((q) => q.id === questionnaireId);
     if (!questionnaire) return;
@@ -595,6 +663,8 @@ export default function EmployerProfile() {
           id: editingQuestionnaire.id,
           title: editingQuestionnaire.title,
           description: editingQuestionnaire.description,
+          attachmentFile: uploadedTemplateFile?.fileName || editingQuestionnaire.attachmentFile,
+          attachmentUrl: uploadedTemplateFile?.fileUrl || editingQuestionnaire.attachmentUrl,
           questions: editingQuestionnaire.questions.map((q, index) => ({
             ...q,
             order: index,
@@ -614,14 +684,15 @@ export default function EmployerProfile() {
         prev.map((q) => (q.id === editingQuestionnaire.id ? data : q))
       );
       setEditingQuestionnaire(null);
-      setSuccessMessage("Асуулга амжилттай засагдлаа");
-      setError(null);
+      setUploadedTemplateFile(null);
+      setSelectedTemplateFile(null);
+      addNotification("Асуулга амжилттай засагдлаа", "success");
     } catch (error) {
       console.error("Error updating questionnaire:", error);
-      setError(
-        error instanceof Error ? error.message : "Асуулга засахад алдаа гарлаа"
+      addNotification(
+        error instanceof Error ? error.message : "Асуулга засахад алдаа гарлаа",
+        "error"
       );
-      setSuccessMessage(null);
     }
   };
 
@@ -639,6 +710,8 @@ export default function EmployerProfile() {
         body: JSON.stringify({
           ...newQuestionnaire,
           companyId: company.id,
+          attachmentFile: uploadedTemplateFile?.fileName,
+          attachmentUrl: uploadedTemplateFile?.fileUrl,
           questions: newQuestionnaire.questions.map((q, index) => ({
             ...q,
             order: index,
@@ -659,11 +732,14 @@ export default function EmployerProfile() {
         description: "",
         questions: [],
       });
-      setSuccessMessage("Асуулга амжилттай үүслээ");
+      setUploadedTemplateFile(null);
+      setSelectedTemplateFile(null);
+      addNotification("Асуулга амжилттай үүслээ", "success");
     } catch (error) {
       console.error("Error creating questionnaire:", error);
-      setError(
-        error instanceof Error ? error.message : "Асуулга үүсгэхэд алдаа гарлаа"
+      addNotification(
+        error instanceof Error ? error.message : "Асуулга үүсгэхэд алдаа гарлаа",
+        "error"
       );
     }
   };
@@ -672,6 +748,8 @@ export default function EmployerProfile() {
     if (!window.confirm("Энэ асуулгыг устгахдаа итгэлтэй байна уу?")) {
       return;
     }
+
+    console.log("Deleting questionnaire with ID:", questionnaireId);
 
     try {
       const response = await fetch(
@@ -684,7 +762,9 @@ export default function EmployerProfile() {
         }
       );
 
+      console.log("Delete response status:", response.status);
       const data = await response.json();
+      console.log("Delete response data:", data);
 
       if (!response.ok) {
         throw new Error(
@@ -693,14 +773,13 @@ export default function EmployerProfile() {
       }
 
       setQuestionnaires((prev) => prev.filter((q) => q.id !== questionnaireId));
-      setSuccessMessage("Асуулга амжилттай устгагдлаа");
-      setError(null);
+      addNotification("Асуулга амжилттай устгагдлаа", "success");
     } catch (error) {
       console.error("Error deleting questionnaire:", error);
-      setError(
-        error instanceof Error ? error.message : "Асуулга устгахад алдаа гарлаа"
+      addNotification(
+        error instanceof Error ? error.message : "Асуулга устгахад алдаа гарлаа",
+        "error"
       );
-      setSuccessMessage(null);
     }
   };
 
@@ -756,10 +835,10 @@ export default function EmployerProfile() {
 
       if (!response.ok) throw new Error("Failed to send questionnaire");
 
-      setSuccessMessage("Асуулга амжилттай илгээгдлээ");
+      addNotification("Асуулга амжилттай илгээгдлээ", "success");
     } catch (error) {
       console.error("Error sending questionnaire:", error);
-      setError("Асуулга илгээхэд алдаа гарлаа");
+      addNotification("Асуулга илгээхэд алдаа гарлаа", "error");
     } finally {
       setIsSendingQuestionnaire(false);
     }
@@ -819,8 +898,16 @@ export default function EmployerProfile() {
                       });
                     }
                   }}
+                  onKeyDown={(e) => {
+                    // Prevent browser's default backspace behavior that might interfere with IME
+                    if (e.key === 'Backspace') {
+                      e.stopPropagation();
+                    }
+                  }}
                   className="w-full bg-white/10 backdrop-blur-sm text-white text-lg md:text-2xl font-bold px-2 sm:px-3 py-1 rounded border border-white/20 focus:outline-none focus:border-white/40"
                   placeholder="Компанийн нэр"
+                  autoComplete="off"
+                  spellCheck="false"
                 />
                 <div className="flex items-center gap-2 flex-wrap">
                   <input
@@ -834,8 +921,16 @@ export default function EmployerProfile() {
                         });
                       }
                     }}
+                    onKeyDown={(e) => {
+                      // Prevent browser's default backspace behavior that might interfere with IME
+                      if (e.key === 'Backspace') {
+                        e.stopPropagation();
+                      }
+                    }}
                     className="bg-white/10 backdrop-blur-sm text-white/80 text-sm sm:text-base px-2 sm:px-3 py-1 rounded border border-white/20 focus:outline-none focus:border-white/40"
                     placeholder="Байршил"
+                    autoComplete="off"
+                    spellCheck="false"
                   />
                   <button
                     onClick={handleSaveProfile}
@@ -861,7 +956,7 @@ export default function EmployerProfile() {
                 </h1>
                 <div className="flex items-center gap-4 flex-wrap">
                   <div className="text-sm sm:text-base text-white/80">
-                    Ажлын байр: {jobs.length}
+                    Ажлын байр: {jobs?.length || 0}
                   </div>
                   <button
                     onClick={() => setIsEditing(true)}
@@ -1118,7 +1213,7 @@ export default function EmployerProfile() {
               Нээлттэй ажлын байрууд
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {jobs.map((job) => (
+              {jobs?.map((job) => (
                 <div
                   key={job.id}
                   className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 flex flex-col gap-3 relative group hover:shadow-lg transition-shadow"
@@ -1292,8 +1387,16 @@ export default function EmployerProfile() {
                               title: e.target.value,
                             }))
                       }
+                      onKeyDown={(e) => {
+                        // Prevent browser's default backspace behavior that might interfere with IME
+                        if (e.key === 'Backspace') {
+                          e.stopPropagation();
+                        }
+                      }}
                       className="w-full border border-gray-300 rounded-lg px-4 py-2.5 transition focus:border-gray-200"
                       placeholder="Асуулгын гарчиг"
+                      autoComplete="off"
+                      spellCheck="false"
                     />
                   </div>
 
@@ -1318,11 +1421,79 @@ export default function EmployerProfile() {
                               description: e.target.value,
                             }))
                       }
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:border-emerald-950 transition duration-200
-"
+                      onKeyDown={(e) => {
+                        // Prevent browser's default backspace behavior that might interfere with IME
+                        if (e.key === 'Backspace') {
+                          e.stopPropagation();
+                        }
+                      }}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:border-emerald-950 transition duration-200"
                       rows={3}
                       placeholder="Асуулгын тайлбар"
+                      autoComplete="off"
+                      spellCheck="false"
                     />
+                  </div>
+
+                  {/* Template File Upload Section */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Word файл
+                    </label>
+                    <div className="space-y-3">
+                      {!uploadedTemplateFile && !editingQuestionnaire?.attachmentFile ? (
+                        <>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                            <input
+                              type="file"
+                              accept=".doc,.docx"
+                              onChange={handleTemplateFileChange}
+                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            />
+                            {selectedTemplateFile && (
+                              <button
+                                onClick={handleTemplateFileUpload}
+                                disabled={isUploadingTemplate}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                              >
+                                {isUploadingTemplate ? 'Хадгалж байна...' : 'Хадгалах'}
+                              </button>
+                            )}
+                          </div>
+                          {selectedTemplateFile && (
+                            <p className="text-sm text-gray-600">
+                              Сонгосон файл: {selectedTemplateFile.name}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-sm text-green-700">
+                              {uploadedTemplateFile?.fileName || editingQuestionnaire?.attachmentFile}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setUploadedTemplateFile(null);
+                              setSelectedTemplateFile(null);
+                              if (editingQuestionnaire) {
+                                setEditingQuestionnaire(prev => prev ? { ...prev, attachmentFile: undefined, attachmentUrl: undefined } : null);
+                              }
+                            }}
+                            className="text-red-600 hover:text-red-700 text-sm"
+                          >
+                            Устгах
+                          </button>
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        Зөвхөн Word файл (.doc, .docx) оруулна уу. Хамгийн их хэмжээ: 10MB
+                      </p>
+                    </div>
                   </div>
 
                   <div className="space-y-4">
@@ -1373,12 +1544,19 @@ export default function EmployerProfile() {
                                         e.target.value
                                       )
                                 }
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Backspace') {
+                                    e.stopPropagation();
+                                  }
+                                }}
+                                autoComplete="off"
+                                spellCheck="false"
                                 className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                                 placeholder="Асуултаа бичнэ үү..."
                               />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                   Төрөл
@@ -1472,7 +1650,7 @@ export default function EmployerProfile() {
                                   Сонголтууд
                                 </label>
                                 <div className="space-y-2">
-                                  {question.options.map(
+                                                                     {question.options?.map(
                                     (option, optionIndex) => (
                                       <div
                                         key={optionIndex}
@@ -1625,7 +1803,7 @@ export default function EmployerProfile() {
                       </div>
                     ))}
 
-                    <div className="flex justify-between items-center gap-4 pt-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4">
                       <button
                         onClick={(e) =>
                           editingQuestionnaire
@@ -1654,7 +1832,7 @@ export default function EmployerProfile() {
                         <PlusIcon className="w-5 h-5 mr-2" />
                         Асуулт нэмэх
                       </button>
-                      <div className="flex gap-4">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
                         <button
                           onClick={(e) => {
                             if (editingQuestionnaire) {
@@ -1691,8 +1869,8 @@ export default function EmployerProfile() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {questionnaires.map((questionnaire) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                                 {questionnaires?.map((questionnaire) => (
                   <div
                     key={questionnaire.id}
                     className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 flex flex-col gap-3 relative group hover:shadow-lg transition-shadow"
@@ -1754,13 +1932,42 @@ export default function EmployerProfile() {
                           {questionnaire.title}
                         </span>
                         <span className="bg-gray-100 text-gray-700 text-xs font-semibold px-2 sm:px-3 py-1 rounded-full">
-                          {questionnaire.questions.length} асуулт
+                          {questionnaire.questions?.length ?? 0} асуулт
                         </span>
                       </div>
                       {questionnaire.description && (
                         <p className="text-gray-600 text-sm line-clamp-2">
                           {questionnaire.description}
                         </p>
+                      )}
+                      {questionnaire.attachmentFile && (
+                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              <span className="text-sm text-blue-700 font-medium">
+                                {questionnaire.attachmentFile}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                if (questionnaire.attachmentUrl) {
+                                  const link = document.createElement('a');
+                                  link.href = questionnaire.attachmentUrl;
+                                  link.download = questionnaire.attachmentFile || 'template.docx';
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                }
+                              }}
+                              className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                            >
+                              Татах
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1788,7 +1995,7 @@ export default function EmployerProfile() {
                 className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Асуулга сонгох</option>
-                {questionnaires.map((q) => (
+                {questionnaires?.map((q) => (
                   <option key={q.id} value={q.id}>
                     {q.title}
                   </option>
@@ -1798,7 +2005,7 @@ export default function EmployerProfile() {
 
             {selectedQuestionnaire ? (
               <div className="space-y-6">
-                {responses.length > 0 ? (
+                                 {responses?.length > 0 ? (
                   responses.map((response) => (
                     <div
                       key={response.id}
@@ -1855,7 +2062,7 @@ export default function EmployerProfile() {
                             </Disclosure.Button>
                             <Disclosure.Panel className="px-6 pb-6">
                               <div className="space-y-4 pt-4 border-t border-gray-100">
-                                {response.answers.map((answer, index) => (
+                                                                 {response.answers?.map((answer, index) => (
                                   <div
                                     key={index}
                                     className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors"
@@ -1974,7 +2181,7 @@ export default function EmployerProfile() {
               Ирсэн CV-үүд
             </h2>
             <div className="grid grid-cols-1 gap-4">
-              {applications.map((application) => (
+                             {applications?.map((application) => (
                 <div
                   key={application.id}
                   className="bg-white rounded-xl shadow-lg p-6 space-y-4"
@@ -1993,14 +2200,18 @@ export default function EmployerProfile() {
                       {application.status && (
                         <span
                           className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                            application.status === "ACCEPTED"
+                            application.status === "EMPLOYER_APPROVED"
+                              ? "bg-blue-100 text-blue-800"
+                              : application.status === "ADMIN_APPROVED"
                               ? "bg-green-100 text-green-800"
                               : application.status === "REJECTED"
                               ? "bg-red-100 text-red-800"
                               : "bg-yellow-100 text-yellow-800"
                           }`}
                         >
-                          {application.status === "ACCEPTED"
+                          {application.status === "EMPLOYER_APPROVED"
+                            ? "Ажил олгогч зөвшөөрсөн"
+                            : application.status === "ADMIN_APPROVED"
                             ? "Зөвшөөрөгдсөн"
                             : application.status === "REJECTED"
                             ? "Татгалзсан"
@@ -2045,7 +2256,7 @@ export default function EmployerProfile() {
                           <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-4 z-10">
                             <h4 className="font-medium mb-2">Асуулга сонгох</h4>
                             <div className="space-y-2">
-                              {questionnaires.map((q) => (
+                              {questionnaires?.map((q) => (
                                 <button
                                   key={q.id}
                                   onClick={() => {
@@ -2066,7 +2277,7 @@ export default function EmployerProfile() {
                   </div>
                 </div>
               ))}
-              {applications.length === 0 && (
+                             {(!applications || applications.length === 0) && (
                 <div className="text-center text-gray-500 py-8">
                   Одоогоор ирсэн CV байхгүй байна
                 </div>

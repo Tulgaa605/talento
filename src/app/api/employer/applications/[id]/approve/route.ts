@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,71 +13,52 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const applicationId = params.id;
+    const { id: applicationId } = await params;
 
-    // Get the application and verify ownership
+    // Тусламжийн хүсэлтийг авах, job болон user-ийг хамт авах
     const application = await prisma.jobApplication.findUnique({
-      where: {
-        id: applicationId,
-      },
-      include: {
-        job: {
-          include: {
-            company: true,
-          },
-        },
-        user: true,
-      },
+      where: { id: applicationId },
+      include: { job: { include: { company: true } }, user: true },
     });
 
     if (!application) {
-      return NextResponse.json(
-        { error: "Application not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Application not found" }, { status: 404 });
     }
 
-    // Verify that the user is associated with the company
     const user = await prisma.user.findUnique({
-      where: {
-        id: session.user.id,
-      },
-      include: {
-        company: true,
-      },
+      where: { id: session.user.id },
+      include: { company: true },
     });
 
     if (!user?.company || user.company.id !== application.job.companyId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Update application status
     const updatedApplication = await prisma.jobApplication.update({
-      where: {
-        id: applicationId,
-      },
-      data: {
-        status: "ACCEPTED",
-      },
+      where: { id: applicationId },
+      data: { status: "EMPLOYER_APPROVED" },
     });
 
-    // Create notification for the applicant
-    await prisma.notification.create({
-      data: {
-        userId: application.userId,
-        title: "Таны CV зөвшөөрөгдлөө",
-        message: `${application.job.title} ажлын байрны CV зөвшөөрөгдлөө`,
-        type: "CV_APPROVED",
-        link: `/jobs/${application.jobId}`,
-      },
+    const admins = await prisma.user.findMany({
+      where: { role: "ADMIN" },
     });
+
+    for (const admin of admins) {
+      await prisma.notification.create({
+        data: {
+          userId: admin.id,
+          title: "Шинэ CV зөвшөөрөх хүсэлт",
+          message: `${application.job.title} ажлын байрны ${application.user.name} нэртэй хүний CV-г ажил олгогч зөвшөөрлөө.`,
+          type: "ADMIN_APPROVAL_REQUEST",
+          link: `/admin/applications/${applicationId}`,
+          createdAt: new Date(),
+        },
+      });
+    }
 
     return NextResponse.json(updatedApplication);
   } catch (error) {
     console.error("Error approving application:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -9,10 +9,10 @@ import { Header } from "@/components/Navigation";
 export default async function CompanyProfilePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const session = await getServerSession(authOptions);
-  const companyId = params.id;
+  const { id: companyId } = await params;
 
   const company = await prisma.company.findUnique({
     where: {
@@ -107,7 +107,7 @@ export default async function CompanyProfilePage({
               </div>
             )}
 
-            {session?.user?.role === "EMPLOYER" && (
+            {["EMPLOYER", "ADMIN"].includes(session?.user?.role ?? "") && (
               <Link
                 href="/employer/profile"
                 className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"

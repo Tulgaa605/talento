@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,6 +16,7 @@ export async function POST(
       );
     }
 
+    const { id: jobId } = await params;
     const { cvId, message } = await request.json();
     if (!cvId) {
       return NextResponse.json({ error: "CV сонгоно уу" }, { status: 400 });
@@ -23,7 +24,7 @@ export async function POST(
 
     // Check if job exists
     const job = await prisma.job.findUnique({
-      where: { id: params.id },
+      where: { id: jobId },
     });
 
     if (!job) {
@@ -48,7 +49,7 @@ export async function POST(
     // Check if user has already applied
     const existingApplication = await prisma.jobApplication.findFirst({
       where: {
-        jobId: params.id,
+        jobId: jobId,
         userId: session.user.id,
       },
     });
@@ -66,7 +67,7 @@ export async function POST(
     // Create job application
     const application = await prisma.jobApplication.create({
       data: {
-        jobId: params.id,
+        jobId: jobId,
         userId: session.user.id,
         cvId: cvId,
         message: message || "",

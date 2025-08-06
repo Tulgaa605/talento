@@ -5,19 +5,19 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user || session.user.role !== "EMPLOYER") {
+    if (!session || !session.user || !["EMPLOYER", "ADMIN"].includes(session.user.role)) {
       return NextResponse.json(
         { error: "Нэвтрээгүй байна" },
         { status: 401 }
       );
     }
 
-    const jobId = context.params.id;
+    const { id: jobId } = await context.params;
 
     // Check if the job exists and belongs to the employer
     const job = await prisma.job.findFirst({
@@ -55,19 +55,19 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user || session.user.role !== "EMPLOYER") {
+    if (!session || !session.user || !["EMPLOYER", "ADMIN"].includes(session.user.role)) {
       return NextResponse.json(
         { error: "Нэвтрээгүй байна" },
         { status: 401 }
       );
     }
 
-    const jobId = context.params.id;
+    const { id: jobId } = await context.params;
     const data = await request.json();
 
     // Check if the job exists and belongs to the employer
@@ -123,9 +123,9 @@ export async function PUT(
 
 export async function DELETE(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const jobId = context.params?.id;
+  const { id: jobId } = await context.params;
   try {
     // 1. Delete all job applications related to this job
     await prisma.jobApplication.deleteMany({

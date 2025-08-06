@@ -13,10 +13,23 @@ interface Notification {
   shown: boolean;
 }
 
+interface DatabaseNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  link?: string;
+  read: boolean;
+  createdAt: string;
+}
+
 interface NotificationContextType {
   notifications: Notification[];
+  databaseNotifications: DatabaseNotification[];
   addNotification: (message: string, type: NotificationType, category?: string) => void;
   removeNotification: (id: string) => void;
+  markNotificationAsRead: (id: string) => void;
+  fetchNotifications: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -29,12 +42,50 @@ const SUCCESS_NOTIFICATIONS_KEY = 'success_notifications';
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [databaseNotifications, setDatabaseNotifications] = useState<DatabaseNotification[]>([]);
   const [isClient, setIsClient] = useState(false);
 
   // Set isClient to true after mount
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Fetch notifications from database
+  const fetchNotifications = useCallback(async () => {
+    if (!isClient) return;
+
+    try {
+      const response = await fetch('/api/notifications');
+      if (response.ok) {
+        const data = await response.json();
+        setDatabaseNotifications(data);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  }, [isClient]);
+
+  // Mark notification as read
+  const markNotificationAsRead = useCallback(async (id: string) => {
+    if (!isClient) return;
+
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notificationId: id }),
+      });
+
+      if (response.ok) {
+        // Remove from database notifications
+        setDatabaseNotifications(prev => prev.filter(n => n.id !== id));
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  }, [isClient]);
 
   // Load notifications from localStorage on mount
   useEffect(() => {
@@ -164,14 +215,28 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   // Don't render notifications during SSR
   if (!isClient) {
     return (
-      <NotificationContext.Provider value={{ notifications: [], addNotification, removeNotification }}>
+      <NotificationContext.Provider value={{ 
+        notifications: [], 
+        databaseNotifications: [],
+        addNotification, 
+        removeNotification,
+        markNotificationAsRead,
+        fetchNotifications
+      }}>
         {children}
       </NotificationContext.Provider>
     );
   }
 
   return (
-    <NotificationContext.Provider value={{ notifications, addNotification, removeNotification }}>
+    <NotificationContext.Provider value={{ 
+      notifications, 
+      databaseNotifications,
+      addNotification, 
+      removeNotification,
+      markNotificationAsRead,
+      fetchNotifications
+    }}>
       {children}
       <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
         {notifications

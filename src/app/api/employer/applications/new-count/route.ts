@@ -16,7 +16,7 @@ export async function GET() {
       include: { company: true },
     });
 
-    if (!user || user.role !== "EMPLOYER") {
+    if (!user || !["EMPLOYER", "ADMIN"].includes(user.role)) {
       return NextResponse.json(
         { error: "Ажил олгогч эрхгүй байна" },
         { status: 403 }
@@ -41,6 +41,7 @@ export async function GET() {
 
     return NextResponse.json({ count: newApplicationsCount });
   } catch (error) {
+    console.error("Алдаа:", error);
     return NextResponse.json(
       { error: "Системийн алдаа гарлаа" },
       { status: 500 }

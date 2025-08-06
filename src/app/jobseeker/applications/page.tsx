@@ -68,7 +68,9 @@ export default function JobseekerApplicationsPage() {
     switch (status) {
       case "PENDING":
         return "bg-yellow-100 text-yellow-800";
-      case "ACCEPTED":
+      case "EMPLOYER_APPROVED":
+        return "bg-blue-100 text-blue-800";
+      case "ADMIN_APPROVED":
         return "bg-green-100 text-green-800";
       case "REJECTED":
         return "bg-red-100 text-red-800";
@@ -81,7 +83,9 @@ export default function JobseekerApplicationsPage() {
     switch (status) {
       case "PENDING":
         return "Хүлээгдэж буй";
-      case "ACCEPTED":
+      case "EMPLOYER_APPROVED":
+        return "Ажил олгогч зөвшөөрсөн";
+      case "ADMIN_APPROVED":
         return "Зөвшөөрөгдсөн";
       case "REJECTED":
         return "Татгалзсан";

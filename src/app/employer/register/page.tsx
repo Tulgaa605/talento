@@ -19,43 +19,22 @@ export default function EmployerRegister() {
 
   useEffect(() => {
     if (pageRef.current && formRef.current && imageRef.current) {
-      // Initial animation for page load
       gsap.fromTo(
         pageRef.current,
         { opacity: 0, scale: 0.99 },
-        {
-          opacity: 1,
-          scale: 1,
-          duration: 0.4,
-          ease: "power1.out",
-        }
+        { opacity: 1, scale: 1, duration: 0.4, ease: "power1.out" }
       );
 
-      // Stagger animation for form elements
       gsap.fromTo(
         formRef.current.children,
         { opacity: 0, y: 5 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.3,
-          stagger: 0.03,
-          ease: "power1.out",
-          delay: 0.1,
-        }
+        { opacity: 1, y: 0, duration: 0.3, stagger: 0.03, ease: "power1.out", delay: 0.1 }
       );
 
-      // Image animation
       gsap.fromTo(
         imageRef.current,
         { opacity: 0, x: -10 },
-        {
-          opacity: 1,
-          x: 0,
-          duration: 0.4,
-          ease: "power1.out",
-          delay: 0.1,
-        }
+        { opacity: 1, x: 0, duration: 0.4, ease: "power1.out", delay: 0.1 }
       );
     }
   }, []);
@@ -82,6 +61,21 @@ export default function EmployerRegister() {
       return;
     }
 
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Имэйл хаяг буруу байна");
+      setIsLoading(false);
+      return;
+    }
+
+    // Password length validation
+    if (password.length < 6) {
+      setError("Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой");
+      setIsLoading(false);
+      return;
+    }
+
     const data = {
       email,
       password,
@@ -89,7 +83,8 @@ export default function EmployerRegister() {
       companyDescription: `${companyName} - Ажил олгогч компани`,
       location: "Улаанбаатар",
       website: "",
-      role: "EMPLOYER",
+      role: ["EMPLOYER", "ADMIN"],
+
     };
 
     try {
@@ -104,16 +99,19 @@ export default function EmployerRegister() {
       });
 
       const responseData = await response.json();
+      console.log("Server response:", responseData); // Log server response for debugging
 
       if (!response.ok) {
-        throw new Error(responseData.message || "Бүртгэл амжилтгүй боллоо");
+        throw new Error(responseData.error || "Бүртгэл амжилтгүй боллоо");
       }
 
       router.push("/employer/login?message=Бүртгэл амжилттай! Та нэвтэрнэ үү.");
     } catch (error) {
       console.error("Registration error:", error);
       setError(
-        error instanceof Error ? error.message : "Ямар нэг зүйл буруу боллоо"
+        error instanceof Error
+          ? error.message
+          : "Сервер дээр алдаа гарлаа. Дахин оролдоно уу."
       );
     } finally {
       setIsLoading(false);
@@ -121,7 +119,10 @@ export default function EmployerRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center mt-7 px-4 sm:px-8 md:px-10 lg:px-32 mt-5 2xl:pt-0 2xl:mt-10 md:mt-10 lg:mt-10">
+    <div
+      ref={pageRef}
+      className="min-h-screen bg-white flex items-center mt-7 px-4 sm:px-8 md:px-10 lg:px-32 mt-5 2xl:pt-0 2xl:mt-10 md:mt-10 lg:mt-10"
+    >
       <div className="flex w-full max-w-[1900px] items-center justify-between flex-col lg:flex-row">
         {/* Зүүн талын illustration */}
         <div className="hidden lg:block w-[58%] flex items-center justify-start pt-10">
@@ -243,7 +244,7 @@ export default function EmployerRegister() {
                     onClick={() =>
                       signIn("google", {
                         callbackUrl: "/",
-                        expectedRole: "EMPLOYER",
+                        expectedRole: ["EMPLOYER", "ADMIN"],
                       })
                     }
                   >

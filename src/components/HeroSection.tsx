@@ -1,7 +1,7 @@
 "use client";
 
 import type { StatCard } from "./types";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useNotification } from "@/providers/NotificationProvider";
@@ -66,78 +66,84 @@ export default function HeroSection() {
   const { addNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
-  const [showHeroNotif, setShowHeroNotif] = useState(false);
-  const [lastCount, setLastCount] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const notifTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const hasShownNotification = useRef(false);
   const [stats, setStats] = useState<StatCard[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const checkNewApplications = async () => {
-      try {
-        console.log("Checking for new applications...");
-        const response = await fetch("/api/employer/applications");
-        if (response.ok) {
-          const data = await response.json();
-          // Only count PENDING and unviewed applications
-          const newPending = data.filter(
-            (app: any) => app.status === "PENDING" && !app.viewedAt
-          );
-          if (newPending.length > 0 && newPending.length > lastCount) {
-            // Only show notification if we're on the employer dashboard
-            if (window.location.pathname === "/employer/dashboard") {
-              addNotification("Шинэ анкет ирлээ!", "info", "applications");
-            }
-          }
-          setLastCount(newPending.length);
-        }
-      } catch (error) {
-        console.error("Error checking applications:", error);
-      }
-    };
+  // useEffect(() => {
+  //   const checkNewApplications = async () => {
+  //     try {
+  //       console.log("Checking for new applications...");
+  //       const response = await fetch("/api/employer/applications");
+  //       if (response.ok) {
+  //         const data = await response.json();
+  //         const newPending = data.filter(
+  //           (app: any) => app.status === "PENDING" && !app.viewedAt
+  //         );
+  //         if (newPending.length > 0) {
+  //           if (window.location.pathname === "/employer/dashboard") {
+  //             addNotification("Шинэ анкет ирлээ!", "info", "applications");
+  //           }
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.error("Error checking applications:", error);
+  //     }
+  //   };
 
-    console.log("Setting up application checker...");
-    checkNewApplications();
-    const interval = setInterval(checkNewApplications, 4000);
-    return () => clearInterval(interval);
-  }, [addNotification]);
+  //   console.log("Setting up application checker...");
+  //   checkNewApplications();
+  //   const interval = setInterval(checkNewApplications, 4000);
+  //   return () => clearInterval(interval);
+  // }, [addNotification]);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch("/api/stats");
+        console.log("Fetching stats from /api/stats...");
+        const response = await fetch("/api/stats", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
         if (!response.ok) {
-          throw new Error("Failed to fetch stats");
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
 
         setStats([
           {
             icon: "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/07d690b7a11fb6e9a72dafc120bf10db5aed2658?placeholderIfAbsent=true",
-            value: data.totalJobs.toString(),
+            value: data.totalJobs?.toString() || "0",
             label: "Ажлын байр",
           },
           {
             icon: "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/881d9c0c8ae8302d4f91f76ca0f7f67975fbeb6e?placeholderIfAbsent=true",
-            value: data.totalCompanies.toString(),
+            value: data.totalCompanies?.toString() || "0",
             label: "Байгууллага",
           },
           {
             icon: "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/6e1ae373b63cb8985cbb0338d0521a27bd9d3d7b?placeholderIfAbsent=true",
-            value: data.totalJobSeekers.toString(),
+            value: data.totalJobSeekers?.toString() || "0",
             label: "Ажил хайж буй хүмүүс",
           },
           {
             icon: "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/0530adb336adca5f8501fed8e0b22af603d45a6d?placeholderIfAbsent=true",
-            value: data.newJobs.toString(),
+            value: data.newJobs?.toString() || "0",
             label: "Шинэ ажлын байр",
           },
         ]);
       } catch (error) {
-        console.error("Error fetching stats:", error);
+        console.error("Detailed error fetching stats:", error);
         addNotification("Статистик мэдээлэл ачаалахад алдаа гарлаа", "error");
+        // Temporary fallback data if API fails
+        setStats([
+          { icon: "...", value: "0", label: "Ажлын байр" },
+          { icon: "...", value: "0", label: "Байгууллага" },
+          { icon: "...", value: "0", label: "Ажил хайж буй хүмүүс" },
+          { icon: "...", value: "0", label: "Шинэ ажлын байр" },
+        ]);
       } finally {
         setLoading(false);
       }
@@ -148,33 +154,27 @@ export default function HeroSection() {
 
   const handleSearch = () => {
     const queryParams = new URLSearchParams();
-    if (searchTerm) {
-      queryParams.set("search", searchTerm);
-    }
-    if (selectedCity) {
-      queryParams.set("city", selectedCity);
-    }
+    if (searchTerm) queryParams.set("search", searchTerm);
+    if (selectedCity) queryParams.set("city", selectedCity);
     router.push(`/jobs?${queryParams.toString()}`);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
+    if (e.key === "Enter") handleSearch();
   };
 
-  // Show notification зөвхөн employer нэвтэрсэн үед
   const isEmployer =
-    status === "authenticated" && session?.user?.role === "EMPLOYER";
+  status === "authenticated" &&
+  (session?.user?.role === "EMPLOYER" || session?.user?.role === "ADMIN");
 
   return (
     <section className="px-4 lg:px-32 md:px-10">
-      {isEmployer && showHeroNotif && (
+      {isEmployer && (
         <div className="fixed top-8 right-8 z-50 flex justify-end items-start">
           <div className="bg-blue-500 text-white px-5 py-3 rounded-xl shadow-lg font-semibold text-base flex items-center gap-3 animate-fade-in-out relative min-w-[200px]">
             <span>Шинэ анкет ирлээ!</span>
             <button
-              onClick={() => setShowHeroNotif(false)}
+              onClick={() => {}}
               className="ml-2 text-white/80 hover:text-white text-lg font-bold absolute top-2 right-2"
               aria-label="Хаах"
             >
@@ -184,10 +184,8 @@ export default function HeroSection() {
         </div>
       )}
 
-      {/* Content container */}
       <div className="container relative z-10">
         <div className="flex flex-col lg:flex-row items-center justify-between min-h-[80vh]">
-          {/* Left side - Text content */}
           <div className="flex flex-col w-full lg:w-[45%] relative z-10 pt-25 md:pt-35 lg:pt-30">
             <div className="w-full font-semibold text-[#0C213A]">
               <h2 className="text-[43px] md:text-6xl lg:text-[58px] xl:text-[58px] 2xl:text-6xl leading-[45px] md:leading-[56px] lg:leading-[60px] 2xl:leading-[60px] 3xl:leading-[80px] font-poppins font-bold">
@@ -226,7 +224,6 @@ export default function HeroSection() {
                     </option>
                   ))}
                 </select>
-                {/* Custom dropdown icon */}
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 md:pr-3">
                   <TiArrowSortedUp
                     className={`w-4 h-4 md:w-5 md:h-5 text-[#0C213A] transition-transform duration-200 ${
@@ -256,7 +253,6 @@ export default function HeroSection() {
               </button>
             </div>
           </div>
-          {/* Right side - Hero icon */}
           <div className="flex items-center justify-center lg:justify-end w-full lg:w-[45%] relative z-10 pt-6 lg:pt-30">
             <img
               src="/icons/hero.svg"
@@ -267,15 +263,16 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* Доорх статистикууд */}
       <div className="flex flex-col lg:flex-row gap-4 md:gap-6 lg:gap-10 items-center justify-between pt-6 md:pt-8 lg:pt-10">
-        {stats.map((stat, index) => (
-          <StatCard
-            key={index}
-            {...stat}
-            className="w-full lg:w-[320px] font-poppins"
-          />
-        ))}
+        {loading ? (
+          <p>Уншиж байна...</p>
+        ) : stats.length > 0 ? (
+          stats.map((stat, index) => (
+            <StatCard key={index} {...stat} className="w-full lg:w-[320px] font-poppins" />
+          ))
+        ) : (
+          <p>Статистик мэдээлэл байхгүй байна.</p>
+        )}
       </div>
     </section>
   );

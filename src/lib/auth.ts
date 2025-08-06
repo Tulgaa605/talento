@@ -4,7 +4,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { UserRole } from "@prisma/client";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -25,7 +24,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        expectedRole: { label: "Expected Role", type: "text" },
+        expectedRoles: { label: "Expected Roles", type: "text" }, // JSON string-аар дамжуулна
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -49,12 +48,14 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Имэйл эсвэл нууц үг буруу байна.");
         }
 
-        if (
-          credentials.expectedRole &&
-          user.role !== credentials.expectedRole
-        ) {
+        // expectedRoles-ыг массив болгож уншина
+        const expectedRoles: string[] = credentials.expectedRoles
+          ? JSON.parse(credentials.expectedRoles)
+          : [];
+
+        if (expectedRoles.length > 0 && !expectedRoles.includes(user.role)) {
           throw new Error(
-            `Нэвтрэх эрхгүй байна. (${credentials.expectedRole} role шаардлагатай)`
+            `Нэвтрэх эрхгүй байна. (${expectedRoles.join(", ")} ролуудын аль нэгтэй байх шаардлагатай)`
           );
         }
 
@@ -71,7 +72,7 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       if (account?.provider === "google") {
         try {
           const existingUser = await prisma.user.findUnique({
@@ -146,11 +147,6 @@ export const authOptions: NextAuthOptions = {
         return `${baseUrl}${url}`;
       }
 
-      // If the user is an employer, redirect to their profile
-      if (url.startsWith(baseUrl) && url.includes("/employer")) {
-        return `${baseUrl}/employer/profile`;
-      }
-
       const session = await prisma.session.findFirst({
         where: { expires: { gt: new Date() } },
         include: { user: true },
@@ -159,7 +155,7 @@ export const authOptions: NextAuthOptions = {
 
       if (session?.user) {
         const redirectUrl =
-          session.user.role === "EMPLOYER"
+          session.user.role === "EMPLOYER" || session.user.role === "ADMIN"
             ? `${baseUrl}/employer/profile`
             : `${baseUrl}/jobseeker/profile`;
         return redirectUrl;

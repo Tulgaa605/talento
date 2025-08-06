@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,7 +17,7 @@ export async function DELETE(
       );
     }
 
-    const cvId = context.params.id;
+    const { id: cvId } = await context.params;
 
     // Check if the CV exists and belongs to the user
     const cv = await prisma.cV.findFirst({

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,7 +13,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: applicationId } = params;
+    const { id: applicationId } = await params;
     const formData = await request.formData();
     const questionnaireId = formData.get("questionnaireId") as string;
 
@@ -24,7 +24,6 @@ export async function POST(
       );
     }
 
-    // Get the application and verify ownership
     const application = await prisma.jobApplication.findUnique({
       where: {
         id: applicationId,
@@ -46,7 +45,6 @@ export async function POST(
       );
     }
 
-    // Verify that the user is associated with the company
     const user = await prisma.user.findUnique({
       where: {
         id: session.user.id,
@@ -60,7 +58,6 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the questionnaire and verify ownership
     const questionnaire = await prisma.questionnaire.findUnique({
       where: {
         id: questionnaireId,
@@ -74,7 +71,6 @@ export async function POST(
       );
     }
 
-    // Create a notification for the applicant
     await prisma.notification.create({
       data: {
         userId: application.userId,
@@ -84,8 +80,6 @@ export async function POST(
         link: `/questionnaires/${questionnaireId}`,
       },
     });
-
-    // Update the application with the questionnaire
     await prisma.jobApplication.update({
       where: { id: applicationId },
       data: { questionnaireId },

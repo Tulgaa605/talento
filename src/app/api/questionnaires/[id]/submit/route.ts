@@ -15,7 +15,7 @@ export async function POST(
 
     const { id: questionnaireId } = params;
     const body = await request.json();
-    const { answers } = body;
+    const { answers, attachmentFile, attachmentUrl } = body;
 
     if (!answers || !Array.isArray(answers)) {
       return NextResponse.json(
@@ -46,6 +46,8 @@ export async function POST(
       data: {
         questionnaireId,
         userId: session.user.id,
+        attachmentFile,
+        attachmentUrl,
         answers: {
           create: answers.map(
             (answer: { questionId: string; answer: string }) => ({
@@ -64,7 +66,7 @@ export async function POST(
         title: "Шинэ асуулгын хариу ирлээ",
         message: `${session.user.name} асуулгад хариулсан байна`,
         type: "QUESTIONNAIRE_RESPONSE",
-        link: `/employer/questionnaires/${questionnaireId}/responses/${response.id}`,
+        link: `/employer/questionnaires`,
       },
     });
 

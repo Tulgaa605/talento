@@ -61,7 +61,7 @@ export default function EmployerLoginPage() {
       const result = await signIn("credentials", {
         email,
         password,
-        expectedRole: "EMPLOYER",
+        expectedRoles: JSON.stringify(["ADMIN", "EMPLOYER"]),
         redirect: false,
       });
 
@@ -182,7 +182,7 @@ export default function EmployerLoginPage() {
                     onClick={() =>
                       signIn("google", {
                         callbackUrl: "/",
-                        expectedRole: "EMPLOYER",
+                        expectedRoles: JSON.stringify(["ADMIN", "EMPLOYER"]),
                       })
                     }
                   >

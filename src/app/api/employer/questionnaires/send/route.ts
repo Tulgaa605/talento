@@ -20,7 +20,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get the CV and verify ownership
     const cv = await prisma.cV.findUnique({
       where: {
         id: cvId,

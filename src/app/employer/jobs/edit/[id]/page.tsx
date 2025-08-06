@@ -94,10 +94,11 @@ export default function EditJobPage({
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (session?.user?.role !== "EMPLOYER") {
+    if (!["EMPLOYER", "ADMIN"].includes(session?.user?.role ?? "")) {
       router.push("/login");
       return;
     }
+    
     const fetchJob = async () => {
       try {
         const response = await fetch(`/api/employer/jobs/${resolvedParams.id}`);
@@ -226,13 +227,8 @@ export default function EditJobPage({
           </div>
         )}
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-          {/* Top Section: Core Info + Skills */}
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
-            {/* Logo and Small Fields Area (Spans 3 columns) */}
             <div className="lg:col-span-3 flex gap-6">
-              {/* Logo Area */}
-
-              {/* Input Fields Next to Logo */}
               <div className="flex-grow grid grid-cols-1 gap-y-4 content-start">
                 <div>
                   <input
@@ -257,7 +253,6 @@ export default function EditJobPage({
                 </div>
               </div>
             </div>
-            {/* Job Details Area (Spans 4 columns) */}
             <div className="lg:col-span-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -385,7 +380,6 @@ export default function EditJobPage({
                   </span>
                 ))}
             </div>
-            {/* Middle Section: Requirements Card */}
             <div className="rounded-lg mt-2">
               <textarea
                 id="requirements"
@@ -409,9 +403,7 @@ export default function EditJobPage({
                 onChange={handleInputChange}
               />
             </div>
-            {/* Skills Input */}
           </div>
-          {/* Submit Buttons */}
           <div className="flex justify-end space-x-3">
             <Link
               href="/employer/profile"

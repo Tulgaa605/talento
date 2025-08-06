@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,14 +13,27 @@ export async function GET(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    const { id } = await params;
+
     const questionnaire = await prisma.questionnaire.findUnique({
       where: {
-        id: params.id,
+        id: id,
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        attachmentFile: true,
+        attachmentUrl: true,
         questions: {
           orderBy: {
             order: "asc",
+          },
+          select: {
+            id: true,
+            text: true,
+            order: true,
+            type: true,
           },
         },
         responses: {

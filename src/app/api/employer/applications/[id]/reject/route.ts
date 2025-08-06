@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,9 +13,8 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const applicationId = params.id;
+    const { id: applicationId } = await params;
 
-    // Get the application and verify ownership
     const application = await prisma.jobApplication.findUnique({
       where: {
         id: applicationId,
@@ -37,7 +36,6 @@ export async function POST(
       );
     }
 
-    // Verify that the user is associated with the company
     const user = await prisma.user.findUnique({
       where: {
         id: session.user.id,
@@ -51,7 +49,6 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Update application status
     const updatedApplication = await prisma.jobApplication.update({
       where: {
         id: applicationId,
@@ -61,7 +58,6 @@ export async function POST(
       },
     });
 
-    // Create notification for the applicant
     await prisma.notification.create({
       data: {
         userId: application.userId,
