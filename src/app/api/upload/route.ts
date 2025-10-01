@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth";
 import mammoth from "mammoth";
 import { prisma } from "@/lib/prisma";
 import { spawn } from "child_process";
-import { promisify } from "util";
 import { writeFile } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -14,6 +13,14 @@ interface PythonResult {
   success: boolean;
   text?: string;
   error?: string;
+}
+
+interface OpenRouterResponse {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
 }
 
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
@@ -42,7 +49,7 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
         if (code === 0) {
           try {
             resolve(JSON.parse(output));
-          } catch (e) {
+          } catch {
             reject(new Error("Failed to parse Python output"));
           }
         } else {
@@ -135,9 +142,10 @@ CV Шинжилгээ:
         );
 
         if (response.ok) {
-          const data: any = await response.json();
-          if (data?.choices?.[0]?.message?.content) {
-            const analysis = data.choices[0].message.content;
+          const data = (await response.json()) as OpenRouterResponse;
+          const contentFromLLM = data.choices?.[0]?.message?.content;
+          if (contentFromLLM) {
+            const analysis = contentFromLLM;
             // Validate that the analysis contains the expected sections
             if (
               analysis.includes("CV Шинжилгээ:") &&
@@ -164,9 +172,6 @@ CV Шинжилгээ:
 
 function generateFallbackAnalysis(content: string): string {
   const cvLower = content.toLowerCase();
-
-  // Extract basic information
-  const name = content.split("\n")[0] || "Нэр олдсонгүй";
   const experience = extractExperience(cvLower);
   const skills = extractSkills(cvLower);
   const education = extractEducation(cvLower);
@@ -223,7 +228,7 @@ function extractExperience(text: string): {
 
   let years = 0;
   let field = "ажлын";
-  const missing = [];
+  const missing: string[] = [];
 
   for (const pattern of experiencePatterns) {
     const match = text.match(pattern);
@@ -247,8 +252,8 @@ function extractSkills(text: string): {
   technical: string[];
   missing: string[];
 } {
-  const technical = [];
-  const missing = [];
+  const technical: string[] = [];
+  const missing: string[] = [];
 
   if (text.includes("сошиал медиа")) technical.push("Сошиал медиа");
   if (text.includes("маркетинг")) technical.push("Маркетинг");
@@ -341,7 +346,7 @@ export async function POST(req: Request) {
       });
 
       // Save file to public directory
-      const uploadDir = join(process.cwd(), 'public', 'uploads');
+      const uploadDir = join(process.cwd(), "public", "uploads");
       await writeFile(join(uploadDir, `${Date.now()}-${file.name}`), buffer);
 
       // Calculate job matches

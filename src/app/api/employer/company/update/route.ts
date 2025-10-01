@@ -17,7 +17,6 @@ export async function PUT(request: Request) {
     const data = await request.json();
     const { name, location, logoUrl, description, website, coverImageUrl } = data;
 
-    // First get the user to find their companyId
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { companyId: true },
@@ -27,7 +26,6 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
-    // Update company profile
     const updatedCompany = await prisma.company.update({
       where: {
         id: user.companyId,

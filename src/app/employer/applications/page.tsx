@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Disclosure } from "@headlessui/react";
-import { ChevronUpIcon } from "@heroicons/react/24/solid";
 import Image from "next/image";
 import { useNotification } from "@/providers/NotificationProvider";
 
@@ -13,6 +11,7 @@ interface JobApplication {
   createdAt: string;
   status: string;
   message: string;
+  viewedAt?: string | null;
   job: {
     id: string;
     title: string;
@@ -44,38 +43,21 @@ export default function EmployerApplicationsPage() {
   const { addNotification } = useNotification();
   const hasShownNotification = useRef(false);
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      console.log("User is not authenticated, redirecting to login");
-      router.push("/employer/login");
-      return;
-    }
-
-    if (status === "authenticated" && session?.user) {
-      fetchApplications();
-    }
-  }, [session, status, router]);
-
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async () => {
     try {
       setLoading(true);
-      console.log("Fetching applications...");
 
       const response = await fetch("/api/employer/applications");
-      console.log("Response status:", response.status);
-
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || "Өргөдлүүдийг ачаалахад алдаа гарлаа"
-        );
+        const errorData = (await response.json()) as { error?: string };
+        throw new Error(errorData.error || "Өргөдлүүдийг ачаалахад алдаа гарлаа");
       }
 
-      const data = await response.json();
-      console.log("Received applications:", data);
+      const data = (await response.json()) as unknown;
 
       if (Array.isArray(data)) {
-        setApplications(data);
+        const typed = data as JobApplication[];
+        setApplications(typed);
 
         // Mark applications as viewed first
         try {
@@ -87,24 +69,19 @@ export default function EmployerApplicationsPage() {
         }
 
         // Check for new applications after marking as viewed
-        const newApplications = data.filter(
+        const newApplications = typed.filter(
           (app) => app.status === "PENDING" && !app.viewedAt
         );
+
         if (newApplications.length > 0 && !hasShownNotification.current) {
           // Group applications by job
-          const applicationsByJob = newApplications.reduce<JobApplications>(
-            (acc, app) => {
-              if (!acc[app.job.id]) {
-                acc[app.job.id] = {
-                  title: app.job.title,
-                  count: 0,
-                };
-              }
-              acc[app.job.id].count++;
-              return acc;
-            },
-            {}
-          );
+          const applicationsByJob = newApplications.reduce<JobApplications>((acc, app) => {
+            if (!acc[app.job.id]) {
+              acc[app.job.id] = { title: app.job.title, count: 0 };
+            }
+            acc[app.job.id].count += 1;
+            return acc;
+          }, {});
 
           // Show notifications for each job
           Object.values(applicationsByJob).forEach(({ title, count }) => {
@@ -119,84 +96,37 @@ export default function EmployerApplicationsPage() {
       } else {
         throw new Error("Буруу өгөгдөл ирлээ");
       }
-    } catch (err: any) {
-      console.error("Error in fetchApplications:", err);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Алдаа гарлаа";
+      console.error("Error in fetchApplications:", message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [addNotification]);
 
-  // Group applications by job
-  const jobsMap: {
-    [jobId: string]: { title: string; applications: JobApplication[] };
-  } = {};
-  applications.forEach((app) => {
-    if (!jobsMap[app.job.id]) {
-      jobsMap[app.job.id] = { title: app.job.title, applications: [] };
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/employer/login");
+      return;
     }
-    jobsMap[app.job.id].applications.push(app);
-  });
-  const jobs = Object.entries(jobsMap);
+    if (status === "authenticated" && session?.user) {
+      fetchApplications();
+    }
+  }, [status, session, router, fetchApplications]);
 
-  const handleStatusChange = async (
-    applicationId: string,
-    newStatus: string
-  ) => {
-    try {
-      const response = await fetch(
-        `/api/employer/applications/${applicationId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Статус шинэчлэхэд алдаа гарлаа");
+  // Group applications by job (memoized)
+  const jobs = useMemo(() => {
+    const jobsMap: {
+      [jobId: string]: { title: string; applications: JobApplication[] };
+    } = {};
+    applications.forEach((app) => {
+      if (!jobsMap[app.job.id]) {
+        jobsMap[app.job.id] = { title: app.job.title, applications: [] };
       }
-
-      setApplications((prev) =>
-        prev.map((app) =>
-          app.id === applicationId ? { ...app, status: newStatus } : app
-        )
-      );
-    } catch (err: any) {
-      console.error("Error updating status:", err);
-      addNotification(err.message, "error");
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800";
-      case "EMPLOYER_APPROVED":
-        return "bg-blue-100 text-blue-800";
-      case "ADMIN_APPROVED":
-        return "bg-green-100 text-green-800";
-      case "REJECTED":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "Хүлээгдэж буй";
-      case "EMPLOYER_APPROVED":
-        return "Ажил олгогч зөвшөөрсөн";
-      case "ADMIN_APPROVED":
-        return "Зөвшөөрөгдсөн";
-      case "REJECTED":
-        return "Татгалзсан";
-      default:
-        return status;
-    }
-  };
+      jobsMap[app.job.id].applications.push(app);
+    });
+    return Object.entries(jobsMap);
+  }, [applications]);
 
   if (loading) {
     return (
@@ -235,6 +165,7 @@ export default function EmployerApplicationsPage() {
             </p>
           </div>
         </div>
+
         {jobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-gray-100">
             <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-[#0C213A]/5 mb-6">
@@ -248,7 +179,7 @@ export default function EmployerApplicationsPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2z"
                 />
               </svg>
             </div>
@@ -261,10 +192,10 @@ export default function EmployerApplicationsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {jobs.map(([jobId, { title, applications }]) => (
+            {jobs.map(([jobId, { title }]) => (
               <div
                 key={jobId}
-                className="bg-white rounded-2xl border border-gray-100 hover:border-[#0C213A]/20 transition-all duration-200"
+                className="bg-white rounded-2xl border border-gray-100 hover:border-[#0C213A]/20 transition-all duration-200 cursor-pointer"
                 onClick={() => router.push(`/employer/applications/${jobId}`)}
               >
                 <div className="p-6">

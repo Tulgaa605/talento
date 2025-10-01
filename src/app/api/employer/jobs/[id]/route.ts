@@ -19,7 +19,6 @@ export async function GET(
 
     const { id: jobId } = await context.params;
 
-    // Check if the job exists and belongs to the employer
     const job = await prisma.job.findFirst({
       where: {
         id: jobId,

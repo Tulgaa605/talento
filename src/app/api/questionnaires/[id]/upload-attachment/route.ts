@@ -1,3 +1,4 @@
+// File: src/app/api/employer/questionnaires/[id]/upload-attachment/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -5,71 +6,69 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+// Next.js 15: params нь Promise байх ёстой
+type RouteCtx = { params: Promise<{ id: string }> };
+
+export async function POST(request: NextRequest, _ctx: RouteCtx) {
   try {
+    void _ctx;
+
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: questionnaireId } = params;
     const formData = await request.formData();
-    const file = formData.get("file") as File;
+    const file = formData.get("file") as File | null;
 
     if (!file) {
-      return NextResponse.json(
-        { error: "No file provided" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Validate file type
     const allowedTypes = [
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/msword",
-      "application/vnd.ms-word",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+      "application/msword", // .doc
+      "application/pdf", // .pdf
     ];
-
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: "Only Word documents (.docx, .doc) are allowed" },
+        { error: "Зөвхөн Word (.doc/.docx) эсвэл PDF файл оруулна уу" },
         { status: 400 }
       );
     }
 
-    // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: "File size must be less than 10MB" },
+        { error: "Файлын хэмжээ 10MB-аас ихгүй байх ёстой" },
         { status: 400 }
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), "public", "uploads", "questionnaires");
+    const uploadsDir = join(
+      process.cwd(),
+      "public",
+      "uploads",
+      "questionnaires"
+    );
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true });
     }
 
-    // Generate unique filename
     const timestamp = Date.now();
     const originalName = file.name;
-    const extension = originalName.split(".").pop();
-    const fileName = `${timestamp}-${originalName}`;
+    const safeOriginal = originalName.replace(/[^\w.\-()\s]/g, "");
+    const fileName = `${timestamp}-${safeOriginal}`;
     const filePath = join(uploadsDir, fileName);
 
-    // Convert file to buffer and save
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     await writeFile(filePath, buffer);
 
-    // Return file information
     const fileUrl = `/uploads/questionnaires/${fileName}`;
-
     return NextResponse.json({
       success: true,
       fileName: originalName,
@@ -82,4 +81,4 @@ export async function POST(
       { status: 500 }
     );
   }
-} 
+}

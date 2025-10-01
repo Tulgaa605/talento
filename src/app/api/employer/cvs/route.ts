@@ -3,14 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the user's company
     const user = await prisma.user.findUnique({
       where: {
         id: session.user.id,
@@ -24,7 +23,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
-    // Get all CVs that have been submitted to the company's jobs
     const cvs = await prisma.cV.findMany({
       where: {
         applications: {

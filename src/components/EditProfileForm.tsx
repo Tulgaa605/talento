@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { User } from "@prisma/client"; // Import User type if needed, or define a simpler type
 
 // Define the expected props, only the fields we are editing + email for display
 interface EditProfileFormProps {

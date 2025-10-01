@@ -1,81 +1,53 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { JobApplicationStatus, Prisma } from '@prisma/client';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session || session.user?.role !== 'EMPLOYER') {
       return NextResponse.json(
-        { error: "Нэвтэрсэн байх шаардлагатай" },
+        { message: 'Нэвтрэх эрхгүй байна' },
         { status: 401 }
       );
     }
 
-    // ✅ role нь EMPLOYER эсвэл ADMIN байх ёстой
-    const user = await prisma.user.findFirst({
-      where: {
-        email: session.user.email,
-        OR: [
-          { role: "EMPLOYER" },
-          { role: "ADMIN" }
-        ]
-      },
-      include: {
-        company: true,
-      },
-    });
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
 
-    if (!user) {
-      return NextResponse.json(
-        {
-          error:
-            "Та ажил олгогч эрхгүй байна. Эхлээд ажил олгогчоор бүртгүүлнэ үү.",
+    const employerJobs = await prisma.job.findMany({
+      where: {
+        company: {
+          users: {
+            some: {
+              id: session.user.id,
+            },
+          },
         },
-        { status: 403 }
-      );
-    }
-
-    if (!user.company) {
-      return NextResponse.json(
-        { error: "Таны компани олдсонгүй. Эхлээд компани бүртгүүлнэ үү." },
-        { status: 404 }
-      );
-    }
-
-    // 1. Get all jobs posted by this company
-    const jobs = await prisma.job.findMany({
-      where: {
-        companyId: user.company.id,
       },
       select: {
         id: true,
-        title: true,
       },
     });
 
-    const jobIds = jobs.map((job) => job.id);
+    const jobIds = employerJobs.map((job) => job.id);
 
-    if (jobIds.length === 0) {
-      return NextResponse.json([]);
+    const whereClause: Prisma.JobApplicationWhereInput = {
+      jobId: {
+        in: jobIds,
+      },
+    };
+
+    if (status && status !== 'all') {
+      whereClause.status = status as JobApplicationStatus; 
     }
 
-    // 2. Get all applications for these jobs
     const applications = await prisma.jobApplication.findMany({
-      where: {
-        jobId: {
-          in: jobIds,
-        },
-      },
+      where: whereClause,
       include: {
-        job: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
         user: {
           select: {
             id: true,
@@ -83,24 +55,27 @@ export async function GET() {
             email: true,
           },
         },
-        cv: {
-          select: {
-            id: true,
-            fileName: true,
-            fileUrl: true,
+        job: {
+          include: {
+            company: {
+              select: {
+                name: true,
+              },
+            },
           },
         },
+        cv: true,
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: 'desc',
       },
     });
 
     return NextResponse.json(applications);
   } catch (error) {
-    console.error("❌ Error in GET /api/employer/applications:", error);
+    console.error('Өргөдлүүд авах үед алдаа гарлаа:', error);
     return NextResponse.json(
-      { error: "Системийн алдаа гарлаа. Дараа дахин оролдоно уу." },
+      { message: 'Серверийн алдаа гарлаа' },
       { status: 500 }
     );
   }

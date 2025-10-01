@@ -53,7 +53,6 @@ export default function ProfileCVUpload() {
         throw new Error(data.error || "CV байршуулахад алдаа гарлаа");
       }
 
-      // Refresh the page to show the new CV
       window.location.reload();
     } catch (error) {
       console.error("Upload error:", error);
@@ -75,7 +74,6 @@ export default function ProfileCVUpload() {
 
   return (
     <div className="space-y-4">
-      {/* Hidden file input */}
       <input
         type="file"
         accept=".pdf,.doc,.docx"
@@ -84,7 +82,6 @@ export default function ProfileCVUpload() {
         className="hidden"
       />
 
-      {/* Custom file input button */}
       <div className="flex flex-col items-center justify-center w-full">
         <button
           type="button"

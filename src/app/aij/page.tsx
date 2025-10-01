@@ -1,10 +1,8 @@
 "use client";
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
 import CVUploadWithProfile from "@/components/CVUploadWithProfile";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface JobMatch {
   job: {
@@ -32,7 +30,6 @@ export default function Home() {
   const [jobMatches, setJobMatches] = useState<JobMatch[]>([]);
   const [noMatches, setNoMatches] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
   const handleAnalysisComplete = (
     analysisResult: string,
@@ -54,29 +51,6 @@ export default function Home() {
     setAnalysis(null);
     setJobMatches([]);
     setNoMatches(false);
-  };
-
-  const handleDeleteCV = async (cvId: string) => {
-    if (!confirm("CV-гээ устгахдаа итгэлтэй байна уу?")) return;
-
-    setDeleteLoading(cvId);
-    try {
-      const response = await fetch(`/api/user/cvs/${cvId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("CV устгахад алдаа гарлаа");
-      }
-
-      // Refresh the page to show updated CV list
-      window.location.reload();
-    } catch (error) {
-      console.error("Error deleting CV:", error);
-      alert("CV устгахад алдаа гарлаа");
-    } finally {
-      setDeleteLoading(null);
-    }
   };
 
   return (
@@ -201,32 +175,34 @@ export default function Home() {
                         className="block hover:shadow-md transition-shadow duration-200"
                       >
                         <div className="bg-white shadow rounded-lg p-4 flex items-center gap-4">
-                          {/* Match Score Badge */}
                           <span className="px-2 py-1 text-xs font-semibold rounded bg-green-50 text-green-700 mr-2">
                             {Math.round(match.matchScore)}% ТОХИРОЛТ
                           </span>
-                          {/* Logo */}
-                          <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center mr-4 overflow-hidden">
+                          <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center mr-4 overflow-hidden relative">
                             {match.job.company.logoUrl ? (
-                              <img
+                              <Image
                                 src={match.job.company.logoUrl}
                                 alt={`${match.job.company.name} logo`}
+                                width={48}
+                                height={48}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src =
+                                  (e.currentTarget as HTMLImageElement).src =
                                     "/images/default-company-logo.svg";
                                 }}
+                                unoptimized
                               />
                             ) : (
-                              <img
+                              <Image
                                 src="/images/default-company-logo.svg"
                                 alt="Default company logo"
+                                width={48}
+                                height={48}
                                 className="w-full h-full object-contain"
+                                unoptimized
                               />
                             )}
                           </div>
-                          {/* Job info */}
                           <div className="flex-1 min-w-0">
                             <h3 className="text-lg font-semibold text-gray-900 truncate">
                               {match.job.title}
@@ -243,7 +219,6 @@ export default function Home() {
                               </p>
                             )}
                           </div>
-                          {/* Arrow icon */}
                           <svg
                             className="w-5 h-5 text-gray-400"
                             fill="none"

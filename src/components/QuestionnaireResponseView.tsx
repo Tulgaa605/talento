@@ -68,7 +68,6 @@ export default function QuestionnaireResponseView({
   return (
     <div className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">
             Асуулгын хариу
@@ -83,9 +82,7 @@ export default function QuestionnaireResponseView({
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-6 space-y-6">
-          {/* User Info */}
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium text-gray-900 mb-2">Хэрэглэгчийн мэдээлэл</h3>
             <div className="space-y-1 text-sm text-gray-600">
@@ -95,7 +92,6 @@ export default function QuestionnaireResponseView({
             </div>
           </div>
 
-          {/* Answers */}
           <div className="space-y-4">
             <h3 className="font-medium text-gray-900">Хариултууд</h3>
             {response.answers.map((answer, index) => (
@@ -130,7 +126,6 @@ export default function QuestionnaireResponseView({
             ))}
           </div>
 
-          {/* Attachment */}
           {response.attachmentUrl && (
             <div className="border rounded-lg p-4">
               <h3 className="font-medium text-gray-900 mb-2">Хавсралт</h3>
@@ -170,7 +165,6 @@ export default function QuestionnaireResponseView({
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex justify-end p-6 border-t">
           <button
             onClick={onClose}

@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: Request) {
+// CV жагсаалт авах
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
@@ -12,9 +13,7 @@ export async function GET(req: Request) {
     }
 
     const cvs = await prisma.cV.findMany({
-      where: {
-        userId: session.user.id,
-      },
+      where: { userId: session.user.id },
       select: {
         id: true,
         fileName: true,
@@ -22,9 +21,7 @@ export async function GET(req: Request) {
         createdAt: true,
         status: true,
       },
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json(cvs);

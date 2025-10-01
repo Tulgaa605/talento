@@ -33,7 +33,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "CV not found" }, { status: 404 });
     }
 
-    // Get the questionnaire and verify ownership
     const questionnaire = await prisma.questionnaire.findUnique({
       where: {
         id: questionnaireId,

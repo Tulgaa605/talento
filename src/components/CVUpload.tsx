@@ -4,25 +4,7 @@ import { useSession } from "next-auth/react";
 import { useChat } from "@/providers/ChatProvider";
 import { useNotification } from "@/providers/NotificationProvider";
 
-interface JobMatch {
-  job: {
-    id: string;
-    title: string;
-    company: {
-      name: string;
-    };
-    location: string;
-    salary?: string;
-    requirements: string;
-  };
-  matchScore: number;
-  matchDetails: {
-    experience: number;
-    skills: number;
-    education: number;
-    overall: number;
-  };
-}
+
 
 interface CVUploadProps {
   onAnalysisStart: () => void;

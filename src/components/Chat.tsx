@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import {useEffect, useRef } from 'react';
 import { useChat } from '@/providers/ChatProvider';
 
 export default function Chat() {
-  const [message, setMessage] = useState('');
-  const { messages, sendMessage, isLoading } = useChat();
+  const { messages, isLoading } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -16,14 +15,7 @@ export default function Chat() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim() || isLoading) return;
 
-    console.log('Submitting message:', message);
-    await sendMessage(message);
-    setMessage('');
-  };
 
   return (
     <div className="flex flex-col h-[600px] bg-white rounded-lg shadow-lg">

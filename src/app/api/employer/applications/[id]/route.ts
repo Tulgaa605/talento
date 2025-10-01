@@ -22,7 +22,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Статус оруулна уу" }, { status: 400 });
     }
 
-    // Get user's company
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       include: { company: true },
@@ -32,7 +31,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Компани олдсонгүй" }, { status: 404 });
     }
 
-    // Check if application exists and belongs to company's job
     const application = await prisma.jobApplication.findFirst({
       where: {
         id: applicationId,
@@ -46,7 +44,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Өргөдөл олдсонгүй" }, { status: 404 });
     }
 
-    // Update application status and set viewedAt if not already set
     const updatedApplication = await prisma.jobApplication.update({
       where: { id: applicationId },
       data: {

@@ -28,8 +28,7 @@ interface QuestionnaireResponseButtonProps {
 }
 
 export default function QuestionnaireResponseButton({
-  questionnaireId,
-  applicationId,
+  questionnaireId
 }: QuestionnaireResponseButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<QuestionnaireResponse | null>(null);
@@ -46,7 +45,6 @@ export default function QuestionnaireResponseButton({
 
       const responses = await res.json();
       
-      // For now, show the first response if any exist
       if (responses.length > 0) {
         setResponse(responses[0]);
         setShowModal(true);

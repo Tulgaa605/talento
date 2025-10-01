@@ -5,8 +5,22 @@ import { useNotification } from '@/providers/NotificationProvider';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+type NotificationType = 'QUESTIONNAIRE' | 'QUESTIONNAIRE_RESPONSE' | 'APPLICATION' | 'INFO' | string;
+
+interface DatabaseNotification {
+  id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string | number | Date;
+  type?: NotificationType;
+  link?: string | null;
+}
+
 export default function NotificationBell() {
   const { databaseNotifications, markNotificationAsRead, fetchNotifications } = useNotification();
+  const notifications = (databaseNotifications ?? []) as DatabaseNotification[];
+
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
@@ -14,15 +28,12 @@ export default function NotificationBell() {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  const unreadCount = databaseNotifications?.filter((n: any) => !n.read)?.length || 0;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const handleNotificationClick = async (notification: any) => {
+  const handleNotificationClick = async (notification: DatabaseNotification) => {
     await markNotificationAsRead(notification.id);
     setIsOpen(false);
-
-    if (notification.link) {
-      router.push(notification.link);
-    }
+    if (notification.link) router.push(notification.link);
   };
 
   return (
@@ -30,8 +41,9 @@ export default function NotificationBell() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg"
+        aria-label="Notifications"
       >
-        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.5 10.5h15l-7.5-7.5-7.5 7.5z" />
         </svg>
         {unreadCount > 0 && (
@@ -46,14 +58,12 @@ export default function NotificationBell() {
           <div className="p-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">Мэдэгдэл</h3>
           </div>
-          
+
           <div className="max-h-96 overflow-y-auto">
-            {!databaseNotifications || databaseNotifications.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                Мэдэгдэл байхгүй байна
-              </div>
+            {notifications.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">Мэдэгдэл байхгүй байна</div>
             ) : (
-              databaseNotifications.map((notification) => (
+              notifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
@@ -82,28 +92,20 @@ export default function NotificationBell() {
                       )}
                     </div>
                     <div className="ml-3 flex-1">
-                      <p className="text-sm font-medium text-gray-900">
-                        {notification.title}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {notification.message}
-                      </p>
+                      <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                      <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
                       <p className="text-xs text-gray-400 mt-2">
                         {new Date(notification.createdAt).toLocaleString('mn-MN')}
                       </p>
                     </div>
-                    {!notification.read && (
-                      <div className="ml-2">
-                        <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                      </div>
-                    )}
+                    {!notification.read && <div className="ml-2 h-2 w-2 bg-blue-500 rounded-full" />}
                   </div>
                 </div>
               ))
             )}
           </div>
-          
-          {databaseNotifications.length > 0 && (
+
+          {notifications.length > 0 && (
             <div className="p-4 border-t border-gray-200">
               <Link
                 href="/notifications"
@@ -116,12 +118,8 @@ export default function NotificationBell() {
           )}
         </div>
       )}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+
+      {isOpen && <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />}
     </div>
   );
 }

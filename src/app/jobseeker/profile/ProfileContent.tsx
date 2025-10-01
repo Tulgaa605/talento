@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import ProfileImageUpload from "@/components/ProfileImageUpload";
@@ -68,7 +67,7 @@ export default function ProfileContent({ user }: ProfileContentProps) {
       setIsEditing(false);
       // Refresh the page or update the user data
       window.location.reload();
-    } catch (error) {
+    } catch{
       alert("Профайл шинэчлэхэд алдаа гарлаа");
     }
   };
@@ -83,7 +82,7 @@ export default function ProfileContent({ user }: ProfileContentProps) {
     <div className="min-h-screen mt-16 bg-white px-0 sm:px-6 md:px-8 lg:px-32 text-[#0C213A] font-poppins">
       {/* Cover Image/Header */}
       <div className="relative w-full h-32 sm:h-40 md:h-48 lg:h-64">
-        <img
+        <Image
           src="/images/cover.jpeg"
           alt="Profile cover"
           className="w-full h-full object-cover object-center"

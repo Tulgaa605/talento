@@ -5,6 +5,17 @@ import { JobCard } from "./JobCard";
 import { JobListing } from "./types";
 import { useRouter } from "next/navigation";
 
+type ApiJob = {
+  title: string;
+  type: "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP" | string;
+  salary?: string | number | null;
+  company: {
+    name: string;
+    logoUrl?: string | null;
+  };
+  location: string;
+};
+
 export default function JobListingSection() {
   const router = useRouter();
   const [jobs, setJobs] = useState<JobListing[]>([]);
@@ -14,40 +25,40 @@ export default function JobListingSection() {
 
   useEffect(() => {
     setMounted(true);
+
     const fetchJobs = async () => {
       try {
         const response = await fetch("/api/jobs");
         if (!response.ok) {
           throw new Error("Failed to fetch jobs");
         }
-        const data = await response.json();
-        console.log("API Response:", data);
 
-        // Transform the API data to match JobListing type
-        const transformedJobs: JobListing[] = data.map((job: any) => {
-          console.log("Job type from API:", job.type);
-          return {
-            title: job.title,
-            type:
-              job.type === "FULL_TIME"
-                ? "БҮТЭН ЦАГ"
-                : job.type === "PART_TIME"
-                ? "ЦАГИЙН"
-                : job.type === "CONTRACT"
-                ? "ГЭРЭЭТ"
-                : job.type === "INTERNSHIP"
-                ? "ДАДЛАГА"
-                : "БҮТЭН ЦАГ",
-            salary: job.salary || "Цалин: Хэлэлцээрээр",
-            company: {
-              name: job.company.name,
-              logo:
-                job.company.logoUrl ||
-                "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/23813725c8b2f39dd1d36d4e94e16d8ab78110aa?placeholderIfAbsent=true",
-              location: job.location,
-            },
-          };
-        });
+        const data = (await response.json()) as ApiJob[];
+
+        const transformedJobs: JobListing[] = data.map((job: ApiJob) => ({
+          title: job.title,
+          type:
+            job.type === "FULL_TIME"
+              ? "БҮТЭН ЦАГ"
+              : job.type === "PART_TIME"
+              ? "ЦАГИЙН"
+              : job.type === "CONTRACT"
+              ? "ГЭРЭЭТ"
+              : job.type === "INTERNSHIP"
+              ? "ДАДЛАГА"
+              : "БҮТЭН ЦАГ",
+          salary:
+            typeof job.salary === "number"
+              ? String(job.salary)
+              : job.salary ?? "Цалин: Хэлэлцээрээр",
+          company: {
+            name: job.company?.name ?? "Компанийн нэргүй",
+            logo:
+              job.company?.logoUrl ??
+              "https://cdn.builder.io/api/v1/image/assets/04fcdb08a3cb484fba8d958382052e5c/23813725c8b2f39dd1d36d4e94e16d8ab78110aa?placeholderIfAbsent=true",
+            location: job.location,
+          },
+        }));
 
         setJobs(transformedJobs);
       } catch (err) {
@@ -60,18 +71,14 @@ export default function JobListingSection() {
     fetchJobs();
   }, []);
 
-  if (!mounted) {
-    return null;
-  }
+  if (!mounted) return null;
 
   if (loading) {
     return (
       <div className="pb-24 w-full">
         <div className="mx-auto text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800 mx-auto"></div>
-          <p className="mt-4 text-gray-600">
-            Ажлын байруудыг ачааллаж байна...
-          </p>
+          <p className="mt-4 text-gray-600">Ажлын байруудыг ачааллаж байна...</p>
         </div>
       </div>
     );
@@ -101,9 +108,8 @@ export default function JobListingSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 justify-between gap-4 md:gap-5 lg:gap-6">
           {jobs
-            .slice() // clone array
+            .slice()
             .sort((a, b) => {
-              // Extract numeric salary, treat non-numeric as 0
               const getSalary = (s: string) => {
                 const num = parseInt(s.replace(/[^\d]/g, ""));
                 return isNaN(num) ? 0 : num;
@@ -129,7 +135,6 @@ export default function JobListingSection() {
   );
 }
 
-// Animated JobCard wrapper component
 const AnimatedJobCard = ({
   job,
   index,
@@ -142,16 +147,11 @@ const AnimatedJobCard = ({
 
   useEffect(() => {
     setMounted(true);
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 100 + index * 100);
-
+    const timer = setTimeout(() => setIsVisible(true), 100 + index * 100);
     return () => clearTimeout(timer);
   }, [index]);
 
-  if (!mounted) {
-    return null;
-  }
+  if (!mounted) return null;
 
   return (
     <div

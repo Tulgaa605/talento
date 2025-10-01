@@ -30,7 +30,7 @@ export async function GET() {
     });
 
     return NextResponse.json({ count: newApplicationsCount });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Системийн алдаа гарлаа" },
       { status: 500 }

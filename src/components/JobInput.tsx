@@ -42,7 +42,6 @@ export default function JobInput() {
     setSuccess(false);
 
     try {
-      // First create or get company
       const companyResponse = await fetch('/api/companies', {
         method: 'POST',
         headers: {
@@ -60,7 +59,6 @@ export default function JobInput() {
 
       const companyData = await companyResponse.json();
 
-      // Then create job with company ID
       const jobResponse = await fetch('/api/jobs', {
         method: 'POST',
         headers: {

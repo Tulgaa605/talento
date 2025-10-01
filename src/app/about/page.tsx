@@ -7,7 +7,6 @@ export default function About() {
       style={{ fontFamily: "Poppins, sans-serif" }}
     >
       <main className="px-4 md:px-10 lg:px-32">
-        {/* Blue dashed box section */}
         <section className="">
           <h1 className="text-xl md:text-2xl font-bold" style={{ color: "#0C213A" }}>
             Talento гэж юу вэ?
@@ -22,7 +21,6 @@ export default function About() {
             үр дүнтэйгээр олоход тусалдаг.
           </p>
         </section>
-        {/* Mission */}
         <section className="mb-6 md:mb-8 pt-6 md:pt-10">
           <h2 className="text-lg md:text-xl font-bold" style={{ color: "#0C213A" }}>
             Манай эрхэм зорилго
@@ -40,7 +38,6 @@ export default function About() {
             эриний эхлэл юм.
           </p>
         </section>
-        {/* Values */}
         <section className="mb-6 md:mb-8">
           <h2 className="text-lg md:text-xl font-bold" style={{ color: "#0C213A" }}>
             Бид итгэдэг:
@@ -65,7 +62,6 @@ export default function About() {
             </li>
           </ul>
         </section>
-        {/* Vision */}
         <section className="mb-6 md:mb-8 pt-2">
           <h2 className="text-lg md:text-xl font-bold" style={{ color: "#0C213A" }}>
             Алсын хараа:
@@ -80,7 +76,6 @@ export default function About() {
             чиглэлд алхах боломжтой орчинд хүргэхийг эрмэлзэж байна.
           </p>
         </section>
-        {/* Why Talento */}
         <section className="mb-6 md:mb-8 pt-6 md:pt-10">
           <h2 className="text-lg md:text-xl font-bold" style={{ color: "#0C213A" }}>
             Яагаад Talento-г сонгох вэ?

@@ -15,7 +15,6 @@ export async function POST(
 
     const { id: applicationId } = await params;
 
-    // Тусламжийн хүсэлтийг авах, job болон user-ийг хамт авах
     const application = await prisma.jobApplication.findUnique({
       where: { id: applicationId },
       include: { job: { include: { company: true } }, user: true },

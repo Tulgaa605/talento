@@ -5,16 +5,14 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Сервер дээрээс session авах
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Хэрэглэгчийн мэдээллийг авч, зөвхөн ADMIN эсэхийг шалгах
     const user = await prisma.user.findUnique({
       where: {
         id: session.user.id,
@@ -25,9 +23,8 @@ export async function POST(
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 
-    const applicationId = params.id;
+    const { id: applicationId } = await params;
 
-    // Job application-г авч ирэх
     const application = await prisma.jobApplication.findUnique({
       where: {
         id: applicationId,
@@ -49,7 +46,6 @@ export async function POST(
       );
     }
 
-    // Application статусыг шинэчлэх
     const updatedApplication = await prisma.jobApplication.update({
       where: {
         id: applicationId,
@@ -58,8 +54,6 @@ export async function POST(
         status: "ADMIN_APPROVED",
       },
     });
-
-    // Applicant-д notification үүсгэх
     await prisma.notification.create({
       data: {
         userId: application.userId,

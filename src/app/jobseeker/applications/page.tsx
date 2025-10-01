@@ -51,10 +51,14 @@ export default function JobseekerApplicationsPage() {
               errorData.error || "Өргөдлүүдийг ачаалахад алдаа гарлаа"
             );
           }
-          const data = await response.json();
+          const data: JobApplication[] = await response.json();
           setApplications(data);
-        } catch (err: any) {
-          setError(err.message);
+        } catch (err: unknown) {
+          const message =
+            err instanceof Error
+              ? err.message
+              : "Өргөдлүүдийг ачаалахад алдаа гарлаа";
+          setError(message);
         } finally {
           setLoading(false);
         }
@@ -64,8 +68,8 @@ export default function JobseekerApplicationsPage() {
     }
   }, [session, status, router]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const getStatusColor = (s: string) => {
+    switch (s) {
       case "PENDING":
         return "bg-yellow-100 text-yellow-800";
       case "EMPLOYER_APPROVED":
@@ -79,18 +83,18 @@ export default function JobseekerApplicationsPage() {
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
+  const getStatusText = (s: string) => {
+    switch (s) {
       case "PENDING":
         return "Хүлээгдэж буй";
       case "EMPLOYER_APPROVED":
         return "Ажил олгогч зөвшөөрсөн";
       case "ADMIN_APPROVED":
-        return "Зөвшөөрөгдсөн";
+        return "Админ зөвшөөрсөн";
       case "REJECTED":
         return "Татгалзсан";
       default:
-        return status;
+        return s;
     }
   };
 
@@ -166,7 +170,7 @@ export default function JobseekerApplicationsPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293л5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
             </div>
@@ -230,10 +234,12 @@ export default function JobseekerApplicationsPage() {
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               strokeWidth={2}
-                              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3м2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                             />
                           </svg>
-                          <span className="text-sm">{application.job.company.name}</span>
+                          <span className="text-sm">
+                            {application.job.company.name}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <svg
@@ -250,7 +256,10 @@ export default function JobseekerApplicationsPage() {
                             />
                           </svg>
                           <span className="text-sm">
-                            {format(new Date(application.createdAt), "yyyy-MM-dd HH:mm")}
+                            {format(
+                              new Date(application.createdAt),
+                              "yyyy-MM-dd HH:mm"
+                            )}
                           </span>
                         </div>
                       </div>
@@ -278,7 +287,7 @@ export default function JobseekerApplicationsPage() {
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               strokeWidth={2}
-                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293л5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                             />
                           </svg>
                           CV харах

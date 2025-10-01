@@ -4,7 +4,6 @@ const prisma = new PrismaClient();
 
 async function main() {
   try {
-    // Create sample companies first
     const companies = [
       {
         name: "Tech Corp",
@@ -27,7 +26,6 @@ async function main() {
       companies.map((company) => prisma.company.create({ data: company }))
     );
 
-    // Create sample jobs with company references
     const jobs = [
       {
         title: "Маркетингийн Менежер",

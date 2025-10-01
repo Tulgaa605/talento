@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { mn } from "date-fns/locale";
 
@@ -36,12 +37,16 @@ export default function SavedJobs({ jobs }: SavedJobsProps) {
           className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 hover:shadow-md transition-shadow"
         >
           <div className="flex items-start gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
               {job.company.logoUrl ? (
-                <img
+                <Image
                   src={job.company.logoUrl}
                   alt={job.company.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(min-width: 640px) 48px, 40px"
+                  className="object-cover"
+                  // Хэрэв гаднын домэйнуудыг зөвшөөрөөгүй бол түрхэнэ:
+                  // unoptimized
                 />
               ) : (
                 <div className="text-gray-400 text-lg sm:text-xl font-bold">
@@ -49,6 +54,7 @@ export default function SavedJobs({ jobs }: SavedJobsProps) {
                 </div>
               )}
             </div>
+
             <div className="flex-1 min-w-0">
               <Link
                 href={`/jobs?selectedJob=${job.id}`}
@@ -56,7 +62,9 @@ export default function SavedJobs({ jobs }: SavedJobsProps) {
               >
                 {job.title}
               </Link>
-              <p className="text-sm sm:text-base text-gray-600 truncate">{job.company.name}</p>
+              <p className="text-sm sm:text-base text-gray-600 truncate">
+                {job.company.name}
+              </p>
               <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm text-gray-500">
                 <span className="truncate">{job.location}</span>
                 <span className="hidden sm:inline">•</span>

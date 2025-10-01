@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import ApplyJobModal from "./ApplyJobModal";
 import Link from "next/link";
+import Image from "next/image";
 
 interface CV {
   id: string;
@@ -31,7 +32,7 @@ interface Job {
   createdAt: string;
   type: string;
   contactPhone?: string;
-  skills?: string;
+  skills?: string | string[]; // <- allow both
 }
 
 interface JobDetailsProps {
@@ -46,18 +47,20 @@ export default function JobDetails({ job }: JobDetailsProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<"success" | "error">("success");
   const [jobData, setJobData] = useState<Job | null>(job);
+  const [logoSrc, setLogoSrc] = useState<string>(
+    job?.company.logoUrl || "/images/default-company-logo.svg"
+  );
 
   useEffect(() => {
     if (job) {
       setJobData(job);
+      setLogoSrc(job.company.logoUrl || "/images/default-company-logo.svg");
     }
   }, [job]);
 
   useEffect(() => {
     if (message) {
-      const timer = setTimeout(() => {
-        setMessage(null);
-      }, 5000);
+      const timer = setTimeout(() => setMessage(null), 5000);
       return () => clearTimeout(timer);
     }
   }, [message]);
@@ -66,17 +69,17 @@ export default function JobDetails({ job }: JobDetailsProps) {
     try {
       const response = await fetch("/api/user/cvs");
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = (await response.json()) as { error?: string };
         throw new Error(errorData.error || "Failed to fetch CVs");
       }
-      const data = await response.json();
+      const data = (await response.json()) as CV[];
       setCVs(data);
     } catch (error) {
       console.error("Error fetching CVs:", error);
     }
   };
 
-  const handleApply = async (cvId: string, message: string) => {
+  const handleApply = async (cvId: string, applyMessage: string) => {
     if (!jobData) return;
     setSending(true);
     setMessage(null);
@@ -84,12 +87,15 @@ export default function JobDetails({ job }: JobDetailsProps) {
       const res = await fetch(`/api/jobs/${jobData.id}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cvId, message }),
+        body: JSON.stringify({ cvId, message: applyMessage }),
       });
-      const data = await res.json();
-      
+      const data = (await res.json()) as {
+        isDuplicate?: boolean;
+        error?: string;
+        message?: string;
+      };
+
       if (!res.ok) {
-        // Check if it's a duplicate application
         if (data.isDuplicate) {
           setMessageType("error");
           setMessage("Та энэ ажлын байрт өргөдөл гаргасан байна");
@@ -101,9 +107,11 @@ export default function JobDetails({ job }: JobDetailsProps) {
         setMessage(data.message || "CV амжилттай илгээгдлээ!");
         setIsApplyModalOpen(false);
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const errMsg =
+        e instanceof Error ? e.message : "Алдаа гарлаа";
       setMessageType("error");
-      setMessage(e.message || "Алдаа гарлаа");
+      setMessage(errMsg);
     } finally {
       setSending(false);
     }
@@ -122,27 +130,33 @@ export default function JobDetails({ job }: JobDetailsProps) {
     );
   }
 
+  // Normalize skills to an array
+  let skillsArray: string[] = [];
+  if (Array.isArray(jobData.skills)) {
+    skillsArray = jobData.skills;
+  } else if (typeof jobData.skills === "string") {
+    try {
+      const parsed = JSON.parse(jobData.skills);
+      if (Array.isArray(parsed)) skillsArray = parsed;
+    } catch {
+      // ignore malformed JSON
+    }
+  }
+
   return (
     <div className="bg-white shadow rounded-lg p-4 sm:p-6 md:p-8 min-h-[500px]">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-6">
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
-          {jobData.company.logoUrl ? (
-            <img
-              src={jobData.company.logoUrl}
-              alt={`${jobData.company.name} logo`}
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = "/images/default-company-logo.svg";
-              }}
-            />
-          ) : (
-            <img
-              src="/images/default-company-logo.svg"
-              alt="Default company logo"
-              className="w-12 h-12 sm:w-16 sm:h-16 object-contain"
-            />
-          )}
+          <Image
+            src={logoSrc}
+            alt={`${jobData.company.name} logo`}
+            width={80}
+            height={80}
+            className="w-full h-full object-contain"
+            onError={() => setLogoSrc("/images/default-company-logo.svg")}
+            // If your logos are remote, either configure next.config.js images.domains or add:
+            // unoptimized
+          />
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-xl sm:text-2xl font-bold text-[#0C213A] mb-1">
@@ -196,31 +210,20 @@ export default function JobDetails({ job }: JobDetailsProps) {
           <p className="text-sm sm:text-base text-[#0C213A]">{jobData.location}</p>
         </div>
 
-        {jobData.skills && (
+        {skillsArray.length > 0 && (
           <div>
             <h3 className="text-base sm:text-lg font-semibold text-[#0C213A] mb-2">
               Шаардлагатай ур чадварууд
             </h3>
             <div className="flex flex-wrap gap-2">
-              {Array.isArray(jobData.skills)
-                ? jobData.skills.map((skill: string) => (
-                    <span
-                      key={skill}
-                      className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-indigo-50 text-indigo-700 rounded-md text-xs sm:text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))
-                : typeof jobData.skills === "string"
-                ? JSON.parse(jobData.skills).map((skill: string) => (
-                    <span
-                      key={skill}
-                      className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-indigo-50 text-indigo-700 rounded-md text-xs sm:text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))
-                : null}
+              {skillsArray.map((skill) => (
+                <span
+                  key={skill}
+                  className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-indigo-50 text-indigo-700 rounded-md text-xs sm:text-sm"
+                >
+                  {skill}
+                </span>
+              ))}
             </div>
           </div>
         )}

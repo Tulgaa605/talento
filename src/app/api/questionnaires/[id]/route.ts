@@ -23,6 +23,7 @@ export async function GET(
         id: true,
         title: true,
         description: true,
+        type: true,
         attachmentFile: true,
         attachmentUrl: true,
         questions: {

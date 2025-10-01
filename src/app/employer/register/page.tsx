@@ -248,7 +248,7 @@ export default function EmployerRegister() {
                       })
                     }
                   >
-                    <img
+                    <Image
                       src="/icons/google1.svg"
                       alt="Google Icon"
                       width={18}

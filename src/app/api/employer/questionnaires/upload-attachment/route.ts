@@ -22,7 +22,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
     const allowedTypes = [
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "application/msword",
@@ -36,8 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json(
         { error: "File size must be less than 10MB" },
@@ -45,24 +43,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create uploads directory if it doesn't exist
     const uploadsDir = join(process.cwd(), "public", "uploads", "questionnaire-templates");
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true });
     }
 
-    // Generate unique filename
     const timestamp = Date.now();
     const originalName = file.name;
     const fileName = `${timestamp}-${originalName}`;
     const filePath = join(uploadsDir, fileName);
 
-    // Convert file to buffer and save
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     await writeFile(filePath, buffer);
 
-    // Return file information
     const fileUrl = `/uploads/questionnaire-templates/${fileName}`;
 
     return NextResponse.json({

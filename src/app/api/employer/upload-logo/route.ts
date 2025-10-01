@@ -1,9 +1,13 @@
+// app/api/upload-logo/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+
+// Node.js орчинд fs ашиглах тул (Edge runtime биш)
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -13,6 +17,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // ---- 1) FormData-аас файл авах, шалгах
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
 
@@ -20,35 +25,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Файл олдсонгүй' }, { status: 400 });
     }
 
-    // Create a safe filename
+    // Хэмжээ/төрлийг хүсвэл энд нэмж шалгаж болно (жишээ нь 5MB-аас их биш, зураг эсэх г.м)
+    // if (file.size > 5 * 1024 * 1024) { ... }
+    // if (!file.type.startsWith('image/')) { ... }
+
+    // ---- 2) Аюулгүй файл нэр бэлтгэх
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const filename = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
 
-    // Define the path to save the file
+    // Файлын нэрийг цэвэрлэх (замын тусгай тэмдэгтүүдийг арилгах)
+    const originalName = path.basename(file.name).replace(/\s+/g, '_');
+    const filename = `${Date.now()}-${originalName}`;
+
+    // ---- 3) Хадгалах хавтсаа бэлтгэх
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'logos');
-    
-    // Create directory if it doesn't exist
+
     try {
       await mkdir(uploadDir, { recursive: true });
     } catch (mkdirError) {
-      console.error("Failed to create directory:", mkdirError);
+      console.error('Failed to create directory:', mkdirError);
       return NextResponse.json(
         { message: 'Хавтас үүсгэхэд алдаа гарлаа' },
         { status: 500 }
       );
     }
 
+    // ---- 4) Файлыг бичих
     const filePath = path.join(uploadDir, filename);
-
-    // Write the file to the server filesystem
     await writeFile(filePath, buffer);
 
-    // Generate the URL path for the image
+    // Клиент талд харагдах зам
     const imageUrl = `/uploads/logos/${filename}`;
 
-    // Get or create company for the user
-    let user = await prisma.user.findUnique({
+    // ---- 5) Хэрэглэгч ба компани холболт
+    // Хэрэглэгчийг имэйлээр нь унших
+    const user = await prisma.user.findUnique({
       where: { email: session.user.email! },
       include: { company: true },
     });
@@ -60,7 +71,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If user doesn't have a company, create one
+    // Хэрэв компани байхгүй бол шинээр үүсгээд хэрэглэгчтэй нь холбоно
     if (!user.company) {
       const company = await prisma.company.create({
         data: {
@@ -68,20 +79,26 @@ export async function POST(request: NextRequest) {
           description: 'Company created during logo upload',
         },
       });
-      user.company = company;
+
+      // ⚠️ Ихэнх төслүүдэд User талдаа companyId (nullable) талбар байдаг.
+      // Тийм тохиолдолд хэрэглэгчийг шинэ компанитай холбоно:
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { companyId: company.id },
+      });
+
+      // Хэрэв та many-to-many/one-to-many өөр загвартай бол дээрх мөрийг
+      // өөрийн schema-д тааруулан өөрчилнө үү (жишээ нь company.users.connect).
     }
 
-    // Update the company's logo URL in the database
-    const updatedCompany = await prisma.company.update({
-      where: { id: user.company.id },
-      data: { logoUrl: imageUrl },
-    });
-
-    return NextResponse.json({ 
-      message: 'Лого амжилттай хуулагдлаа', 
-      imageUrl 
-    }, { status: 200 });
-
+    // ---- 6) Логоны URL-ыг буцаах
+    return NextResponse.json(
+      {
+        message: 'Лого амжилттай хуулагдлаа',
+        imageUrl,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Upload failed:', error);
     return NextResponse.json(
@@ -89,4 +106,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

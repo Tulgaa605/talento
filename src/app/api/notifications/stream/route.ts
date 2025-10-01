@@ -14,10 +14,11 @@ export async function GET(request: NextRequest) {
     const response = new NextResponse(
       new ReadableStream({
         start(controller) {
-          const sendNotification = (data: any) => {
+          const sendNotification = (data: unknown) => {
             const message = `data: ${JSON.stringify(data)}\n\n`;
             controller.enqueue(new TextEncoder().encode(message));
           };
+
 
           // Send initial connection message
           sendNotification({ type: 'connected', message: 'Connected to notification stream' });

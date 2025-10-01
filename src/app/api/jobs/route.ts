@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: Request) {
+// Бүх ажлын байр авах
+export async function GET() {
   try {
-    // Check if we have any jobs
     const jobs = await prisma.job.findMany({
       include: {
         company: true,
@@ -13,9 +13,8 @@ export async function GET(req: Request) {
       },
     });
 
-    // If no jobs exist, create sample jobs
+    // Хэрэв ажлын байр байхгүй бол жишээ компани, ажил үүсгэнэ
     if (jobs.length === 0) {
-      // First create a default company
       const company = await prisma.company.create({
         data: {
           name: "Tech Corp",
@@ -24,7 +23,6 @@ export async function GET(req: Request) {
         },
       });
 
-      // Create sample jobs with company relation
       const job = await prisma.job.create({
         data: {
           title: "Маркетингийн Менежер",
@@ -49,7 +47,7 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json(jobs);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch jobs" },
       { status: 500 }
@@ -57,6 +55,7 @@ export async function GET(req: Request) {
   }
 }
 
+// Шинэ ажил нэмэх
 export async function POST(req: Request) {
   try {
     const { title, companyId, description, requirements, location, salary } =
@@ -85,8 +84,8 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json(job);
-  } catch (error) {
+    return NextResponse.json(job, { status: 201 });
+  } catch {
     return NextResponse.json(
       { error: "Failed to create job" },
       { status: 500 }

@@ -13,7 +13,6 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is admin
     const user = await prisma.user.findUnique({
       where: {
         id: session.user.id,
@@ -26,7 +25,6 @@ export async function POST(
 
     const { id: applicationId } = await params;
 
-    // Get the application and verify ownership
     const application = await prisma.jobApplication.findUnique({
       where: {
         id: applicationId,
@@ -48,7 +46,6 @@ export async function POST(
       );
     }
 
-    // Update application status
     const updatedApplication = await prisma.jobApplication.update({
       where: {
         id: applicationId,
@@ -58,7 +55,6 @@ export async function POST(
       },
     });
 
-    // Create notification for the applicant
     await prisma.notification.create({
       data: {
         userId: application.userId,

@@ -7,6 +7,7 @@ import { Job, JobApplication, User, CV } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import QuestionnaireDropdown from "./QuestionnaireDropdown";
 import QuestionnaireResponseButton from "@/components/QuestionnaireResponseButton";
+import Image from "next/image";
 
 interface PageProps {
   params: Promise<{
@@ -22,118 +23,26 @@ type JobWithApplications = Job & {
   })[];
 };
 
-type Questionnaire = {
-  id: string;
-  title: string;
-  description?: string;
-  questions: Question[];
-};
-
-type Question = {
-  id: string;
-  text: string;
-  type: "TEXT" | "MULTIPLE_CHOICE" | "SINGLE_CHOICE";
-  required: boolean;
-  options: string[];
-  order: number;
-};
-
-async function downloadCV(cvId: string) {
-  "use server";
-
-  const cv = await prisma.cV.findUnique({
-    where: { id: cvId },
-  });
-
-  if (!cv || !cv.fileUrl) {
-    throw new Error("CV not found");
-  }
-
-  return {
-    url: cv.fileUrl,
-    fileName: cv.fileName,
-  };
-}
-
-async function sendQuestionnaire(
-  applicationId: string,
-  questionnaireId: string
-) {
-  "use server";
-
-  try {
-    const application = await prisma.jobApplication.findUnique({
-      where: { id: applicationId },
-      include: {
-        user: true,
-        job: true,
-      },
-    });
-
-    if (!application) {
-      throw new Error("Application not found");
-    }
-
-    const questionnaire = await prisma.questionnaire.findUnique({
-      where: { id: questionnaireId },
-    });
-
-    if (!questionnaire) {
-      throw new Error("Questionnaire not found");
-    }
-
-    // Create a notification for the applicant
-    await prisma.notification.create({
-      data: {
-        userId: application.userId,
-        title: "Шинэ асуулга ирлээ",
-        message: `${questionnaire.title} асуулгад хариулаарай`,
-        type: "QUESTIONNAIRE",
-        link: `/questionnaires/${questionnaireId}`,
-      },
-    });
-
-    // Update the application with the questionnaire ID
-    await prisma.jobApplication.update({
-      where: { id: applicationId },
-      data: { questionnaireId },
-    });
-
-    revalidatePath(`/employer/applications/${application.jobId}`);
-  } catch (error) {
-    console.error("Error sending questionnaire:", error);
-    throw error;
-  }
-}
-
 export default async function JobApplicationsPage({ params }: PageProps) {
   const session = await getServerSession(authOptions);
-  const { jobId } = await params;
+  const { jobId } = await params; // ⬅️ Next.js 15-д params нь Promise тул await хийж авна
 
   if (!jobId || !session?.user?.id) {
     notFound();
   }
 
-  const job = (await prisma.job.findUnique({
+  // relation filter ашиглаж буй тул findFirst
+  const job = (await prisma.job.findFirst({
     where: {
       id: jobId,
       company: {
-        users: {
-          some: {
-            id: session.user.id,
-          },
-        },
+        users: { some: { id: session.user.id } },
       },
     },
     include: {
       applications: {
-        include: {
-          user: true,
-          cv: true,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
+        include: { user: true, cv: true },
+        orderBy: { createdAt: "desc" },
       },
     },
   })) as JobWithApplications | null;
@@ -142,91 +51,55 @@ export default async function JobApplicationsPage({ params }: PageProps) {
     notFound();
   }
 
-  // Fetch questionnaires for the company
   const questionnaires = await prisma.questionnaire.findMany({
-    where: {
-      companyId: job.companyId,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
+    where: { companyId: job.companyId },
+    orderBy: { createdAt: "desc" },
   });
 
   async function approveApplication(applicationId: string) {
     "use server";
+    const application = await prisma.jobApplication.findUnique({
+      where: { id: applicationId },
+      include: { job: true },
+    });
+    if (!application) throw new Error("Application not found");
 
-    try {
-      const application = await prisma.jobApplication.findUnique({
-        where: { id: applicationId },
-        include: { job: true },
-      });
-
-      if (!application) {
-        throw new Error("Application not found");
-      }
-
-      await prisma.jobApplication.update({
-        where: { id: applicationId },
-        data: { status: "EMPLOYER_APPROVED" },
-      });
-
-      // Notification will be sent by admin when they approve
-      // await prisma.notification.create({
-      //   data: {
-      //     userId: application.userId,
-      //     title: "Таны CV зөвшөөрөгдлөө",
-      //     message: `${application.job.title} ажлын байрт таны CV зөвшөөрөгдлөө`,
-      //     type: "APPLICATION",
-      //     link: `/jobs/${application.jobId}`,
-      //   },
-      // });
-
-      revalidatePath(`/employer/applications/${jobId}`);
-    } catch (error) {
-      console.error("Error approving application:", error);
-      throw error;
-    }
+    await prisma.jobApplication.update({
+      where: { id: applicationId },
+      data: { status: "EMPLOYER_APPROVED" },
+    });
+    revalidatePath(`/employer/applications/${jobId}`);
   }
 
   async function rejectApplication(applicationId: string) {
     "use server";
+    const application = await prisma.jobApplication.findUnique({
+      where: { id: applicationId },
+      include: { job: true },
+    });
+    if (!application) throw new Error("Application not found");
 
-    try {
-      const application = await prisma.jobApplication.findUnique({
-        where: { id: applicationId },
-        include: { job: true },
-      });
+    await prisma.jobApplication.update({
+      where: { id: applicationId },
+      data: { status: "REJECTED" },
+    });
 
-      if (!application) {
-        throw new Error("Application not found");
-      }
+    await prisma.notification.create({
+      data: {
+        userId: application.userId,
+        title: "Таны CV татгалзлаа",
+        message: `${application.job.title} ажлын байрт таны CV татгалзлаа`,
+        type: "APPLICATION",
+        link: `/jobs/${application.jobId}`,
+      },
+    });
 
-      await prisma.jobApplication.update({
-        where: { id: applicationId },
-        data: { status: "REJECTED" },
-      });
-
-      await prisma.notification.create({
-        data: {
-          userId: application.userId,
-          title: "Таны CV татгалзлаа",
-          message: `${application.job.title} ажлын байрт таны CV татгалзлаа`,
-          type: "APPLICATION",
-          link: `/jobs/${application.jobId}`,
-        },
-      });
-
-      revalidatePath(`/employer/applications/${jobId}`);
-    } catch (error) {
-      console.error("Error rejecting application:", error);
-      throw error;
-    }
+    revalidatePath(`/employer/applications/${jobId}`);
   }
 
   return (
     <div className="min-h-screen pt-20 px-4 sm:px-6 md:px-8 lg:px-16 xl:px-32 bg-white">
       <div className="py-8 mt-20">
-        {/* Applications List */}
         <div className="space-y-4">
           {job.applications.map((application) => (
             <div
@@ -236,12 +109,14 @@ export default async function JobApplicationsPage({ params }: PageProps) {
               <div className="p-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
                       {application.user.image ? (
-                        <img
+                        <Image
                           src={application.user.image}
                           alt={application.user.name || ""}
-                          className="w-10 h-10 rounded-full object-cover"
+                          width={40}
+                          height={40}
+                          className="rounded-full object-cover"
                         />
                       ) : (
                         <span className="text-lg font-semibold text-gray-500">
@@ -273,9 +148,11 @@ export default async function JobApplicationsPage({ params }: PageProps) {
                   >
                     {application.status === "PENDING" && "Хүлээгдэж буй"}
                     {application.status === "EMPLOYER_APPROVED" && "Ажил олгогч зөвшөөрсөн"}
-                    {application.status === "ADMIN_APPROVED" && "Зөвшөөрөгдсөн"}
+                    {application.status === "ADMIN_APPROVED" && "Админ зөвшөөрсөн"}
                     {application.status === "REJECTED" && "Татгалзсан"}
-                    {!["PENDING", "EMPLOYER_APPROVED", "ADMIN_APPROVED", "REJECTED"].includes(application.status) && application.status}
+                    {!["PENDING", "EMPLOYER_APPROVED", "ADMIN_APPROVED", "REJECTED"].includes(
+                      application.status
+                    ) && application.status}
                   </div>
                 </div>
 
@@ -311,9 +188,7 @@ export default async function JobApplicationsPage({ params }: PageProps) {
                   )}
                   {application.status === "PENDING" && (
                     <>
-                      <form
-                        action={approveApplication.bind(null, application.id)}
-                      >
+                      <form action={approveApplication.bind(null, application.id)}>
                         <button
                           type="submit"
                           className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200"
@@ -321,9 +196,7 @@ export default async function JobApplicationsPage({ params }: PageProps) {
                           Зөвшөөрөх
                         </button>
                       </form>
-                      <form
-                        action={rejectApplication.bind(null, application.id)}
-                      >
+                      <form action={rejectApplication.bind(null, application.id)}>
                         <button
                           type="submit"
                           className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200"

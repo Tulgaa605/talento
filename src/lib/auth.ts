@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        expectedRoles: { label: "Expected Roles", type: "text" }, // JSON string-аар дамжуулна
+        expectedRoles: { label: "Expected Roles", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -48,7 +48,6 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Имэйл эсвэл нууц үг буруу байна.");
         }
 
-        // expectedRoles-ыг массив болгож уншина
         const expectedRoles: string[] = credentials.expectedRoles
           ? JSON.parse(credentials.expectedRoles)
           : [];
@@ -132,7 +131,7 @@ export const authOptions: NextAuthOptions = {
 
             return true;
           }
-        } catch (error) {
+        } catch {
           return false;
         }
       }
@@ -163,7 +162,7 @@ export const authOptions: NextAuthOptions = {
 
       return baseUrl;
     },
-    async session({ session, token }) {
+    async session({ session }) {
       if (session.user) {
         try {
           const dbUser = await prisma.user.findUnique({
@@ -193,7 +192,7 @@ export const authOptions: NextAuthOptions = {
               },
             };
           }
-        } catch (error) {
+        } catch {
           return {
             ...session,
             user: {

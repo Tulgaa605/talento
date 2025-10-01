@@ -1,28 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { calculateJobMatches } from "@/lib/jobMatching";
-
-interface MatchDetails {
-  experience: number;
-  skills: number;
-  education: number;
-  overall: number;
-}
-
-interface Job {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  salary?: string;
-  requirements: string;
-}
-
-interface JobMatch {
-  job: Job;
-  matchScore: number;
-  matchDetails: MatchDetails;
-}
 
 interface JobCategory {
   titles: string[];

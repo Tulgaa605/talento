@@ -14,7 +14,6 @@ export async function GET() {
       );
     }
 
-    // Get user's company
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       include: { company: true },
@@ -24,7 +23,6 @@ export async function GET() {
       return NextResponse.json({ error: "Компани олдсонгүй" }, { status: 404 });
     }
 
-    // Get count of new applications (PENDING status and not viewed)
     const newApplicationsCount = await prisma.jobApplication.count({
       where: {
         job: {
@@ -33,7 +31,7 @@ export async function GET() {
         status: "PENDING",
         OR: [
           { viewedAt: null },
-          { viewedAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } }, // Applications not viewed in last 24 hours
+          { viewedAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
         ],
       },
     });

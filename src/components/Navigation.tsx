@@ -1,210 +1,23 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useState } from "react";
 import NotificationBell from "./NotificationBell";
 
-const EmployerMenu = ({
-  newApplicationsCount,
-  onClose,
-}: {
-  newApplicationsCount: number;
-  onClose: () => void;
-}) => (
-  <>
-    <Link
-      href="/employer/profile"
-      className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]"
-      onClick={onClose}
-    >
-      <div className="w-5">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-          />
-        </svg>
-      </div>
-      Миний профайл
-    </Link>
-    <Link
-      href="/employer/post-job"
-      className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]"
-      onClick={onClose}
-    >
-      <div className="w-5">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      </div>
-      Ажлын байр нийтлэх
-    </Link>
-    <Link
-      href="/employer/applications"
-      className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]"
-      onClick={onClose}
-    >
-      <div className="w-5">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"
-          />
-        </svg>
-      </div>
-      Анкетууд
-      {newApplicationsCount > 0 && (
-        <span className="absolute right-4 inline-flex items-center justify-center min-w-[18px] h-5 px-1 bg-red-500 text-white text-xs rounded-full">
-          {newApplicationsCount > 99 ? "99+" : newApplicationsCount}
-        </span>
-      )}
-    </Link>
-    <Link
-      href="/employer/questionnaires"
-      className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]"
-      onClick={onClose}
-    >
-      <div className="w-5">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-        </svg>
-      </div>
-      Асуулгууд
-    </Link>
-  </>
-);
-
-const UserMenu = ({
-  newApplicationsCount,
-  onClose,
-}: {
-  newApplicationsCount: number;
-  onClose: () => void;
-}) => (
-  <>
-    <Link
-      href="/jobseeker/profile"
-      className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]"
-      onClick={onClose}
-    >
-      <div className="w-5">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-          />
-        </svg>
-      </div>
-      Миний профайл
-    </Link>
-    <Link
-      href="/jobseeker/applications"
-      className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]"
-      onClick={onClose}
-    >
-      <div className="w-5">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"
-          />
-        </svg>
-      </div>
-      Миний өргөдлүүд
-      {newApplicationsCount > 0 && (
-        <span className="absolute right-4 inline-flex items-center justify-center min-w-[18px] h-5 px-1 bg-red-500 text-white text-xs rounded-full">
-          {newApplicationsCount > 99 ? "99+" : newApplicationsCount}
-        </span>
-      )}
-    </Link>
-  </>
-);
 
 export const Header = () => {
   const { data: session, status } = useSession();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [newApplicationsCount, setNewApplicationsCount] = useState(0);
-
-  useEffect(() => {
-    const fetchNewApplicationsCount = async () => {
-      if (session?.user) {
-        try {
-          const isEmployerOrAdmin = ["EMPLOYER", "ADMIN"].includes(session.user.role);
+  const pathname = usePathname();
+  const isActive = (href: string) => pathname?.startsWith(href);
   
-          const endpoint = isEmployerOrAdmin
-            ? "/api/employer/applications/new-count"
-            : "/api/jobseeker/applications/new-count";
-  
-          const response = await fetch(endpoint);
-          if (response.ok) {
-            const data = await response.json();
-            setNewApplicationsCount(data.count || 0);
-          }
-        } catch (error) {
-          console.error("Шинэ application авахад алдаа гарлаа:", error);
-        }
-      }
-    };
-  
-    fetchNewApplicationsCount();
-  
-    // 30 секунд тутамд дахин дуудах
-    const interval = setInterval(fetchNewApplicationsCount, 30000);
-  
-    return () => clearInterval(interval);
-  }, [session]);
+  const isEmployer = session?.user?.role === 'EMPLOYER';
+  const isAdmin = session?.user?.role === 'ADMIN';
+  const canAccessHR = !!session && (isEmployer || isAdmin);
   
 
   const handleSignOut = async () => {
@@ -214,7 +27,7 @@ export const Header = () => {
   const closeMenu = () => {
     setShowProfileMenu(false);
   };
-  const isEmployer = ["EMPLOYER", "ADMIN"].includes(session?.user?.role);
+
 
 
   return (
@@ -227,35 +40,34 @@ export const Header = () => {
           >
             Talento
           </Link>
+          {status === "authenticated" && canAccessHR && (
           <div className="hidden lg:flex gap-8 items-center text-sm font-medium">
-            <Link
-              href="/"
-              className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A] ml-20"
-            >
-              <span className="group-hover:text-[#0C213A]/80 transition-colors font-poppins font-medium">
-                Нүүр
-              </span>
-              <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0C213A] transition-all duration-300 group-hover:w-full"></div>
+            <Link href="/employer/hr/employees" className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A] ml-20">
+              <span className="group-hover:text-[#0C213A]/80 transition-colors font-poppins font-medium">Ажилтны мэдээллийн сан</span>
+              <div className={`absolute bottom-0 left-0 h-0.5 bg-[#0C213A] transition-all duration-300 transform translate-y-[6px] ${isActive('/employer/hr/employees') ? 'w-full' : 'w-0 group-hover:w-full'}`}></div>
             </Link>
-            <Link
-              href="/jobs"
-              className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A]"
-            >
-              <span className="group-hover:text-[#0C213A]/80 transition-colors font-poppins font-medium">
-                Ажлын байр
-              </span>
-              <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0C213A] transition-all duration-300 group-hover:w-full"></div>
+            <Link href="/employer/hr/recruitment" className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A]">
+              <span className="group-hover:text-[#0C213A]/80 transition-colors font-poppins font-medium">Ажилд авах процесс</span>
+              <div className={`absolute bottom-0 left-0 h-0.5 bg-[#0C213A] transition-all duration-300 transform translate-y-[6px] ${isActive('/employer/hr/recruitment') ? 'w-full' : 'w-0 group-hover:w-full'}`}></div>
             </Link>
-            <Link
-              href="/about"
-              className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A]"
-            >
-              <span className="group-hover:text-[#0C213A]/80 transition-colors font-poppins font-medium">
-                Таленто гэж юу вэ?
-              </span>
-              <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0C213A] transition-all duration-300 group-hover:w-full"></div>
+            <Link href="/employer/hr/training" className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A]">
+              <span className="group-hover:text-[#0C213A]/80 transition-colors font-poppins font-medium">Сургалт хөгжлийн бүртгэл</span>
+              <div className={`absolute bottom-0 left-0 h-0.5 bg-[#0C213A] transition-all duration-300 transform translate-y-[6px] ${isActive('/employer/hr/training') ? 'w-full' : 'w-0 group-hover:w-full'}`}></div>
+            </Link>
+            <Link href="/employer/hr/performance" className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A]">
+              <span className="group-hover:text-[#0C213A]/80 transition-colors font-poppins font-medium">Ажлын гүйцэтгэл үнэлгээ</span>
+              <div className={`absolute bottom-0 left-0 h-0.5 bg-[#0C213A] transition-all duration-300 transform translate-y-[6px] ${isActive('/employer/hr/performance') ? 'w-full' : 'w-0 group-hover:w-full'}`}></div>
+            </Link>
+            <Link href="/employer/hr/rewards-penalties" className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A]">
+              <span className="group-hover:text-[#0C213A]/80 transition-colors font-poppins font-medium">Шагнал, шийтгэлийн бүртгэл</span>
+              <div className={`absolute bottom-0 left-0 h-0.5 bg-[#0C213A] transition-all duration-300 transform translate-y-[6px] ${isActive('/employer/hr/rewards-penalties') ? 'w-full' : 'w-0 group-hover:w-full'}`}></div>
+            </Link>
+            <Link href="/employer/hr/reports" className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A]">
+              <span className="group-hover:text-[#0C213A]/80 transition-colors font-poppins font-medium">Тайлан, статистик</span>
+              <div className={`absolute bottom-0 left-0 h-0.5 bg-[#0C213A] transition-all duration-300 transform translate-y-[6px] ${isActive('/employer/hr/reports') ? 'w-full' : 'w-0 group-hover:w-full'}`}></div>
             </Link>
           </div>
+          )}
         </div>
         <div className="flex items-center gap-4 pr-0">
           <Link
@@ -270,8 +82,6 @@ export const Header = () => {
               className="rounded-lg mt-2"
             />
           </Link>
-
-          {/* Navigation Menu Button */}
           <button
             onClick={() => setShowMobileMenu(!showMobileMenu)}
             className="lg:hidden rounded-lg hover:bg-gray-100"
@@ -292,57 +102,45 @@ export const Header = () => {
             </svg>
           </button>
 
-          {/* Navigation Menu Dropdown */}
           {showMobileMenu && (
             <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg lg:hidden">
               <div className="py-2">
-                <Link
-                  href="/"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  Нүүр
-                </Link>
-                <Link
-                  href="/jobs"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  Ажлын байр
-                </Link>
-                <Link
-                  href="/about"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  Таленто гэж юу вэ?
-                </Link>
+                {status === "authenticated" && canAccessHR && (
+                  <>
+                    <Link href="/employer/hr/employees" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setShowMobileMenu(false)}>
+                      Ажилтны мэдээллийн сан
+                    </Link>
+                    <Link href="/employer/hr/recruitment" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setShowMobileMenu(false)}>
+                      Ажилд авах процесс
+                    </Link>
+                    <Link href="/employer/hr/training" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setShowMobileMenu(false)}>
+                      Сургалт хөгжлийн бүртгэл
+                    </Link>
+                    <Link href="/employer/hr/performance" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setShowMobileMenu(false)}>
+                      Ажлын гүйцэтгэл үнэлгээ
+                    </Link>
+                    <Link href="/employer/hr/rewards-penalties" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setShowMobileMenu(false)}>
+                      Шагнал, шийтгэлийн бүртгэл
+                    </Link>
+                    <Link href="/employer/hr/reports" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setShowMobileMenu(false)}>
+                      Тайлан, статистик
+                    </Link>
+                  </>
+                )}
                 {status === "authenticated" && session ? (
                   <>
                     <div className="border-t border-gray-100 my-2"></div>
                     <div className="px-4 py-2 text-sm text-gray-500">
                       {session.user?.email}
                     </div>
-                    <Link
-                      href={
-                        isEmployer ? "/employer/profile" : "/jobseeker/profile"
-                      }
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
+                    <Link href={isEmployer ? "/employer/profile" : "/jobseeker/profile"} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setShowMobileMenu(false)}>
                       Миний профайл
                     </Link>
-                    <Link
-                      href={
-                        isEmployer
-                          ? "/employer/applications"
-                          : "/jobseeker/applications"
-                      }
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
-                      {isEmployer ? "Анкетууд" : "Миний өргөдлүүд"}
-                    </Link>
+                    {session?.user?.role === 'USER' && (
+                      <Link href="/jobseeker/performance" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setShowMobileMenu(false)}>
+                        Миний гүйцэтгэл
+                      </Link>
+                    )}
                     <div className="border-t border-gray-100 my-2"></div>
                     <button
                       onClick={() => {
@@ -357,18 +155,10 @@ export const Header = () => {
                 ) : (
                   <>
                     <div className="border-t border-gray-100 my-2"></div>
-                    <Link
-                      href="/jobseeker/login"
-                      className="block px-4 py-2 text-sm text-white bg-[#0C213A] hover:bg-[#0C213A]/90"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
+                    <Link href="/jobseeker/login" className="block px-4 py-2 text-sm text-white bg-[#0C213A] hover:bg-[#0C213A]/90" onClick={() => setShowMobileMenu(false)}>
                       Нэвтрэх
                     </Link>
-                    <Link
-                      href="/employer/register"
-                      className="block px-4 py-2 text-sm text-[#0C213A] border border-[#0C213A] hover:bg-gray-50"
-                      onClick={() => setShowMobileMenu(false)}
-                    >
+                    <Link href="/employer/register" className="block px-4 py-2 text-sm text-[#0C213A] border border-[#0C213A] hover:bg-gray-50" onClick={() => setShowMobileMenu(false)}>
                       Ажил олгогч
                     </Link>
                   </>
@@ -392,7 +182,6 @@ export const Header = () => {
                 <NotificationBell />
               </div>
             )}
-
             {status === "authenticated" && session ? (
               <div className="hidden lg:block relative">
                 <button
@@ -404,11 +193,6 @@ export const Header = () => {
                       session.user?.email?.[0]?.toUpperCase() ||
                       "U"}
                   </div>
-                  {isEmployer && (
-                    <span className="text-xs px-2 py-1 bg-[#0C213A]/10 text-[#0C213A] rounded-full">
-                      Ажил олгогч
-                    </span>
-                  )}
                 </button>
 
                 {showProfileMenu && (
@@ -418,19 +202,24 @@ export const Header = () => {
                       <div className="text-sm text-[#0C213A]/60 border-b border-gray-100 pb-2">
                         {session.user?.email}
                       </div>
-                      <div className="flex flex-col gap-1">
-                        {isEmployer ? (
-                          <EmployerMenu
-                            newApplicationsCount={newApplicationsCount}
-                            onClose={closeMenu}
-                          />
-                        ) : (
-                          <UserMenu
-                            newApplicationsCount={newApplicationsCount}
-                            onClose={closeMenu}
-                          />
-                        )}
-                      </div>
+                      <Link href={isEmployer ? "/employer/profile" : "/jobseeker/profile"} className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]" onClick={closeMenu}>
+                        <div className="w-5">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                          </svg>
+                        </div>
+                        Миний профайл
+                      </Link>
+                      {session?.user?.role === 'USER' && (
+                        <Link href="/jobseeker/performance" className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]" onClick={closeMenu}>
+                          <div className="w-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                            </svg>
+                          </div>
+                          Гүйцэтгэлийн үнэлгээ
+                        </Link>
+                      )}
                       <div className="border-t border-gray-100 pt-1">
                         <button
                           onClick={handleSignOut}
@@ -474,3 +263,4 @@ export const Header = () => {
     </header>
   );
 };
+

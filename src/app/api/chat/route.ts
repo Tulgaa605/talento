@@ -15,12 +15,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    // If the message is a CV analysis or job matches, return it directly
     if (message.startsWith('CV Шинжилгээ:') || message.startsWith('Таны CV-тэй тохирох ажлын байрууд:')) {
       return NextResponse.json({ response: message });
     }
 
-    // Get user's CVs from database
     const cvs = await prisma.cV.findMany({
       where: {
         userId: session.user.id,

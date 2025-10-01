@@ -1,7 +1,47 @@
+// src/app/api/employer/questionnaires/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+type QuestionPayload = {
+  text: string;
+  type: "TEXT" | "MULTIPLE_CHOICE" | "SINGLE_CHOICE";
+  required: boolean;
+  options?: string[] | null;
+  order: number;
+};
+
+type PostBody = {
+  title: string;
+  description?: string;
+  questions: QuestionPayload[];
+  companyId: string;
+  attachmentFile?: string;
+  attachmentUrl?: string;
+  type?: string;
+};
+
+type PutBody = {
+  id: string;
+  title: string;
+  description?: string;
+  questions: QuestionPayload[];
+  attachmentFile?: string;
+  attachmentUrl?: string;
+  type?: string;
+};
+
+function mapQuestionForCreate(q: QuestionPayload) {
+  const opts = Array.isArray(q.options) ? q.options : undefined;
+  return {
+    text: q.text,
+    type: q.type,
+    required: q.required,
+    order: q.order,
+    ...(opts ? { options: opts } : {}),
+  };
+}
 
 export async function GET() {
   try {
@@ -10,43 +50,26 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the user's company
     const user = await prisma.user.findUnique({
-      where: {
-        id: session.user.id,
-      },
-      include: {
-        company: true,
-      },
+      where: { id: session.user.id },
+      include: { company: true },
     });
 
     if (!user?.company) {
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
-    // Get questionnaires for the company with responses
     const questionnaires = await prisma.questionnaire.findMany({
-      where: {
-        companyId: user.company.id,
-      },
+      where: { companyId: user.company.id },
       include: {
         responses: {
           include: {
-            user: {
-              select: {
-                name: true,
-                email: true,
-              },
-            },
+            user: { select: { name: true, email: true } },
           },
-          orderBy: {
-            createdAt: 'desc',
-          },
+          orderBy: { createdAt: "desc" },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json(questionnaires);
@@ -66,8 +89,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { title, description, questions, companyId, attachmentFile, attachmentUrl } = body;
+    const body = (await request.json()) as PostBody;
+    const {
+      title,
+      description,
+      questions,
+      companyId,
+      attachmentFile,
+      attachmentUrl,
+      type,
+    } = body;
 
     if (!title || !companyId || !questions || !Array.isArray(questions)) {
       return NextResponse.json(
@@ -80,22 +111,15 @@ export async function POST(request: Request) {
       data: {
         title,
         description,
+        type: type || "CUSTOM",
         attachmentFile,
         attachmentUrl,
         companyId,
         questions: {
-          create: questions.map((q: any) => ({
-            text: q.text,
-            type: q.type,
-            required: q.required,
-            options: q.options,
-            order: q.order,
-          })),
+          create: questions.map(mapQuestionForCreate),
         },
       },
-      include: {
-        questions: true,
-      },
+      include: { questions: true },
     });
 
     return NextResponse.json(questionnaire);
@@ -115,8 +139,9 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { id, title, description, questions, attachmentFile, attachmentUrl } = body;
+    const body = (await request.json()) as PutBody;
+    const { id, title, description, questions, attachmentFile, attachmentUrl, type } =
+      body;
 
     if (!id || !title || !questions || !Array.isArray(questions)) {
       return NextResponse.json(
@@ -125,15 +150,10 @@ export async function PUT(request: Request) {
       );
     }
 
-    // First check if the questionnaire exists
     const existingQuestionnaire = await prisma.questionnaire.findUnique({
       where: { id },
       include: {
-        questions: {
-          include: {
-            answers: true,
-          },
-        },
+        questions: { include: { answers: true } },
       },
     });
 
@@ -144,48 +164,28 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Delete existing answers first
+    // Clean existing answers tied to questions
     for (const question of existingQuestionnaire.questions) {
-      await prisma.answer.deleteMany({
-        where: {
-          questionId: question.id,
-        },
-      });
+      await prisma.answer.deleteMany({ where: { questionId: question.id } });
     }
 
-    // Then delete existing questions
-    await prisma.question.deleteMany({
-      where: {
-        questionnaireId: id,
-      },
-    });
+    // Remove existing questions
+    await prisma.question.deleteMany({ where: { questionnaireId: id } });
 
-    // Update questionnaire and create new questions
     const questionnaire = await prisma.questionnaire.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: {
         title,
         description,
+        type: type || "CUSTOM",
         attachmentFile,
         attachmentUrl,
         questions: {
-          create: questions.map((q: any) => ({
-            text: q.text,
-            type: q.type,
-            required: q.required,
-            options: q.options,
-            order: q.order,
-          })),
+          create: questions.map(mapQuestionForCreate),
         },
       },
       include: {
-        questions: {
-          orderBy: {
-            order: "asc",
-          },
-        },
+        questions: { orderBy: { order: "asc" } },
       },
     });
 
@@ -219,20 +219,11 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // First check if the questionnaire exists and get all related data
     const questionnaire = await prisma.questionnaire.findUnique({
       where: { id },
       include: {
-        questions: {
-          include: {
-            answers: true,
-          },
-        },
-        responses: {
-          include: {
-            answers: true,
-          },
-        },
+        questions: { include: { answers: true } },
+        responses: { include: { answers: true } },
       },
     });
 
@@ -243,44 +234,24 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Delete all answers first
+    // Delete answers tied to responses
     for (const response of questionnaire.responses) {
-      await prisma.answer.deleteMany({
-        where: {
-          responseId: response.id,
-        },
-      });
+      await prisma.answer.deleteMany({ where: { responseId: response.id } });
     }
-
-    // Delete all responses
+    // Delete responses
     await prisma.questionnaireResponse.deleteMany({
-      where: {
-        questionnaireId: id,
-      },
+      where: { questionnaireId: id },
     });
 
-    // Delete all question answers
+    // Delete answers tied to questions (defensive)
     for (const question of questionnaire.questions) {
-      await prisma.answer.deleteMany({
-        where: {
-          questionId: question.id,
-        },
-      });
+      await prisma.answer.deleteMany({ where: { questionId: question.id } });
     }
+    // Delete questions
+    await prisma.question.deleteMany({ where: { questionnaireId: id } });
 
-    // Delete all questions
-    await prisma.question.deleteMany({
-      where: {
-        questionnaireId: id,
-      },
-    });
-
-    // Finally delete the questionnaire
-    await prisma.questionnaire.delete({
-      where: {
-        id,
-      },
-    });
+    // Delete questionnaire
+    await prisma.questionnaire.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

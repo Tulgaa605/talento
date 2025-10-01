@@ -7,60 +7,6 @@ import { use } from "react";
 import Link from "next/link";
 import { MapPinIcon } from "@heroicons/react/24/outline";
 
-const SKILLS_LIST = [
-  "JavaScript",
-  "TypeScript",
-  "React",
-  "Node.js",
-  "Python",
-  "Java",
-  "C#",
-  "C++",
-  "PHP",
-  "Ruby",
-  "Swift",
-  "Kotlin",
-  "Go",
-  "Rust",
-  "SQL",
-  "MongoDB",
-  "PostgreSQL",
-  "MySQL",
-  "AWS",
-  "Azure",
-  "GCP",
-  "Docker",
-  "Kubernetes",
-  "Linux",
-  "Git",
-  "HTML",
-  "CSS",
-  "SASS",
-  "Redux",
-  "Vue.js",
-  "Angular",
-  "Next.js",
-  "GraphQL",
-  "REST API",
-  "Microservices",
-  "DevOps",
-  "CI/CD",
-  "Testing",
-  "Agile",
-  "Scrum",
-  "UI/UX Design",
-  "Figma",
-  "Adobe XD",
-  "Photoshop",
-  "Illustrator",
-  "Project Management",
-  "Technical Writing",
-  "Documentation",
-  "Communication",
-  "Leadership",
-  "Problem Solving",
-];
-
 interface Job {
   id: string;
   title: string;
@@ -89,7 +35,6 @@ export default function EditJobPage({
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [currentSkill, setCurrentSkill] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
   const resolvedParams = use(params);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -98,7 +43,7 @@ export default function EditJobPage({
       router.push("/login");
       return;
     }
-    
+
     const fetchJob = async () => {
       try {
         const response = await fetch(`/api/employer/jobs/${resolvedParams.id}`);
@@ -117,14 +62,15 @@ export default function EditJobPage({
           contactPhone: data.contactPhone || "",
           otherInfo: data.otherInfo || "",
         });
-      } catch (error) {
+      } catch {
         setError("Ажлын байрны мэдээлэл ачаалахад алдаа гарлаа");
       } finally {
         setLoading(false);
       }
     };
+
     fetchJob();
-  }, [resolvedParams.id, session]);
+  }, [resolvedParams.id, session, router]); // <-- include router
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -185,7 +131,7 @@ export default function EditJobPage({
       }
       setSuccessMessage("Ажлын байр амжилттай шинэчлэгдлээ!");
       router.push("/employer/profile");
-    } catch (error) {
+    } catch {
       setError("Ажлын байрны мэдээлэл шинэчлэхэд алдаа гарлаа");
     } finally {
       setSaving(false);

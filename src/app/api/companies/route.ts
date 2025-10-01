@@ -12,7 +12,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if company already exists
     const existingCompany = await prisma.company.findFirst({
       where: {
         name: name
@@ -23,7 +22,6 @@ export async function POST(req: Request) {
       return NextResponse.json(existingCompany);
     }
 
-    // Create new company if it doesn't exist
     const company = await prisma.company.create({
       data: {
         name,

@@ -3,7 +3,6 @@ export const Footer = () => {
     <footer className="bg-gray-900 text-gray-300 px-4 md:px-24 lg:px-24 2xl:px-32 pt-20 pb-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-12">
-          {/* Logo and Slogan */}
           <div className="mb-10 md:mb-0 md:w-1/4 flex flex-col items-center md:items-start">
             <span className="text-5xl md:text-6xl font-extrabold tracking-wider text-white leading-tight">
               Talento
@@ -14,7 +13,6 @@ export const Footer = () => {
               </span>
             </div>
           </div>
-          {/* Contact */}
           <div className="mb-8 md:mb-0  md:w-1/5">
             <h3 className="text-base font-semibold text-white mb-3">
               Холбоо барих
@@ -41,7 +39,6 @@ export const Footer = () => {
               <li>📍 Байршил: Улаанбаатар, Монгол</li>
             </ul>
           </div>
-          {/* Social Media */}
           <div className="mb-8 md:mb-0 md:w-1/5">
             <h3 className="text-base font-semibold text-white mb-3">
               Нийгмийн сүлжээ
@@ -88,7 +85,6 @@ export const Footer = () => {
               </li>
             </ul>
           </div>
-          {/* Legal */}
           <div className="md:w-1/5">
             <h3 className="text-base font-semibold text-white mb-3">
               Хууль, журам
@@ -112,9 +108,7 @@ export const Footer = () => {
             </ul>
           </div>
         </div>
-        {/* Divider */}
         <div className="border-t border-gray-800 my-10"></div>
-        {/* Copyright */}
         <div className="text-center text-gray-500 text-xs font-light">
           © {new Date().getFullYear()} Talento. Бүх эрх хуулиар хамгаалагдсан.
         </div>

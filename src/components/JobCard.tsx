@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { JobListing } from "./types";
 
 export const JobCard = ({ title, type, salary, company }: JobListing) => {
   const [isHovered, setIsHovered] = useState(false);
 
-  // Get color scheme based on job type
   const getColorScheme = (jobType: string) => {
     const typeLower = jobType.toLowerCase();
-
     if (typeLower.includes("программист") || typeLower.includes("developer")) {
       return {
         gradient: "from-gray-800 to-gray-900",
@@ -60,7 +59,6 @@ export const JobCard = ({ title, type, salary, company }: JobListing) => {
         logo: "from-gray-400 to-gray-500",
       };
     }
-    // Default color scheme
     return {
       gradient: "from-gray-900 to-black",
       badge: "from-gray-900 to-black",
@@ -96,10 +94,12 @@ export const JobCard = ({ title, type, salary, company }: JobListing) => {
 
         <div className="flex items-center pt-4 border-t border-gray-100">
           <div className="relative mr-4">
-            <img
+            <Image
               src={company.logo}
-              className="w-12 h-12 object-contain rounded-lg"
               alt={company.name}
+              width={48}
+              height={48}
+              className="w-12 h-12 object-contain rounded-lg"
             />
           </div>
 

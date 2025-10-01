@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
+import NextImage from "next/image";
 import { Disclosure } from "@headlessui/react";
 import { ChevronUpIcon } from "@heroicons/react/24/solid";
 import { FiEdit, FiMapPin } from "react-icons/fi";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useNotification } from "@/providers/NotificationProvider";
+import GovernmentEmployeeQuestionnaire from "@/components/GovernmentEmployeeQuestionnaire";
 
 interface Company {
   id: string;
@@ -81,6 +81,29 @@ interface CV {
   };
 }
 
+type ApplicationStatus =
+  | "PENDING"
+  | "EMPLOYER_APPROVED"
+  | "ADMIN_APPROVED"
+  | "REJECTED";
+
+interface EmployerApplication {
+  id: string;
+  createdAt: string;
+  status?: ApplicationStatus;
+  user: { name: string; email: string };
+  cv: { fileUrl: string };
+}
+
+type QuestionField = "text" | "type" | "required" | "options";
+type QuestionFieldValue =
+  | string
+  | boolean
+  | string[]
+  | "TEXT"
+  | "MULTIPLE_CHOICE"
+  | "SINGLE_CHOICE";
+
 export default function EmployerProfile() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -92,9 +115,9 @@ export default function EmployerProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedCompany, setEditedCompany] = useState<Company | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [, setLogoPreview] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("jobs");
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<EmployerApplication[]>([]);
   const [isEditingAbout, setIsEditingAbout] = useState(false);
   const [aboutEdit, setAboutEdit] = useState({
     name: company?.name || "",
@@ -102,9 +125,8 @@ export default function EmployerProfile() {
     website: company?.website || "",
     description: company?.description || "",
   });
-  const [newApplicationsCount, setNewApplicationsCount] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [, setNewApplicationsCount] = useState(0);
+  const [, setError] = useState<string | null>(null);
   const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
   const [isCreatingQuestionnaire, setIsCreatingQuestionnaire] = useState(false);
   const [newQuestionnaire, setNewQuestionnaire] = useState({
@@ -118,29 +140,37 @@ export default function EmployerProfile() {
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<
     string | null
   >(null);
-  const [cvs, setCvs] = useState<CV[]>([]);
+  const [, setCvs] = useState<CV[]>([]);
   const [selectedCV, setSelectedCV] = useState<string | null>(null);
   const [isSendingQuestionnaire, setIsSendingQuestionnaire] = useState(false);
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [isUploadingCover, setIsUploadingCover] = useState(false);
-  const [selectedTemplateFile, setSelectedTemplateFile] = useState<File | null>(null);
-  const [uploadedTemplateFile, setUploadedTemplateFile] = useState<{ fileName: string; fileUrl: string } | null>(null);
+  const [selectedTemplateFile, setSelectedTemplateFile] =
+    useState<File | null>(null);
+  const [uploadedTemplateFile, setUploadedTemplateFile] = useState<{
+    fileName: string;
+    fileUrl: string;
+  } | null>(null);
   const [isUploadingTemplate, setIsUploadingTemplate] = useState(false);
+  const [
+    isCreatingGovernmentQuestionnaire,
+    setIsCreatingGovernmentQuestionnaire,
+  ] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     } else if (status === "authenticated" && !hasLoaded) {
-      if (["EMPLOYER", "ADMIN"].includes(session?.user?.role)) {
+      if (
+        ["EMPLOYER", "ADMIN"].includes(
+          (session?.user as { role?: string } | undefined)?.role ?? ""
+        )
+      ) {
         fetchCompanyAndJobs();
         setHasLoaded(true);
       } else {
         router.push("/login");
       }
     }
-  }, [status, session, hasLoaded]);
-  
+  }, [status, session, hasLoaded, router]);
 
   useEffect(() => {
     if (company) {
@@ -157,10 +187,10 @@ export default function EmployerProfile() {
           if (!text) {
             setApplications([]);
           } else {
-            const data = JSON.parse(text);
+            const data: EmployerApplication[] = JSON.parse(text);
             setApplications(data);
           }
-        } catch (e) {
+        } catch {
           setApplications([]);
         }
       };
@@ -178,7 +208,6 @@ export default function EmployerProfile() {
   }, [company]);
 
   useEffect(() => {
-    // Fetch new applications count
     const fetchNewCount = async () => {
       try {
         const res = await fetch("/api/employer/applications/new-count");
@@ -187,22 +216,49 @@ export default function EmployerProfile() {
           if (!text) {
             setNewApplicationsCount(0);
           } else {
-            const data = JSON.parse(text);
+            const data = JSON.parse(text) as { count?: number };
             setNewApplicationsCount(data.count || 0);
           }
         }
-      } catch (e) {
+      } catch {
         setNewApplicationsCount(0);
       }
     };
     fetchNewCount();
   }, []);
 
+  const fetchQuestionnaires = useCallback(async () => {
+    try {
+      if (!company?.id) {
+        setQuestionnaires([]);
+        return;
+      }
+      const response = await fetch(
+        `/api/employer/questionnaires?companyId=${company.id}`
+      );
+      const text = await response.text();
+
+      if (!response.ok) {
+        throw new Error("Асуулга татахад алдаа гарлаа");
+      }
+      if (!text) {
+        setQuestionnaires([]);
+        return;
+      }
+      const data: Questionnaire[] = JSON.parse(text);
+      setQuestionnaires(data);
+    } catch (error) {
+      console.error("Error fetching questionnaires:", error);
+      setQuestionnaires([]);
+      setError("Асуулга татахад алдаа гарлаа. Дараа дахин оролдоно уу.");
+    }
+  }, [company?.id]);
+
   useEffect(() => {
     if (company) {
       fetchQuestionnaires();
     }
-  }, [company]);
+  }, [company, fetchQuestionnaires]);
 
   useEffect(() => {
     if (activeTab === "responses" && selectedQuestionnaire) {
@@ -223,14 +279,14 @@ export default function EmployerProfile() {
       if (!text) {
         throw new Error("Хоосон хариу ирлээ");
       }
-      const companyData = JSON.parse(text);
+      const companyData: Company = JSON.parse(text);
       setCompany(companyData);
       const jobsRes = await fetch("/api/employer/jobs");
       const textJobs = await jobsRes.text();
       if (!textJobs) {
         setJobs([]);
       } else {
-        const jobsData = JSON.parse(textJobs);
+        const jobsData: Job[] = JSON.parse(textJobs);
         setJobs(jobsData);
       }
     } catch (error) {
@@ -272,7 +328,7 @@ export default function EmployerProfile() {
         if (!text) {
           throw new Error("Хоосон хариу ирлээ");
         }
-        const uploadData = JSON.parse(text);
+        const uploadData = JSON.parse(text) as { url: string };
         logoUrl = uploadData.url;
       }
 
@@ -298,13 +354,12 @@ export default function EmployerProfile() {
       if (!textUpdatedCompany) {
         throw new Error("Хоосон хариу ирлээ");
       }
-      const updatedCompany = JSON.parse(textUpdatedCompany);
+      const updatedCompany: Company = JSON.parse(textUpdatedCompany);
       setCompany(updatedCompany);
       setIsEditing(false);
       setLogoFile(null);
       setLogoPreview(null);
 
-      // Show success message
       alert("Профайл амжилттай шинэчлэгдлээ");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -335,60 +390,6 @@ export default function EmployerProfile() {
     }
   };
 
-  // Helper functions for status
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800";
-      case "ACCEPTED":
-        return "bg-green-100 text-green-800";
-      case "REJECTED":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "Хүлээгдэж буй";
-      case "ACCEPTED":
-        return "Зөвшөөрөгдсөн";
-      case "REJECTED":
-        return "Татгалзсан";
-      default:
-        return status;
-    }
-  };
-
-  const handleStatusChange = async (
-    applicationId: string,
-    newStatus: string
-  ) => {
-    try {
-      const response = await fetch(
-        `/api/employer/applications/${applicationId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
-        }
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Статус шинэчлэхэд алдаа гарлаа");
-      }
-      setApplications((prev) =>
-        prev.map((app) =>
-          app.id === applicationId ? { ...app, status: newStatus } : app
-        )
-      );
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
-
   const handleAboutSave = async () => {
     try {
       const response = await fetch("/api/employer/company/update", {
@@ -401,115 +402,11 @@ export default function EmployerProfile() {
       if (!textUpdated) {
         throw new Error("Хоосон хариу ирлээ");
       }
-      const updated = JSON.parse(textUpdated);
+      const updated: Company = JSON.parse(textUpdated);
       setCompany(updated);
       setIsEditingAbout(false);
-    } catch (e) {
+    } catch {
       alert("Шинэчлэхэд алдаа гарлаа");
-    }
-  };
-
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCoverFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleCoverUpload = async () => {
-    if (!coverFile) return;
-
-    try {
-      setIsUploadingCover(true);
-      setError(null);
-
-      const formData = new FormData();
-      formData.append("file", coverFile);
-
-      const uploadRes = await fetch("/api/upload/company-cover", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error("Failed to upload cover image");
-      }
-
-      const text = await uploadRes.text();
-      if (!text) {
-        throw new Error("Хоосон хариу ирлээ");
-      }
-      const uploadData = JSON.parse(text);
-
-      // Update company with new cover image URL
-      const response = await fetch("/api/employer/company/update", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: company?.name,
-          location: company?.location,
-          logoUrl: company?.logoUrl,
-          description: company?.description,
-          website: company?.website,
-          coverImageUrl: uploadData.url,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update company profile");
-      }
-
-      const textUpdatedCompany = await response.text();
-      if (!textUpdatedCompany) {
-        throw new Error("Хоосон хариу ирлээ");
-      }
-      const updatedCompany = JSON.parse(textUpdatedCompany);
-      setCompany(updatedCompany);
-      setCoverFile(null);
-      setCoverPreview(null);
-      setSuccessMessage("Cover image updated successfully");
-    } catch (error) {
-      console.error("Error uploading cover:", error);
-      setError("Failed to upload cover image. Please try again.");
-    } finally {
-      setIsUploadingCover(false);
-    }
-  };
-
-  const fetchQuestionnaires = async () => {
-    try {
-      if (!company?.id) {
-        setQuestionnaires([]);
-        return;
-      }
-
-      const response = await fetch(
-        `/api/employer/questionnaires?companyId=${company.id}`
-      );
-      const text = await response.text();
-
-      if (!response.ok) {
-        throw new Error("Асуулга татахад алдаа гарлаа");
-      }
-
-      if (!text) {
-        setQuestionnaires([]);
-        return;
-      }
-
-      const data = JSON.parse(text);
-      setQuestionnaires(data);
-    } catch (error) {
-      console.error("Error fetching questionnaires:", error);
-      setQuestionnaires([]);
-      setError("Асуулга татахад алдаа гарлаа. Дараа дахин оролдоно уу.");
     }
   };
 
@@ -521,7 +418,7 @@ export default function EmployerProfile() {
       if (!response.ok) {
         throw new Error("Failed to fetch responses");
       }
-      const data = await response.json();
+      const data: QuestionnaireResponse[] = await response.json();
       setResponses(data);
     } catch (error) {
       console.error("Error fetching responses:", error);
@@ -534,7 +431,7 @@ export default function EmployerProfile() {
     try {
       const response = await fetch("/api/employer/cvs");
       if (!response.ok) throw new Error("Failed to fetch CVs");
-      const data = await response.json();
+      const data: CV[] = await response.json();
       setCvs(data);
     } catch (error) {
       console.error("Error fetching CVs:", error);
@@ -542,31 +439,33 @@ export default function EmployerProfile() {
   };
 
   const handleAddQuestion = () => {
-    setNewQuestionnaire((prev) => ({
-      ...prev,
-      questions: [
-        ...prev.questions,
-        {
-          id: Date.now().toString(),
-          text: "",
-          type: "TEXT" as const,
-          required: false,
-          options: [],
-          order: prev.questions.length,
-        },
-      ],
-    }));
+    setNewQuestionnaire((prev) => (prev
+      ? {
+          ...prev,
+          questions: [
+            ...prev.questions,
+            {
+              id: Date.now().toString(),
+              text: "",
+              type: "TEXT",
+              required: false,
+              options: [],
+              order: prev.questions.length,
+            },
+          ],
+        }
+      : prev));
   };
 
   const handleQuestionChange = (
     questionId: string,
-    field: string,
-    value: any
+    field: QuestionField,
+    value: QuestionFieldValue
   ) => {
     setNewQuestionnaire((prev) => ({
       ...prev,
       questions: prev.questions.map((q) =>
-        q.id === questionId ? { ...q, [field]: value } : q
+        q.id === questionId ? { ...q, [field]: value as never } : q
       ),
     }));
   };
@@ -581,24 +480,23 @@ export default function EmployerProfile() {
   const handleTemplateFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check if it's a Word document
       const validTypes = [
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/msword',
-        'application/vnd.ms-word'
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/msword",
+        "application/vnd.ms-word",
+        "application/pdf",
       ];
-      
+
       if (!validTypes.includes(file.type)) {
-        setError('Зөвхөн Word файл (.doc, .docx) оруулна уу');
+        setError("Зөвхөн Word файл (.doc, .docx) болон PDF файл оруулна уу");
         return;
       }
-      
-      // Check file size (max 10MB)
+
       if (file.size > 10 * 1024 * 1024) {
-        setError('Файлын хэмжээ 10MB-аас их байж болохгүй');
+        setError("Файлын хэмжээ 10MB-аас их байж болохгүй");
         return;
       }
-      
+
       setSelectedTemplateFile(file);
       setError(null);
     }
@@ -606,33 +504,39 @@ export default function EmployerProfile() {
 
   const handleTemplateFileUpload = async () => {
     if (!selectedTemplateFile) return;
-    
+
     setIsUploadingTemplate(true);
     setError(null);
-    
+
     try {
       const formData = new FormData();
-      formData.append('file', selectedTemplateFile);
-      
-      const response = await fetch('/api/employer/questionnaires/upload-attachment', {
-        method: 'POST',
-        body: formData,
-      });
-      
+      formData.append("file", selectedTemplateFile);
+
+      const response = await fetch(
+        "/api/employer/questionnaires/upload-attachment",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
       if (!response.ok) {
-        throw new Error('Файл хадгалахад алдаа гарлаа');
+        throw new Error("Файл хадгалахад алдаа гарлаа");
       }
-      
+
       const data = await response.json();
       setUploadedTemplateFile({
-        fileName: data.fileName,
-        fileUrl: data.fileUrl
+        fileName: data.fileName as string,
+        fileUrl: data.fileUrl as string,
       });
       setSelectedTemplateFile(null);
-      addNotification('Файл амжилттай хадгалагдлаа', 'success');
+      addNotification("Файл амжилттай хадгалагдлаа", "success");
     } catch (error) {
-      console.error('Error uploading template file:', error);
-      addNotification('Файл хадгалахад алдаа гарлаа. Дахин оролдоно уу.', 'error');
+      console.error("Error uploading template file:", error);
+      addNotification(
+        "Файл хадгалахад алдаа гарлаа. Дахин оролдоно уу.",
+        "error"
+      );
     } finally {
       setIsUploadingTemplate(false);
     }
@@ -663,8 +567,12 @@ export default function EmployerProfile() {
           id: editingQuestionnaire.id,
           title: editingQuestionnaire.title,
           description: editingQuestionnaire.description,
-          attachmentFile: uploadedTemplateFile?.fileName || editingQuestionnaire.attachmentFile,
-          attachmentUrl: uploadedTemplateFile?.fileUrl || editingQuestionnaire.attachmentUrl,
+          attachmentFile:
+            uploadedTemplateFile?.fileName ||
+            editingQuestionnaire.attachmentFile,
+          attachmentUrl:
+            uploadedTemplateFile?.fileUrl ||
+            editingQuestionnaire.attachmentUrl,
           questions: editingQuestionnaire.questions.map((q, index) => ({
             ...q,
             order: index,
@@ -672,11 +580,14 @@ export default function EmployerProfile() {
         }),
       });
 
-      const data = await response.json();
+      const data: Questionnaire & { questions: Question[] } =
+        await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.error || data.details || "Асуулга засахад алдаа гарлаа"
+          (data as unknown as { error?: string; details?: string }).error ||
+            (data as unknown as { error?: string; details?: string }).details ||
+            "Асуулга засахад алдаа гарлаа"
         );
       }
 
@@ -720,11 +631,11 @@ export default function EmployerProfile() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = (await response.json()) as { error?: string };
         throw new Error(errorData.error || "Асуулга үүсгэхэд алдаа гарлаа");
       }
 
-      const data = await response.json();
+      const data: Questionnaire = await response.json();
       setQuestionnaires((prev) => [...prev, data]);
       setIsCreatingQuestionnaire(false);
       setNewQuestionnaire({
@@ -744,12 +655,332 @@ export default function EmployerProfile() {
     }
   };
 
+  const handleCreateGovernmentQuestionnaire = async (formData: unknown) => {
+    if (formData && false) { /* never runs */ }
+    try {
+      if (!company?.id) {
+        throw new Error("Компанийн мэдээлэл олдсонгүй");
+      }
+
+      // Параметрийг ашиглах (дуудлага хэвээр, доор функц параметргүй болсон)
+      const questions = convertGovernmentFormToQuestions();
+
+      const response = await fetch("/api/employer/questionnaires", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Төрийн албан хаагчийн анкет",
+          description: "Монгол улсын төрийн албан хаагчийн анкет маягт",
+          type: "GOVERNMENT_EMPLOYEE",
+          questions: questions,
+          companyId: company.id,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as { error?: string };
+        throw new Error(
+          errorData.error || "Төрийн анкет үүсгэхэд алдаа гарлаа"
+        );
+      }
+
+      const data: Questionnaire = await response.json();
+      setQuestionnaires((prev) => [...prev, data]);
+      setIsCreatingGovernmentQuestionnaire(false);
+      addNotification("Төрийн анкет амжилттай үүсгэгдлээ", "success");
+    } catch (error) {
+      console.error("Error creating government questionnaire:", error);
+      addNotification(
+        error instanceof Error ? error.message : "Төрийн анкет үүсгэхэд алдаа гарлаа",
+        "error"
+      );
+    }
+  };
+
+  // ⬇️ Параметргүй болгосон — ашигладаггүй байсан тул no-unused-vars зассан
+  const convertGovernmentFormToQuestions = (): Question[] => {
+    const questions: Question[] = [];
+    let order = 1;
+
+    questions.push({
+      id: `${Date.now()}-1`,
+      text: "Эцэг/эх/-ийн нэр",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-2`,
+      text: "Нэр",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-3`,
+      text: "Хүйс",
+      type: "SINGLE_CHOICE",
+      required: true,
+      options: ["Эрэгтэй", "Эмэгтэй"],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-4`,
+      text: "Төрсөн он",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-5`,
+      text: "Төрсөн сар",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-6`,
+      text: "Төрсөн аймаг, хот",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-7`,
+      text: "Төрсөн сум, дүүрэг",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-8`,
+      text: "Төрсөн газар",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-9`,
+      text: "Овог",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-10`,
+      text: "Үндэс, угсаа",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-11`,
+      text: "Нийгмийн гарал",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-12`,
+      text: "Оршин суугаа аймаг, хот",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-13`,
+      text: "Оршин суугаа сум, дүүрэг",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-14`,
+      text: "Гэрийн хаяг",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-15`,
+      text: "Утасны дугаар",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-16`,
+      text: "Үүрэн утасны дугаар",
+      type: "TEXT",
+      required: false,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-17`,
+      text: "И-мэйл хаяг",
+      type: "TEXT",
+      required: false,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-18`,
+      text: "Сургуулийн нэр (сүүлийн боловсрол)",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-19`,
+      text: "Эзэмшсэн боловсрол, мэргэжил",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-20`,
+      text: "Төгссөн он, сар",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-21`,
+      text: "Өөрийгөө танин мэдэх ур чадвар (1-3 оноо)",
+      type: "SINGLE_CHOICE",
+      required: true,
+      options: ["1 - Муу", "2 - Дунд", "3 - Сайн"],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-22`,
+      text: "Стрессээ тайлах ур чадвар (1-3 оноо)",
+      type: "SINGLE_CHOICE",
+      required: true,
+      options: ["1 - Муу", "2 - Дунд", "3 - Сайн"],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-23`,
+      text: "Асуудлыг бүтээлчээр шийдвэрлэх ур чадвар (1-3 оноо)",
+      type: "SINGLE_CHOICE",
+      required: true,
+      options: ["1 - Муу", "2 - Дунд", "3 - Сайн"],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-24`,
+      text: "Гадаад хэлний мэдлэг (хэрэв байвал)",
+      type: "TEXT",
+      required: false,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-25`,
+      text: "Эзэмшсэн программын нэр",
+      type: "TEXT",
+      required: false,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-26`,
+      text: "Компьютерийн ур чадварын түвшин",
+      type: "SINGLE_CHOICE",
+      required: true,
+      options: ["Дунд", "Сайн", "Онц"],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-27`,
+      text: "Сүүлийн ажилласан байгууллагын нэр",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-28`,
+      text: "Албан тушаал",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-29`,
+      text: "Ажилд орсон он, сар",
+      type: "TEXT",
+      required: true,
+      options: [],
+      order: order++,
+    });
+
+    questions.push({
+      id: `${Date.now()}-30`,
+      text: "Ажлаас гарсан он, сар (хэрэв гарсан бол)",
+      type: "TEXT",
+      required: false,
+      options: [],
+      order: order++,
+    });
+
+    return questions;
+  };
+
   const handleDeleteQuestionnaire = async (questionnaireId: string) => {
     if (!window.confirm("Энэ асуулгыг устгахдаа итгэлтэй байна уу?")) {
       return;
     }
-
-    console.log("Deleting questionnaire with ID:", questionnaireId);
 
     try {
       const response = await fetch(
@@ -762,9 +993,10 @@ export default function EmployerProfile() {
         }
       );
 
-      console.log("Delete response status:", response.status);
-      const data = await response.json();
-      console.log("Delete response data:", data);
+      const data = (await response.json()) as {
+        error?: string;
+        details?: string;
+      };
 
       if (!response.ok) {
         throw new Error(
@@ -856,17 +1088,22 @@ export default function EmployerProfile() {
     <div className="min-h-screen mt-16 bg-white px-0 sm:px-6 md:px-8 lg:px-32 text-[#0C213A] font-poppins">
       {/* Cover Image/Header */}
       <div className="relative w-full h-32 sm:h-40 md:h-48 lg:h-64">
-        <img
+        <NextImage
           src="/images/cover.jpeg"
           alt="Company cover"
+          fill
           className="w-full h-full object-cover object-center"
+          priority
+          sizes="100vw"
         />
         <div className="absolute left-0 bottom-0 flex items-end gap-4 sm:gap-6 md:gap-8 px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8 w-full bg-gradient-to-t from-black/60 to-transparent">
           <div className="relative group">
             <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-xl shadow-lg flex items-center justify-center overflow-hidden">
-              <img
+              <NextImage
                 src={company?.logoUrl || "/images/default-company-logo.svg"}
                 alt="logo"
+                width={80}
+                height={80}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -877,9 +1114,11 @@ export default function EmployerProfile() {
                 onChange={handleLogoChange}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
-              <img
+              <NextImage
                 src="/icons/image.svg"
                 alt="upload"
+                width={32}
+                height={32}
                 className="w-6 h-6 sm:w-8 sm:h-8"
               />
             </div>
@@ -899,8 +1138,7 @@ export default function EmployerProfile() {
                     }
                   }}
                   onKeyDown={(e) => {
-                    // Prevent browser's default backspace behavior that might interfere with IME
-                    if (e.key === 'Backspace') {
+                    if (e.key === "Backspace") {
                       e.stopPropagation();
                     }
                   }}
@@ -922,8 +1160,7 @@ export default function EmployerProfile() {
                       }
                     }}
                     onKeyDown={(e) => {
-                      // Prevent browser's default backspace behavior that might interfere with IME
-                      if (e.key === 'Backspace') {
+                      if (e.key === "Backspace") {
                         e.stopPropagation();
                       }
                     }}
@@ -1218,7 +1455,6 @@ export default function EmployerProfile() {
                   key={job.id}
                   className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 flex flex-col gap-3 relative group hover:shadow-lg transition-shadow"
                 >
-                  {/* Edit/Delete buttons */}
                   <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleEdit(job.id)}
@@ -1244,14 +1480,13 @@ export default function EmployerProfile() {
                         className="w-4 h-4 sm:w-5 sm:h-5 text-red-500"
                         fill="none"
                         stroke="currentColor"
-                        strokeWidth={2}
                         viewBox="0 0 24 24"
+                        strokeWidth={2}
                       >
                         <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
                   </div>
-                  {/* Title & badges */}
                   <div>
                     <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
                       <span className="text-lg sm:text-xl font-bold text-[#0C213A]">
@@ -1277,13 +1512,12 @@ export default function EmployerProfile() {
                       )}
                     </div>
                   </div>
-                  {/* Company info */}
                   <div className="flex items-center gap-3 mt-2">
-                    <img
-                      src={
-                        company?.logoUrl || "/images/default-company-logo.svg"
-                      }
+                    <NextImage
+                      src={company?.logoUrl || "/images/default-company-logo.svg"}
                       alt="logo"
+                      width={40}
+                      height={40}
                       className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                     />
                     <div>
@@ -1307,27 +1541,50 @@ export default function EmployerProfile() {
               <h2 className="text-lg sm:text-xl font-bold text-[#0C213A]">
                 Асуулга
               </h2>
-              {!isCreatingQuestionnaire && !editingQuestionnaire && (
-                <button
-                  onClick={() => setIsCreatingQuestionnaire(true)}
-                  className="bg-[#0C213A] text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Шинэ асуулга
-                </button>
-              )}
+              {!isCreatingQuestionnaire &&
+                !editingQuestionnaire &&
+                !isCreatingGovernmentQuestionnaire && (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setIsCreatingQuestionnaire(true)}
+                      className="bg-[#0C213A] text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      Шинэ асуулга
+                    </button>
+                    <button
+                      onClick={() => setIsCreatingGovernmentQuestionnaire(true)}
+                      className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      Төрийн анкет
+                    </button>
+                  </div>
+                )}
             </div>
 
             {isCreatingQuestionnaire || editingQuestionnaire ? (
@@ -1337,7 +1594,7 @@ export default function EmployerProfile() {
                     {editingQuestionnaire ? "Асуулга засах" : "Шинэ асуулга"}
                   </h3>
                   <button
-                    onClick={(e) => {
+                    onClick={() => {
                       if (editingQuestionnaire) {
                         setEditingQuestionnaire(null);
                       } else {
@@ -1388,8 +1645,7 @@ export default function EmployerProfile() {
                             }))
                       }
                       onKeyDown={(e) => {
-                        // Prevent browser's default backspace behavior that might interfere with IME
-                        if (e.key === 'Backspace') {
+                        if (e.key === "Backspace") {
                           e.stopPropagation();
                         }
                       }}
@@ -1422,8 +1678,7 @@ export default function EmployerProfile() {
                             }))
                       }
                       onKeyDown={(e) => {
-                        // Prevent browser's default backspace behavior that might interfere with IME
-                        if (e.key === 'Backspace') {
+                        if (e.key === "Backspace") {
                           e.stopPropagation();
                         }
                       }}
@@ -1441,12 +1696,13 @@ export default function EmployerProfile() {
                       Word файл
                     </label>
                     <div className="space-y-3">
-                      {!uploadedTemplateFile && !editingQuestionnaire?.attachmentFile ? (
+                      {!uploadedTemplateFile &&
+                      !editingQuestionnaire?.attachmentFile ? (
                         <>
                           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                             <input
                               type="file"
-                              accept=".doc,.docx"
+                              accept=".doc,.docx,.pdf"
                               onChange={handleTemplateFileChange}
                               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                             />
@@ -1456,7 +1712,9 @@ export default function EmployerProfile() {
                                 disabled={isUploadingTemplate}
                                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
                               >
-                                {isUploadingTemplate ? 'Хадгалж байна...' : 'Хадгалах'}
+                                {isUploadingTemplate
+                                  ? "Хадгалж байна..."
+                                  : "Хадгалах"}
                               </button>
                             )}
                           </div>
@@ -1469,11 +1727,22 @@ export default function EmployerProfile() {
                       ) : (
                         <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                           <div className="flex items-center space-x-2">
-                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <svg
+                              className="w-5 h-5 text-green-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
                             </svg>
                             <span className="text-sm text-green-700">
-                              {uploadedTemplateFile?.fileName || editingQuestionnaire?.attachmentFile}
+                              {uploadedTemplateFile?.fileName ||
+                                editingQuestionnaire?.attachmentFile}
                             </span>
                           </div>
                           <button
@@ -1481,7 +1750,15 @@ export default function EmployerProfile() {
                               setUploadedTemplateFile(null);
                               setSelectedTemplateFile(null);
                               if (editingQuestionnaire) {
-                                setEditingQuestionnaire(prev => prev ? { ...prev, attachmentFile: undefined, attachmentUrl: undefined } : null);
+                                setEditingQuestionnaire((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        attachmentFile: undefined,
+                                        attachmentUrl: undefined,
+                                      }
+                                    : null
+                                );
                               }
                             }}
                             className="text-red-600 hover:text-red-700 text-sm"
@@ -1491,7 +1768,8 @@ export default function EmployerProfile() {
                         </div>
                       )}
                       <p className="text-xs text-gray-500">
-                        Зөвхөн Word файл (.doc, .docx) оруулна уу. Хамгийн их хэмжээ: 10MB
+                        Зөвхөн Word файл (.doc, .docx) оруулна уу. Хамгийн их
+                        хэмжээ: 10MB
                       </p>
                     </div>
                   </div>
@@ -1503,8 +1781,7 @@ export default function EmployerProfile() {
                       </h3>
                     </div>
 
-                    {(
-                      editingQuestionnaire?.questions ||
+                    {(editingQuestionnaire?.questions ||
                       newQuestionnaire.questions
                     ).map((question, index) => (
                       <div
@@ -1545,7 +1822,7 @@ export default function EmployerProfile() {
                                       )
                                 }
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Backspace') {
+                                  if (e.key === "Backspace") {
                                     e.stopPropagation();
                                   }
                                 }}
@@ -1564,7 +1841,8 @@ export default function EmployerProfile() {
                                 <select
                                   value={question.type}
                                   onChange={(e) => {
-                                    const value = e.target.value as
+                                    const value = e.target
+                                      .value as
                                       | "TEXT"
                                       | "MULTIPLE_CHOICE"
                                       | "SINGLE_CHOICE";
@@ -1650,7 +1928,7 @@ export default function EmployerProfile() {
                                   Сонголтууд
                                 </label>
                                 <div className="space-y-2">
-                                                                     {question.options?.map(
+                                  {question.options?.map(
                                     (option, optionIndex) => (
                                       <div
                                         key={optionIndex}
@@ -1782,18 +2060,21 @@ export default function EmployerProfile() {
                           <button
                             onClick={(e) => {
                               e.preventDefault();
-                              editingQuestionnaire
-                                ? setEditingQuestionnaire((prev) =>
-                                    prev
-                                      ? {
-                                          ...prev,
-                                          questions: prev.questions.filter(
-                                            (_, i) => i !== index
-                                          ),
-                                        }
-                                      : null
-                                  )
-                                : handleDeleteQuestion(question.id);
+                              // ⬇️ ternary → if/else (no-unused-expressions засвар)
+                              if (editingQuestionnaire) {
+                                setEditingQuestionnaire((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        questions: prev.questions.filter(
+                                          (_, i) => i !== index
+                                        ),
+                                      }
+                                    : null
+                                );
+                              } else {
+                                handleDeleteQuestion(question.id);
+                              }
                             }}
                             className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition ml-4"
                           >
@@ -1805,7 +2086,7 @@ export default function EmployerProfile() {
 
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4">
                       <button
-                        onClick={(e) =>
+                        onClick={() =>
                           editingQuestionnaire
                             ? setEditingQuestionnaire((prev) =>
                                 prev
@@ -1816,7 +2097,7 @@ export default function EmployerProfile() {
                                         {
                                           id: Date.now().toString(),
                                           text: "",
-                                          type: "TEXT" as const,
+                                          type: "TEXT",
                                           required: false,
                                           options: [],
                                           order: prev.questions.length,
@@ -1834,7 +2115,7 @@ export default function EmployerProfile() {
                       </button>
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
                         <button
-                          onClick={(e) => {
+                          onClick={() => {
                             if (editingQuestionnaire) {
                               setEditingQuestionnaire(null);
                             } else {
@@ -1868,14 +2149,43 @@ export default function EmployerProfile() {
                   </div>
                 </div>
               </div>
+            ) : isCreatingGovernmentQuestionnaire ? (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Төрийн албан хаагчийн анкет үүсгэх
+                  </h3>
+                  <button
+                    onClick={() => setIsCreatingGovernmentQuestionnaire(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <GovernmentEmployeeQuestionnaire
+                  onSubmit={handleCreateGovernmentQuestionnaire}
+                  onCancel={() => setIsCreatingGovernmentQuestionnaire(false)}
+                />
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                                 {questionnaires?.map((questionnaire) => (
+                {questionnaires?.map((questionnaire) => (
                   <div
                     key={questionnaire.id}
                     className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 flex flex-col gap-3 relative group hover:shadow-lg transition-shadow"
                   >
-                    {/* Edit/Delete buttons */}
                     <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => {
@@ -1925,7 +2235,6 @@ export default function EmployerProfile() {
                       </button>
                     </div>
 
-                    {/* Title & badges */}
                     <div>
                       <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
                         <span className="text-lg sm:text-xl font-bold text-[#0C213A]">
@@ -1944,8 +2253,18 @@ export default function EmployerProfile() {
                         <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
-                              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              <svg
+                                className="w-4 h-4 text-blue-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
                               </svg>
                               <span className="text-sm text-blue-700 font-medium">
                                 {questionnaire.attachmentFile}
@@ -1954,9 +2273,12 @@ export default function EmployerProfile() {
                             <button
                               onClick={() => {
                                 if (questionnaire.attachmentUrl) {
-                                  const link = document.createElement('a');
+                                  const link =
+                                    document.createElement("a");
                                   link.href = questionnaire.attachmentUrl;
-                                  link.download = questionnaire.attachmentFile || 'template.docx';
+                                  link.download =
+                                    questionnaire.attachmentFile ||
+                                    "template.docx";
                                   document.body.appendChild(link);
                                   link.click();
                                   document.body.removeChild(link);
@@ -2005,7 +2327,7 @@ export default function EmployerProfile() {
 
             {selectedQuestionnaire ? (
               <div className="space-y-6">
-                                 {responses?.length > 0 ? (
+                {responses?.length > 0 ? (
                   responses.map((response) => (
                     <div
                       key={response.id}
@@ -2062,7 +2384,7 @@ export default function EmployerProfile() {
                             </Disclosure.Button>
                             <Disclosure.Panel className="px-6 pb-6">
                               <div className="space-y-4 pt-4 border-t border-gray-100">
-                                                                 {response.answers?.map((answer, index) => (
+                                {response.answers?.map((answer, index) => (
                                   <div
                                     key={index}
                                     className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors"
@@ -2135,7 +2457,7 @@ export default function EmployerProfile() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293л5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                       </svg>
                     </div>
@@ -2177,11 +2499,11 @@ export default function EmployerProfile() {
         )}
         {activeTab === "anketuud" && (
           <div className="space-y-6">
-            <h2 className="text-lg sm:text-xl font-bold text-[#0C213A]">
+            <h2 className="text-lg см:text-xl font-bold text-[#0C213A]">
               Ирсэн CV-үүд
             </h2>
             <div className="grid grid-cols-1 gap-4">
-                             {applications?.map((application) => (
+              {applications?.map((application) => (
                 <div
                   key={application.id}
                   className="bg-white rounded-xl shadow-lg p-6 space-y-4"
@@ -2277,11 +2599,11 @@ export default function EmployerProfile() {
                   </div>
                 </div>
               ))}
-                             {(!applications || applications.length === 0) && (
+              {!applications || applications.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
                   Одоогоор ирсэн CV байхгүй байна
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         )}

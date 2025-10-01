@@ -14,7 +14,6 @@ export async function POST() {
       );
     }
 
-    // Get user's company
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       include: { company: true },
@@ -24,7 +23,6 @@ export async function POST() {
       return NextResponse.json({ error: "Компани олдсонгүй" }, { status: 404 });
     }
 
-    // Mark all pending applications as viewed
     await prisma.jobApplication.updateMany({
       where: {
         job: {

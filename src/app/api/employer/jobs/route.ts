@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { JobStatus, JobType } from "@prisma/client";
+import { JobStatus } from "@prisma/client";
 
 export async function GET() {
   try {
@@ -84,7 +84,6 @@ export async function POST(req: Request) {
       location,
       salary,
       requirements,
-      otherInfo,
       companyUrl,
       contactPhone,
       workHours,
@@ -92,7 +91,6 @@ export async function POST(req: Request) {
       skills,
     } = body;
 
-    // Validate required fields
     if (!title) {
       return NextResponse.json(
         { message: "Албан тушаалыг оруулна уу" },

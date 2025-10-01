@@ -37,7 +37,6 @@ export async function GET(request: Request) {
       return new NextResponse("CV not found", { status: 404 });
     }
 
-    // Check if the user has permission to download this CV
     const jobApplication = await prisma.jobApplication.findFirst({
       where: {
         cvId: cv.id,
@@ -60,14 +59,12 @@ export async function GET(request: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Get the file path from the URL
     console.log("Original fileUrl:", cv.fileUrl);
     const filePath = path.join(process.cwd(), "public", cv.fileUrl);
     console.log("Attempting to read file from:", filePath);
 
     if (!existsSync(filePath)) {
       console.log("File not found at primary path, trying alternative paths");
-      // Try alternative paths
       const possiblePaths = [
         path.join(process.cwd(), "public", "uploads", "cvs", path.basename(cv.fileUrl.replace(/^\/uploads\/cvs\//, ''))),
       ];

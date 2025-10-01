@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { PhotoIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
 
 interface ProfileImageUploadProps {
@@ -10,10 +9,8 @@ interface ProfileImageUploadProps {
 }
 
 export default function ProfileImageUpload({
-  userId,
-  currentImageUrl,
+  userId
 }: ProfileImageUploadProps) {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -24,13 +21,11 @@ export default function ProfileImageUpload({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       setError("Зөвхөн зураг файл байршуулна уу");
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setError("Зургийн хэмжээ 5MB-ээс хэтрэхгүй байх ёстой");
       return;
@@ -54,9 +49,7 @@ export default function ProfileImageUpload({
         throw new Error(errorData.message || "Зураг хуулж чадсангүй.");
       }
 
-      const data = await response.json();
 
-      // Force a hard refresh to show the new image
       window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ямар нэг алдаа гарлаа.");

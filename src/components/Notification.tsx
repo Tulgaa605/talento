@@ -12,7 +12,6 @@ export default function Notification({ message, type, duration = 3000, onClose, 
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Check if this notification has been shown before
     if (id) {
       const shownNotifications = JSON.parse(localStorage.getItem('shown_notifications') || '[]');
       if (shownNotifications.includes(id)) {

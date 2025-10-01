@@ -20,15 +20,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Файл олдсонгүй" }, { status: 400 });
     }
 
-    // Файлын нэрийг аюулгүй болгох
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const filename = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
 
-    // Файл хадгалах замыг тодорхойлох
     const uploadDir = path.join(process.cwd(), "public", "uploads", "cvs");
 
-    // Хавтас байхгүй бол үүсгэх
     try {
       await mkdir(uploadDir, { recursive: true });
     } catch (mkdirError) {
@@ -41,13 +38,10 @@ export async function POST(req: Request) {
 
     const filePath = path.join(uploadDir, filename);
 
-    // Файлыг серверт хадгалах
     await writeFile(filePath, buffer);
 
-    // CV-ийн URL замыг үүсгэх
     const fileUrl = `/uploads/cvs/${filename}`;
 
-    // CV-г мэдээллийн сан руу хадгалах
     const cv = await prisma.cV.create({
       data: {
         userId: session.user.id,

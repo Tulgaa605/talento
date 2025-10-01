@@ -30,6 +30,7 @@ enum JobApplicationStatus {
   PENDING
   EMPLOYER_APPROVED
   ADMIN_APPROVED
+  APPROVED
   REJECTED
 }
 
@@ -70,6 +71,8 @@ model User {
   profileImageUrl String?
   phoneNumber     String?
   facebookUrl     String?
+  position        String?
+  department      String?
   role          UserRole  @default(USER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -176,8 +179,9 @@ model Questionnaire {
   id          String     @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String?
-  attachmentFile String?  // File name for uploaded document
-  attachmentUrl  String?  // URL to the uploaded file
+  type        String     @default("CUSTOM")
+  attachmentFile String?
+  attachmentUrl  String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   company     Company    @relation(fields: [companyId], references: [id])
@@ -190,9 +194,9 @@ model Questionnaire {
 model Question {
   id             String     @id @default(auto()) @map("_id") @db.ObjectId
   text           String
-  type           String     // "TEXT", "MULTIPLE_CHOICE", "SINGLE_CHOICE"
+  type           String
   required       Boolean    @default(false)
-  options        String[]   // For multiple/single choice questions
+  options        String[]
   order          Int
   questionnaire  Questionnaire @relation(fields: [questionnaireId], references: [id])
   questionnaireId String    @db.ObjectId
@@ -207,8 +211,8 @@ model QuestionnaireResponse {
   user           User       @relation(fields: [userId], references: [id])
   userId         String     @db.ObjectId
   answers        Answer[]
-  attachmentFile String?    // File name for uploaded document
-  attachmentUrl  String?    // URL to the uploaded file
+  attachmentFile String?
+  attachmentUrl  String?
 }
 
 model Answer {
@@ -230,4 +234,413 @@ model Notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
-} 
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum ContractType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  PROBATION
+}
+
+enum DecisionType {
+  HIRING
+  PROMOTION
+  TRANSFER
+  TERMINATION
+  SALARY_CHANGE
+  OTHER
+}
+
+/// NEW: Decision status enum
+enum DecisionStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+  REVOKED
+  ARCHIVED
+}
+
+model Department {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  code        String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  employees   Employee[]
+  positions   Position[]
+}
+
+model Position {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  description  String?
+  code         String     @unique
+  department   Department @relation(fields: [departmentId], references: [id])
+  departmentId String     @db.ObjectId
+  salaryRange  String?
+  requirements String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  employees    Employee[]
+}
+
+model Employee {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId      String         @unique
+  firstName       String
+  lastName        String
+  middleName      String?
+  email           String         @unique
+  phoneNumber     String
+  dateOfBirth     DateTime
+  gender          String
+  address         String
+  emergencyContact String?
+  emergencyPhone  String?
+  status          EmployeeStatus @default(ACTIVE)
+  hireDate        DateTime
+  terminationDate DateTime?
+  position        Position       @relation(fields: [positionId], references: [id])
+  positionId      String         @db.ObjectId
+  department      Department     @relation(fields: [departmentId], references: [id])
+  departmentId    String         @db.ObjectId
+  jobClassification JobClassification? @relation(fields: [jobClassificationId], references: [id])
+  jobClassificationId String?    @db.ObjectId
+  manager         Employee?      @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  managerId       String?        @db.ObjectId
+  subordinates    Employee[]     @relation("EmployeeManager")
+  contracts       EmploymentContract[]
+  decisions       Decision[]
+  documents       EmployeeDocument[]
+  salaryStructures SalaryStructure[]
+  salaryCalculations SalaryCalculation[]
+  salaryAllowances SalaryAllowance[]
+  salaryDeductions SalaryDeduction[]
+  leaveBalances   LeaveBalance[]
+  leaveRequests   LeaveRequest[]
+  leaveSchedules  LeaveSchedule[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+enum EmploymentContractStatus {
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+model EmploymentContract {
+  id              String                     @id @default(auto()) @map("_id") @db.ObjectId
+  contractNumber  String                     @unique
+  employee        Employee                   @relation(fields: [employeeId], references: [id])
+  employeeId      String                     @db.ObjectId
+  contractType    ContractType
+  startDate       DateTime
+  endDate         DateTime?
+  salary          Float
+  currency        String                     @default("MNT")
+  probationPeriod Int?
+  workSchedule    String?
+  benefits        String?
+  terms           String?
+  status          EmploymentContractStatus   @default(ACTIVE)
+  documentUrl     String?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+}
+
+model Decision {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  decisionNumber String        @unique
+  title         String
+  description   String
+  type          DecisionType
+  employee      Employee       @relation(fields: [employeeId], references: [id])
+  employeeId    String         @db.ObjectId
+  decisionDate  DateTime
+  effectiveDate DateTime?
+  reason        String?
+  details       String?
+  documentUrl   String?
+  status        DecisionStatus @default(ACTIVE) // changed from String -> enum
+  createdBy     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model EmployeeDocument {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  type        String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  employeeId  String   @db.ObjectId
+  documentUrl String
+  fileName    String
+  fileSize    Int?
+  uploadDate  DateTime @default(now())
+  expiryDate  DateTime?
+  description String?
+  isRequired  Boolean  @default(false)
+}
+
+enum SalaryType {
+  BASIC
+  ALLOWANCE
+  BONUS
+  DEDUCTION
+  OVERTIME
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  PERSONAL
+  MATERNITY
+  PATERNITY
+  UNPAID
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model SalaryStructure {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  employeeId  String   @db.ObjectId
+  basicSalary Float
+  allowances  Float    @default(0)
+  deductions  Float    @default(0)
+  effectiveDate DateTime
+  endDate     DateTime?
+  currency    String   @default("MNT")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SalaryCalculation {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  employeeId  String   @db.ObjectId
+  month       Int
+  year        Int
+  basicSalary Float
+  allowances  Float    @default(0)
+  deductions  Float    @default(0)
+  overtime    Float    @default(0)
+  bonus       Float    @default(0)
+  tax         Float    @default(0)
+  socialInsurance Float @default(0)
+  netSalary   Float
+  currency    String   @default("MNT")
+  calculatedAt DateTime @default(now())
+  paidAt      DateTime?
+  status      String   @default("PENDING")
+}
+
+model SalaryAllowance {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  employee    Employee   @relation(fields: [employeeId], references: [id])
+  employeeId  String     @db.ObjectId
+  type        SalaryType
+  amount      Float
+  description String?
+  effectiveDate DateTime
+  endDate     DateTime?
+  currency    String     @default("MNT")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model SalaryDeduction {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  employee    Employee   @relation(fields: [employeeId], references: [id])
+  employeeId  String     @db.ObjectId
+  type        SalaryType
+  amount      Float
+  description String?
+  effectiveDate DateTime
+  endDate     DateTime?
+  currency    String     @default("MNT")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model LeaveBalance {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  employeeId  String   @db.ObjectId
+  year        Int
+  leaveType   LeaveType
+  totalDays   Int
+  usedDays    Int      @default(0)
+  remainingDays Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([employeeId, year, leaveType])
+}
+
+model LeaveRequest {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  employee    Employee    @relation(fields: [employeeId], references: [id])
+  employeeId  String      @db.ObjectId
+  leaveType   LeaveType
+  startDate   DateTime
+  endDate     DateTime
+  totalDays   Int
+  reason      String
+  status      LeaveStatus @default(PENDING)
+  approvedBy  String?
+  approvedAt  DateTime?
+  rejectedBy  String?
+  rejectedAt  DateTime?
+  rejectionReason String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model LeaveSchedule {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  employeeId  String   @db.ObjectId
+  year        Int
+  leaveType   LeaveType
+  plannedDays Int
+  actualDays  Int?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model JobClassification {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  code         String   @unique
+  mainGroup    String
+  subGroup     String
+  minorGroup   String
+  unitGroup    String
+  jobProfession String
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  employees    Employee[]
+}
+
+model Training {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  legacyId     Int      @unique
+  name         String
+  type         String
+  objective    String?
+  content      String?
+  startDate    DateTime
+  endDate      DateTime
+  location     String?
+  instructor   String?
+  participants Int      @default(0)
+  status       String
+  progress     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model TrainingParticipant {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId     String
+  name           String
+  position       String?
+  trainingName   String
+  duration       String?
+  status         String
+  score          Int      @default(0)
+  certificate    String?
+  trainingLegacyId Int
+  createdAt      DateTime @default(now())
+}
+
+model Reward {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  legacyId    Int      @unique
+  employeeId  String
+  employee    String
+  type        String
+  amount      String
+  reason      String?
+  date        DateTime
+  status      String
+  issuedBy    String?
+  orderNumber String?
+  createdAt   DateTime @default(now())
+}
+
+model Penalty {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  legacyId    Int      @unique
+  employeeId  String
+  employee    String
+  type        String
+  reason      String?
+  amount      String
+  date        DateTime
+  status      String
+  decidedBy   String?
+  orderNumber String?
+  createdAt   DateTime @default(now())
+}
+
+model PerformanceEvaluation {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  legacyId      Int      @unique
+  employee      String
+  employeeRefId String
+  evaluator     String
+  evaluatorType String
+  score         Float
+  period        String
+  status        String
+  evaluationDate DateTime
+  comment       String?
+  strengths     String?
+  improvements  String?
+  averageScore  Float
+  evaluationType String
+  createdAt     DateTime @default(now())
+}
+
+model HRReport {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  legacyId     Int      @unique
+  name         String
+  type         String
+  period       String
+  status       String
+  size         String   @default("-")
+  description  String?
+  createdBy    String
+  createdAt    DateTime @default(now())
+  lastModified DateTime @default(now())
+  format       String
+  department   String
+}
+
+model Occupation {
+  id        String   @id @default(cuid()) @map("_id") @db.ObjectId
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -15,7 +15,6 @@ export async function GET(
 
     const { id: questionnaireId } = await params;
 
-    // Get the questionnaire to verify ownership
     const questionnaire = await prisma.questionnaire.findUnique({
       where: {
         id: questionnaireId,
@@ -32,7 +31,6 @@ export async function GET(
       );
     }
 
-    // Verify that the user is associated with the company
     const user = await prisma.user.findUnique({
       where: {
         id: session.user.id,
@@ -46,7 +44,6 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch responses with user and answer details
     const responses = await prisma.questionnaireResponse.findMany({
       where: {
         questionnaireId,
