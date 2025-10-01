@@ -116,7 +116,7 @@ export default function PositionsPage() {
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <Link
-          href="/hr/positions/new"
+          href="/employer/hr/positions/new"
           className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
         >
           <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

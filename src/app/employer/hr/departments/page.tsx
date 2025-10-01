@@ -100,7 +100,7 @@ export default function DepartmentsPage() {
               </p>
             </div>
             <Link
-              href="/hr/departments/new"
+              href="/employer/hr/departments/new"
               className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
             >
               <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />

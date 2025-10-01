@@ -33,6 +33,8 @@ export default function NewPositionPage() {
       if (response.ok) {
         const data = await response.json();
         setDepartments(data);
+      } else {
+        console.error('Хэлтсүүдийн API 404/500:', await response.text());
       }
     } catch (error) {
       console.error('Хэлтсүүдийг авахад алдаа гарлаа:', error);
@@ -54,18 +56,17 @@ export default function NewPositionPage() {
     try {
       const response = await fetch('/api/hr/positions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Алдаа гарлаа');
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `Алдаа гарлаа (${response.status})`);
       }
 
-      router.push('/hr/positions');
+      // ✅ Employer хэсгийн зөв маршрут руу чиглүүлэв
+      router.push('/employer/hr/positions');
     } catch (error) {
       console.error('Алдаа:', error);
       alert(error instanceof Error ? error.message : 'Алдаа гарлаа');
@@ -134,6 +135,7 @@ export default function NewPositionPage() {
                   </button>
                 </div>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Хэлтэс *
