@@ -202,7 +202,6 @@ export const Header = () => {
                       <div className="text-sm text-[#0C213A]/60 border-b border-gray-100 pb-2">
                         {session.user?.email}
                       </div>
-                      {/* Ажлын байр нийтлэх линк - зөвхөн ажил олгогч болон админд */}
                       {canAccessHR && (
                         <Link href="/employer/post-job" className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]" onClick={closeMenu}>
                           <div className="w-5">

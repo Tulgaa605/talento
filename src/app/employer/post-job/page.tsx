@@ -1,44 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  BriefcaseIcon,
-  MapPinIcon,
-  CurrencyDollarIcon,
-  LinkIcon as UrlIcon, // Renamed for clarity
-  PhoneIcon,
-  ClockIcon, 
-  BuildingOfficeIcon, 
-  PhotoIcon,
-  PlusCircleIcon,
-  PaperAirplaneIcon,
-  ArrowUturnLeftIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  TagIcon, 
-  ListBulletIcon,
-  PlusIcon,
-  ServerStackIcon, // Placeholder for Talento Logo in Nav
-  UserCircleIcon, // Placeholder for User Icon in Nav
-  ComputerDesktopIcon, // Placeholder for AI icon
-} from '@heroicons/react/24/outline';
+import { MapPinIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import Image from "next/image";
 
-// Helper component for Skill Tags
-const SkillTag = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline-block text-slate-700 text-sm font-medium px-4 py-1.5 border border-slate-300 rounded-md hover:bg-slate-50 cursor-pointer">
-    {children}
-  </span>
-);
-
-// Placeholder for actual icons in the Nav
-const AiIconPlaceholder = () => <ComputerDesktopIcon className="w-6 h-6 text-slate-700" />;
-const UserIconPlaceholder = () => <UserCircleIcon className="w-7 h-7 text-slate-700" />;
-const TalentoLogoNav = () => <ServerStackIcon className="w-7 h-7 text-slate-700" />;
 
 export default function PostJobPageWithNewDesign() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -147,21 +115,23 @@ export default function PostJobPageWithNewDesign() {
                         accept="image/*"
                         onChange={handleLogoUpload}
                     />
-                    {logoUrl ? (
-                        <img 
-                            src={logoUrl} 
-                            alt="Company Logo" 
-                            className="w-full h-full object-contain"
-                            style={{ width: 'auto', height: 'auto' }}
-                        />
-                    ) : (
-                        <>
-                            <PhotoIcon className="w-12 h-12 text-slate-400 mb-2" />
-                            <p className={`text-xs ${labelBaseClass} font-light text-center`}>
-                                {isUploadingLogo ? "Лого хуулаж байна..." : "Лого"}
-                            </p>
-                        </>
-                    )}
+          {logoUrl ? (
+            <Image 
+              src={logoUrl} 
+              alt="Company Logo" 
+              className="w-full h-full object-contain"
+              style={{ width: 'auto', height: 'auto' }}
+              width={201}
+              height={201}
+            />
+          ) : (
+            <>
+              <PhotoIcon className="w-12 h-12 text-slate-400 mb-2" />
+              <p className={`text-xs ${labelBaseClass} font-light text-center`}>
+                {isUploadingLogo ? "Лого хуулаж байна..." : "Лого"}
+              </p>
+            </>
+          )}
                 </div>
                 {/* Input Fields Next to Logo */} 
                 <div className="flex-grow grid grid-cols-1 gap-y-4 content-start">
