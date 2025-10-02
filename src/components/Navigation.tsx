@@ -202,6 +202,17 @@ export const Header = () => {
                       <div className="text-sm text-[#0C213A]/60 border-b border-gray-100 pb-2">
                         {session.user?.email}
                       </div>
+                      {/* Ажлын байр нийтлэх линк - зөвхөн ажил олгогч болон админд */}
+                      {canAccessHR && (
+                        <Link href="/employer/post-job" className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]" onClick={closeMenu}>
+                          <div className="w-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                          </div>
+                          Ажлын байр нийтлэх
+                        </Link>
+                      )}
                       <Link href={isEmployer ? "/employer/profile" : "/jobseeker/profile"} className="font-medium h-12 relative hover:bg-zinc-100 flex items-center px-3 gap-3 rounded-lg transition-colors text-[#0C213A]" onClick={closeMenu}>
                         <div className="w-5">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
