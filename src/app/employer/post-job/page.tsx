@@ -1,4 +1,14 @@
 "use client";
+  const handleTitleInput = (e: React.FormEvent<HTMLInputElement>) => {
+    const value = e.currentTarget.value;
+    if (value.length > 0) {
+      e.currentTarget.value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+    }
+  };
+
+  const handlePhoneInput = (e: React.FormEvent<HTMLInputElement>) => {
+    e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+  };
 
 import { useState, useRef } from "react";
 import Link from "next/link";
@@ -136,7 +146,14 @@ export default function PostJobPageWithNewDesign() {
                 {/* Input Fields Next to Logo */} 
                 <div className="flex-grow grid grid-cols-1 gap-y-4 content-start">
                     <div>
-                        <input type="text" name="title" required className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400  rounded-md focus:outline-none  focus:ring-gray-500 focus:border-gray-500"} ${inputPadding}`} placeholder="Албан тушаал..."/>
+                        <input 
+                          type="text" 
+                          name="title" 
+                          required 
+                          className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400  rounded-md focus:outline-none  focus:ring-gray-500 focus:border-gray-500"} ${inputPadding}`}
+                          placeholder="Албан тушаал..."
+                          onInput={handleTitleInput}
+                        />
                     </div>
                     <div>
                         <input type="url" name="companyUrl" className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400  rounded-md focus:outline-none  focus:ring-gray-500 focus:border-gray-500"} ${inputPadding}`} placeholder="Байгууллагын линк URL"/>
@@ -148,7 +165,15 @@ export default function PostJobPageWithNewDesign() {
             <div className="lg:col-span-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <input type="tel" name="contactPhone" className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400  rounded-md focus:outline-none  focus:ring-gray-500 focus:border-gray-500"} ${inputPadding}`} placeholder="Утас"/>
+                        <input 
+                          type="text"
+                          name="contactPhone" 
+                          className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400  rounded-md focus:outline-none  focus:ring-gray-500 focus:border-gray-500"} ${inputPadding}`}
+                          placeholder="Утас"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          onInput={handlePhoneInput}
+                        />
                     </div>
                     <div>
                         <div className="relative">
@@ -235,22 +260,22 @@ export default function PostJobPageWithNewDesign() {
             />
           </div>
 
-           {/* Submit Buttons - You might want to place these more prominently or differently */}
-            <div className="flex justify-end space-x-3">
-                <Link
-                    href="/employer/profile" 
-                    className="px-5 py-2.5 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                >
-                    Буцах
-                </Link>
-                <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="px-5 py-2.5 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-70 transition-colors"
-                >
-                    {isLoading ? "Илгээж байна..." : "Нийтлэх"}
-                </button>
-            </div>
+      {/* Submit Buttons */}
+      <div className="flex justify-end space-x-3">
+        <Link
+          href="/employer/profile" 
+          className="px-5 py-2.5 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          Буцах
+        </Link>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="px-5 py-2.5 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-70 transition-colors"
+        >
+          {isLoading ? "Илгээж байна..." : "Нийтлэх"}
+        </button>
+      </div>
         </form>
       </main>
     </div>

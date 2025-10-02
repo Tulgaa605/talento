@@ -412,7 +412,6 @@ export default function RecruitmentPage() {
                 onSubmit={(data) => {
                   console.log('Questionnaire submitted:', data);
                   setShowQuestionnaire(false);
-                  // Here you can handle the form submission
                   alert('Анкет амжилттай илгээгдлээ!');
                 }}
                 onCancel={() => setShowQuestionnaire(false)}
@@ -424,7 +423,3 @@ export default function RecruitmentPage() {
     </main>
   );
 }
-
-
-
-
