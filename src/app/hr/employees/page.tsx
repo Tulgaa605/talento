@@ -7,7 +7,6 @@ export default function RedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to the new employer HR employees page
     router.replace('/employer/hr/employees');
   }, [router]);
 

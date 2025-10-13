@@ -8,7 +8,6 @@ import {
 
 const prisma = new PrismaClient();
 
-// Бүх ажилтнуудыг авах
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

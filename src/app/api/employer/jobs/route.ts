@@ -89,6 +89,9 @@ export async function POST(req: Request) {
       workHours,
       type,
       skills,
+      jobProfessionCode,
+      jobProfessionName,
+      otherInfo,
     } = body;
 
     if (!title) {
@@ -131,6 +134,9 @@ export async function POST(req: Request) {
           workHours,
           type,
           skills: JSON.stringify(skills || []),
+          jobProfessionCode: jobProfessionCode || null,
+          jobProfessionName: jobProfessionName || null,
+          otherInfo: otherInfo || null,
         },
       });
 

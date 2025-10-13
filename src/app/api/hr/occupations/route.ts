@@ -1,13 +1,53 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
-export async function GET() {
-  const items = await prisma.occupation.findMany();
-  return NextResponse.json(items);
+interface Occupation {
+  code: string;
+  titleMn: string;
+  majorGroup: string;
+  subMajor: string;
+  minorGroup: string;
+  unitGroup: string;
+  version: string;
 }
 
-export async function POST(req: Request) {
-  const data = await req.json();
-  const created = await prisma.occupation.create({ data });
-  return NextResponse.json(created, { status: 201 });
+// Ажил мэргэжлийн жагсаалт авах
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || '';
+    const limit = parseInt(searchParams.get('limit') || '50');
+
+    // Read occupations from JSON file
+    const occupationsPath = path.join(process.cwd(), 'occupations.json');
+    const occupationsData = fs.readFileSync(occupationsPath, 'utf8');
+    const occupations = JSON.parse(occupationsData) as Occupation[];
+
+    let filteredOccupations = occupations;
+
+    // Хайлт хийх
+    if (search.trim()) {
+      const searchLower = search.toLowerCase();
+      filteredOccupations = occupations.filter((occupation: Occupation) =>
+        occupation.titleMn.toLowerCase().includes(searchLower) ||
+        occupation.code.includes(search)
+      );
+    }
+
+    // Хязгаарлах
+    const limitedResults = filteredOccupations.slice(0, limit);
+
+    return NextResponse.json({
+      occupations: limitedResults,
+      total: filteredOccupations.length,
+      hasMore: filteredOccupations.length > limit
+    });
+  } catch (error) {
+    console.error('Ажил мэргэжлийн жагсаалт авахад алдаа гарлаа:', error);
+    return NextResponse.json(
+      { error: 'Ажил мэргэжлийн жагсаалт авахад алдаа гарлаа' },
+      { status: 500 }
+    );
+  }
 }

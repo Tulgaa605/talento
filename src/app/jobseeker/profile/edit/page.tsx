@@ -36,7 +36,6 @@ export default async function EditProfilePage() {
     );
   }
 
-  // Make email non-null to satisfy EditProfileForm’s prop type
   const formUser = { ...userData, email: userData.email ?? '' };
 
   return (

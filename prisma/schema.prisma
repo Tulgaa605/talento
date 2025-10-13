@@ -110,24 +110,27 @@ model Company {
 }
 
 model Job {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  title        String
-  description  String
-  requirements String?
-  location     String
-  salary       String?
-  type         JobType   @default(FULL_TIME)
-  status       JobStatus @default(ACTIVE)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  company      Company   @relation(fields: [companyId], references: [id])
-  companyId    String    @db.ObjectId
-  applications JobApplication[]
-  companyUrl   String?
-  contactPhone String?
-  workHours    String?
-  skills       String   @default("[]")
-  savedBy      SavedJob[]
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  title            String
+  description      String
+  requirements     String?
+  location         String
+  salary           String?
+  type             JobType   @default(FULL_TIME)
+  status           JobStatus @default(ACTIVE)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  company          Company   @relation(fields: [companyId], references: [id])
+  companyId        String    @db.ObjectId
+  applications     JobApplication[]
+  companyUrl       String?
+  contactPhone     String?
+  workHours        String?
+  skills           String   @default("[]")
+  savedBy          SavedJob[]
+  jobProfessionCode String?
+  jobProfessionName String?
+  otherInfo        String?
 }
 
 model CV {
@@ -281,17 +284,19 @@ model Department {
 }
 
 model Position {
-  id           String     @id @default(auto()) @map("_id") @db.ObjectId
-  title        String
-  description  String?
-  code         String     @unique
-  department   Department @relation(fields: [departmentId], references: [id])
-  departmentId String     @db.ObjectId
-  salaryRange  String?
-  requirements String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  employees    Employee[]
+  id               String     @id @default(auto()) @map("_id") @db.ObjectId
+  title            String
+  description      String?
+  code             String     @unique
+  department       Department @relation(fields: [departmentId], references: [id])
+  departmentId     String     @db.ObjectId
+  salaryRange      String?
+  requirements     String?
+  jobProfessionCode String?
+  jobProfessionName String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  employees        Employee[]
 }
 
 model Employee {

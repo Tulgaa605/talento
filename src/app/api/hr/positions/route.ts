@@ -14,6 +14,8 @@ export async function GET() {
         code: true,
         salaryRange: true,
         requirements: true,
+        jobProfessionCode: true,
+        jobProfessionName: true,
         createdAt: true,
         department: {
           select: {
@@ -48,13 +50,15 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, description, code, departmentId, salaryRange, requirements } = body as {
+    const { title, description, code, departmentId, salaryRange, requirements, jobProfessionCode, jobProfessionName } = body as {
       title: string;
       description?: string | null;
       code: string;
       departmentId: string;
       salaryRange?: string | null;
       requirements?: string | null;
+      jobProfessionCode?: string;
+      jobProfessionName?: string;
     };
 
     if (!title || !code || !departmentId) {
@@ -87,6 +91,8 @@ export async function POST(request: NextRequest) {
         departmentId,
         salaryRange: salaryRange ?? null,
         requirements: requirements ?? null,
+        jobProfessionCode: jobProfessionCode ?? null,
+        jobProfessionName: jobProfessionName ?? null,
       },
       include: {
         department: true,

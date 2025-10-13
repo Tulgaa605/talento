@@ -66,17 +66,14 @@ export default function ReportsPage() {
         if (!res.ok) return;
         const data: unknown = await res.json();
         if (Array.isArray(data)) {
-          // best-effort cast — серверээс Report[] ирдэг гэж үзэв
           setReports(data as Report[]);
         }
       } catch {
-        // noop
       }
     };
     load();
   }, []);
 
-  // ==== Modal handlers ====
   const openDetailModal = (report: Report) => {
     setSelectedReport(report);
     setShowDetailModal(true);
@@ -119,7 +116,6 @@ export default function ReportsPage() {
   const handleEditTemplate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedTemplate) return;
-    // энд state-ээ сольж болно гэвч та “зөвхөн алдааг зас” гэсэн тул хадгалах логикд хүрсэнгүй
     closeEditTemplateModal();
   };
 
@@ -173,7 +169,6 @@ export default function ReportsPage() {
         body: JSON.stringify(newReport),
       });
     } catch {
-      // noop
     }
   };
 
@@ -203,10 +198,10 @@ export default function ReportsPage() {
     try {
       alert("Тайлан амжилттай үүсгэлээ.");
     } catch {
-      // noop
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const departmentStats: {
     department: string;
     employees: number;
@@ -299,7 +294,6 @@ export default function ReportsPage() {
               { id: "overview", name: "Хянах самбар" },
               { id: "reports", name: "Тайланууд" },
               { id: "templates", name: "Загварууд" },
-              { id: "analytics", name: "Аналитик" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -537,67 +531,7 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {activeTab === "analytics" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-[#0C213A]">Хэлтэсээр статистик</h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                {departmentStats.map((dept, index) => (
-                  <div key={index} className="p-4 border border-gray-200 rounded-lg">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium text-[#0C213A]">{dept.department}</h4>
-                      <span className="text-sm text-gray-500">{dept.employees} ажилтан</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-600">Дундаж цалин</p>
-                        <p className="font-semibold text-green-600">{dept.avgSalary}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Гүйцэтгэл</p>
-                        <div className="flex items-center">
-                          <span className="font-semibold text-[#0C213A] mr-2">{dept.performance}</span>
-                          <span className="text-green-600">
-                            {dept.trend === "up" ? "📈" : dept.trend === "down" ? "📉" : "➡️"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-[#0C213A]">Тайлангийн тренд</h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-6">
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium text-gray-700">Нийт тайлан</span>
-                  <span className="text-2xl font-bold text-[#0C213A]">156</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium text-gray-700">Энэ сар</span>
-                  <span className="text-2xl font-bold text-green-600">24</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium text-gray-700">Экспорт хийсэн</span>
-                  <span className="text-2xl font-bold text-blue-600">89</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium text-gray-700">Хамгийн их тайлан</span>
-                  <span className="text-2xl font-bold text-purple-600">Ажилтны</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       {showDetailModal && selectedReport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

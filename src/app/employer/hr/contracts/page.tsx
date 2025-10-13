@@ -125,24 +125,24 @@ export default function ContractsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-      <div className="mb-6 sm:mb-8 sm:mt-10">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Хөдөлмөрийн гэрээнүүд</h1>
-        <p className="mt-2 text-sm sm:text-base text-gray-600">Бүх хөдөлмөрийн гэрээний жагсаалт</p>
+      <div className="flex justify-between items-center sm:mb-7 sm:mt-10">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Хөдөлмөрийн гэрээнүүд</h1>
+          <p className="mt-1 text-sm sm:text-base text-gray-600">Бүх хөдөлмөрийн гэрээний жагсаалт</p>
+        </div>
+        <div className="sm:flex-row gap-4">
+          <Link
+            href="/hr/contracts/new"
+            className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="hidden sm:inline">Шинэ гэрээ үүсгэх</span>
+            <span className="sm:hidden">Шинэ гэрээ</span>
+          </Link>
+        </div>
       </div>
-
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        <Link
-          href="/hr/contracts/new"
-          className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span className="hidden sm:inline">Шинэ гэрээ үүсгэх</span>
-          <span className="sm:hidden">Шинэ гэрээ</span>
-        </Link>
-      </div>
-
       <div className="bg-white rounded-lg shadow">
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -311,20 +311,6 @@ export default function ContractsPage() {
                 ? 'Хайлтын нөхцөлд тохирох гэрээ байхгүй байна.' 
                 : 'Одоогоор бүртгэгдсэн гэрээ байхгүй байна.'}
             </p>
-            {!searchTerm && !statusFilter && !contractTypeFilter && (
-              <div className="mt-4 sm:mt-6">
-                <Link
-                  href="/hr/contracts/new"
-                  className="inline-flex items-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span className="hidden sm:inline">Эхний гэрээ үүсгэх</span>
-                  <span className="sm:hidden">Гэрээ үүсгэх</span>
-                </Link>
-              </div>
-            )}
           </div>
         )}
       </div>

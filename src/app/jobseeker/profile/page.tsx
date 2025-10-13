@@ -68,7 +68,6 @@ export default async function JobseekerProfilePage() {
     );
   }
 
-  // Transform saved jobs data to match the expected format
   const savedJobs = user.savedJobs.map((savedJob) => ({
     ...savedJob.job,
     createdAt: savedJob.job.createdAt.toISOString(),

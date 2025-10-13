@@ -237,7 +237,7 @@ export default function HRDashboardPage() {
               <Link
                 key={action.title}
                 href={action.href}
-                className="bg-white rounded-lg shadow p-4 sm:p-6 hover:shadow-lg transition-shadow duration-200"
+                className="bg-white rounded-lg shadow p-4 sm:p-3.5 hover:shadow-lg transition-shadow duration-200"
               >
                 <div className="flex items-center">
                   <div className={`flex-shrink-0 p-2 rounded-lg ${action.color}`}>
@@ -252,7 +252,6 @@ export default function HRDashboardPage() {
             ))}
           </div>
         </div>
-
         <div>
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Системийн хэсгүүд</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">

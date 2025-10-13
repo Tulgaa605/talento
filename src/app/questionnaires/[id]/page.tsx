@@ -61,7 +61,6 @@ export default function QuestionnairePage({
         });
         setAnswers(initialAnswers);
       } catch (error) {
-        // AbortController-аар цуцлагдсан эсэхийг аюулгүй шалгах
         const aborted =
           (error instanceof DOMException && error.name === "AbortError") ||
           (error instanceof Error && error.name === "AbortError");

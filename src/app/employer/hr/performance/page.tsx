@@ -23,13 +23,12 @@ export interface Evaluation {
   score: number;
   period: string;
   status: EvalStatus;
-  evaluationDate: string; // ISO yyyy-mm-dd
+  evaluationDate: string;
   comment: string;
   strengths: string;
   improvements: string;
   evaluationType: EvalType;
   averageScore?: number;
-  // optional fields we sometimes show in “top performers”
   position?: string;
   department?: string;
   trend?: "up" | "down" | "flat";
@@ -131,7 +130,6 @@ export default function PerformancePage() {
     };
 
     setEvaluations((prev) => [...prev, newEvaluation]);
-    // Fire-and-forget API call; ignore errors
     try {
       void fetch("/api/hr/performance/evaluations", {
         method: "POST",
@@ -139,12 +137,9 @@ export default function PerformancePage() {
         body: JSON.stringify(newEvaluation),
       });
     } catch {
-      // ignore
     }
     closeAddModal();
   };
-
-  // Derived stats
   const totalEvaluations = evaluations.length;
   const averageScore =
     totalEvaluations > 0
@@ -178,30 +173,6 @@ export default function PerformancePage() {
       description: "Ажлын бүтээмж, чанар",
       subCriteria: ["Ажлын бүтээмж", "Ажлын чанар", "Хугацаанд гүйцэтгэх", "Алдааны түвшин"],
     },
-    {
-      category: "Ажлын хурд ба цаг баримтлалт",
-      weight: "20%",
-      description: "Цаг баримтлалт, хурд",
-      subCriteria: ["Цаг баримтлалт", "Ажлын хурд", "Хугацааны удирдлага", "Хуваарь дагах"],
-    },
-    {
-      category: "Харилцаа, багийн ажиллагаа",
-      weight: "25%",
-      description: "Багтай хамтран ажиллах",
-      subCriteria: ["Багтай хамтран ажиллах", "Харилцааны ур чадвар", "Сонсгол", "Илтгэх ур чадвар"],
-    },
-    {
-      category: "Бүтээлч сэтгэлгээ",
-      weight: "15%",
-      description: "Шинэ санаа, шийдэл",
-      subCriteria: ["Шинэ санаа", "Шийдэл олох", "Шинэчлэл", "Бүтээлч байдал"],
-    },
-    {
-      category: "Хариуцлага ба сахилга бат",
-      weight: "10%",
-      description: "Ажлын хариуцлага",
-      subCriteria: ["Ажлын хариуцлага", "Сахилга бат", "Дүрэм дагах", "Хариуцлагатай байдал"],
-    },
   ] as const;
 
   useEffect(() => {
@@ -210,7 +181,6 @@ export default function PerformancePage() {
         const res = await fetch("/api/hr/performance/evaluations");
         if (!res.ok) return;
         const data: unknown = await res.json();
-        // basic runtime guard
         if (Array.isArray(data)) {
           const typed = data as Evaluation[];
           setEvaluations(typed);
@@ -224,13 +194,10 @@ export default function PerformancePage() {
 
   return (
     <main className="max-w-7xl mt-10 mx-auto px-4 py-8">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Ажлын гүйцэтгэл үнэлгээ</h1>
         <p className="text-gray-600">Ажилтнуудын ажлын гүйцэтгэлийг үнэлж, хөгжүүлэх</p>
       </div>
-
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {performanceStats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -247,8 +214,6 @@ export default function PerformancePage() {
           </div>
         ))}
       </div>
-
-      {/* Tabs */}
       <div className="mb-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
@@ -273,11 +238,8 @@ export default function PerformancePage() {
           </nav>
         </div>
       </div>
-
-      {/* Content based on active tab */}
       {activeTab === "overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Top Performers */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-[#0C213A]">Шилдэг ажилтнууд</h3>
@@ -311,8 +273,6 @@ export default function PerformancePage() {
               </div>
             </div>
           </div>
-
-          {/* Recent Evaluations */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-[#0C213A]">Сүүлийн үнэлгээ</h3>
@@ -589,8 +549,6 @@ export default function PerformancePage() {
           </div>
         </div>
       )}
-
-      {/* Detail Modal */}
       {showDetailModal && selectedEvaluation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -672,8 +630,6 @@ export default function PerformancePage() {
           </div>
         </div>
       )}
-
-      {/* Edit Modal */}
       {showEditModal && selectedEvaluation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">

@@ -38,7 +38,6 @@ export default async function CompanyProfilePage({
     <>
       <Header />
       <div className="min-h-screen bg-gray-50 pt-[70px]">
-        {/* Cover Image */}
         <div className="relative h-80 bg-gradient-to-r from-blue-600 to-indigo-600">
           {company.coverImageUrl ? (
             <Image

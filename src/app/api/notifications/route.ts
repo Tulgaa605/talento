@@ -10,7 +10,6 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get unread notifications for the current user
     const notifications = await prisma.notification.findMany({
       where: {
         userId: session.user.id,
@@ -19,7 +18,7 @@ export async function GET() {
       orderBy: {
         createdAt: 'desc',
       },
-      take: 50, // Limit to 50 most recent notifications
+      take: 50,
     });
 
     return NextResponse.json(notifications);

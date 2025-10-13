@@ -65,6 +65,13 @@ export async function GET() {
         responses: {
           include: {
             user: { select: { name: true, email: true } },
+            answers: {
+              include: {
+                question: {
+                  select: { text: true, type: true }
+                }
+              }
+            }
           },
           orderBy: { createdAt: "desc" },
         },

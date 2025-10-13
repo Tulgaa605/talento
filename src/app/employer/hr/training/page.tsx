@@ -49,7 +49,6 @@ export default function TrainingPage() {
   };
   const openParticipant = (p: Participant) => {
     setSelectedParticipant(p);
-    // find all trainings that this employee participated in based on participant records
     const relatedTrainingIds = participants
       .filter((pt) => pt.employeeId === p.employeeId)
       .map((pt) => pt.trainingId);
@@ -114,8 +113,6 @@ export default function TrainingPage() {
     };
     fetchParticipants();
   }, []);
-
-  // Derived dynamic stats (after trainings and participants are declared)
   const totalTrainings = trainings.length;
   const activeTrainings = trainings.filter((t) => t.status === "Идэвхтэй").length;
   const completedTrainings = trainings.filter((t) => t.status === "Дууссан").length;
@@ -156,13 +153,10 @@ export default function TrainingPage() {
 
   return (
     <main className="max-w-7xl mx-auto mt-10 px-4 py-8">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Сургалт хөгжлийн бүртгэл</h1>
         <p className="text-gray-600">Ажилтнуудын сургалт, хөгжлийн үйл ажиллагааг удирдах</p>
       </div>
-
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {trainingStats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -178,8 +172,6 @@ export default function TrainingPage() {
           </div>
         ))}
       </div>
-
-      {/* Tabs */}
       <div className="mb-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
@@ -204,11 +196,8 @@ export default function TrainingPage() {
           </nav>
         </div>
       </div>
-
-      {/* Content based on active tab */}
       {activeTab === "overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Recent Trainings */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-[#0C213A]">Сүүлийн сургалтууд</h3>
@@ -243,8 +232,6 @@ export default function TrainingPage() {
               </div>
             </div>
           </div>
-
-          {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-[#0C213A]">Хурдан үйлдэл</h3>
@@ -294,7 +281,7 @@ export default function TrainingPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-semibold text-[#0C213A]">Бүх сургалтууд</h3>
-            <button onClick={openAddTraining} className="bg-[#0C213A] text-white px-4 py-2 rounded-lg hover:bg-[#0C213A]/90 transition-colors">
+            <button onClick={openAddTraining} className="bg-white text-black px-4 py-2 border-2 border-gray-700 rounded-lg hover:bg-[#0C213A]/90 hover:text-white transition-colors">
               Шинэ сургалт нэмэх
             </button>
           </div>
@@ -393,13 +380,14 @@ export default function TrainingPage() {
         </div>
       )}
       {showAddParticipant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <h3 className="text-lg font-semibold text-[#0C213A]">Оролцогч нэмэх</h3>
               <button onClick={closeAddParticipant} className="p-2 rounded-md hover:bg-gray-100">✕</button>
             </div>
-            <form onSubmit={handleCreateParticipant} className="p-6 grid grid-cols-2 text-gray-700 gap-4 text-sm">
+            <div className="overflow-y-auto flex-1">
+              <form onSubmit={handleCreateParticipant} className="p-6 grid grid-cols-2 text-gray-700 gap-4 text-sm">
               <input name="employeeId" placeholder="Ажилтны ID" className="border rounded-lg px-3 py-2" required />
               <input name="name" placeholder="Нэр" className="border rounded-lg px-3 py-2" required />
               <input name="position" placeholder="Албан тушаал" className="border rounded-lg px-3 py-2" />
@@ -425,6 +413,7 @@ export default function TrainingPage() {
                 <button type="submit" className="px-4 py-2 bg-[#0C213A] text-white rounded-lg">Хадгалах</button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
@@ -479,11 +468,10 @@ export default function TrainingPage() {
           </div>
         </div>
       )}
-      {/* Detail Modal */}
       {showDetail && selectedTraining && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <h3 className="text-lg font-semibold text-[#0C213A]">{selectedTraining.name}</h3>
               <button
                 onClick={closeDetail}
@@ -493,7 +481,7 @@ export default function TrainingPage() {
                 ✕
               </button>
             </div>
-            <div className="p-6">
+            <div className="overflow-y-auto flex-1 p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
                 <div>
                   <p className="text-gray-500">Төрөл</p>
@@ -547,22 +535,22 @@ export default function TrainingPage() {
                 </div>
               )}
             </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">
               <button onClick={closeDetail} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">Хаах</button>
               <button className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90">Засварлах</button>
             </div>
           </div>
         </div>
       )}
-      {/* Participant View Modal */}
       {showParticipant && selectedParticipant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white w-full max-w-xl rounded-xl shadow-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white w-full max-w-xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <h3 className="text-lg font-semibold text-[#0C213A]">Оролцогч - Дэлгэрэнгүй</h3>
               <button onClick={closeParticipant} className="p-2 rounded-md hover:bg-gray-100">✕</button>
             </div>
-            <div className="p-6 grid grid-cols-2 gap-4 text-sm">
+            <div className="overflow-y-auto flex-1 p-6">
+              <div className="grid grid-cols-2 gap-4 text-sm">
               <p><span className="text-gray-500">Ажилтны ID:</span> <span className="font-medium text-[#0C213A]">{selectedParticipant.employeeId}</span></p>
               <p><span className="text-gray-500">Нэр:</span> <span className="font-medium text-[#0C213A]">{selectedParticipant.name}</span></p>
               <p><span className="text-gray-500">Албан тушаал:</span> <span className="font-medium text-[#0C213A]">{selectedParticipant.position}</span></p>
@@ -594,17 +582,17 @@ export default function TrainingPage() {
                 </div>
               </div>
             )}
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end flex-shrink-0">
               <button onClick={closeParticipant} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Хаах</button>
             </div>
           </div>
         </div>
       )}
-      {/* Add Training Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <h3 className="text-lg font-semibold text-[#0C213A]">Шинэ сургалт нэмэх</h3>
               <button
                 onClick={closeAddTraining}
@@ -614,7 +602,8 @@ export default function TrainingPage() {
                 ✕
               </button>
             </div>
-            <form onSubmit={handleCreateTraining} className="p-6 space-y-4">
+            <div className="overflow-y-auto flex-1">
+              <form onSubmit={handleCreateTraining} className="p-6 space-y-4">
               <div className="grid grid-cols-1 text-gray-700 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Сургалтын нэр</label>
@@ -626,9 +615,7 @@ export default function TrainingPage() {
                     <option value="Дотоод">Дотоод</option>
                     <option value="Гадаад">Гадаад</option>
                     <option value="Онлайн">Онлайн</option>
-                    <option value="Семинар">Семинар</option>
-                    <option value="Воркшоп">Воркшоп</option>
-                    <option value="Заавал">Заавал</option>
+                    <option value="Заавал">Танхим</option>
                   </select>
                 </div>
                 <div>
@@ -663,27 +650,16 @@ export default function TrainingPage() {
                   <label className="block text-sm text-gray-600 mb-1">Зорилго</label>
                   <input name="objective" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
                 </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm text-gray-600 mb-1">Агуулга</label>
-                  <textarea name="content" rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2"></textarea>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">Явц (%)</label>
-                  <input name="progress" type="number" min="0" max="100" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
-                </div>
               </div>
               <div className="pt-2 flex justify-end gap-3 border-t border-gray-200 mt-4">
                 <button type="button" onClick={closeAddTraining} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">Цуцлах</button>
                 <button type="submit" className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90">Хадгалах</button>
               </div>
             </form>
+            </div>
           </div>
-      </div>
+        </div>
       )}
     </main>
   );
 }
-
-
-
-

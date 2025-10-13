@@ -96,14 +96,12 @@ export default function GovernmentQuestionnairePage({
 
     setSubmitting(true);
     try {
-      const payload = toAnswersPayload(formData);
-
       const response = await fetch(
-        `/api/questionnaires/${questionnaire.id}/submit`,
+        `/api/questionnaires/${questionnaire.id}/submit-government`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ answers: payload }),
+          body: JSON.stringify({ formData }),
         }
       );
 
@@ -112,7 +110,8 @@ export default function GovernmentQuestionnairePage({
         throw new Error(errorData.error || 'Асуулга илгээхэд алдаа гарлаа');
       }
 
-      addNotification('Асуулга амжилттай илгээгдлээ', 'success');
+      const result = await response.json();
+      addNotification(result.message || 'Анкет амжилттай илгээгдлээ', 'success');
       router.push('/jobseeker/applications');
     } catch (error) {
       console.error('Error submitting questionnaire:', error);

@@ -58,8 +58,6 @@ export default function EmployerApplicationsPage() {
       if (Array.isArray(data)) {
         const typed = data as JobApplication[];
         setApplications(typed);
-
-        // Mark applications as viewed first
         try {
           await fetch("/api/employer/applications/mark-viewed", {
             method: "POST",
@@ -67,14 +65,11 @@ export default function EmployerApplicationsPage() {
         } catch (err) {
           console.error("Error marking applications as viewed:", err);
         }
-
-        // Check for new applications after marking as viewed
         const newApplications = typed.filter(
           (app) => app.status === "PENDING" && !app.viewedAt
         );
 
         if (newApplications.length > 0 && !hasShownNotification.current) {
-          // Group applications by job
           const applicationsByJob = newApplications.reduce<JobApplications>((acc, app) => {
             if (!acc[app.job.id]) {
               acc[app.job.id] = { title: app.job.title, count: 0 };
@@ -82,8 +77,6 @@ export default function EmployerApplicationsPage() {
             acc[app.job.id].count += 1;
             return acc;
           }, {});
-
-          // Show notifications for each job
           Object.values(applicationsByJob).forEach(({ title, count }) => {
             addNotification(
               `${title} ажлын байрт ${count} шинэ өргөдөл ирлээ`,
@@ -113,8 +106,6 @@ export default function EmployerApplicationsPage() {
       fetchApplications();
     }
   }, [status, session, router, fetchApplications]);
-
-  // Group applications by job (memoized)
   const jobs = useMemo(() => {
     const jobsMap: {
       [jobId: string]: { title: string; applications: JobApplication[] };

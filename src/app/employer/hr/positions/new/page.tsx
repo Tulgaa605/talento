@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Briefcase } from 'lucide-react';
+import { ArrowLeft, Save, Briefcase, Search } from 'lucide-react';
 
 interface Department {
   id: string;
@@ -10,10 +10,24 @@ interface Department {
   code: string;
 }
 
+interface Occupation {
+  code: string;
+  titleMn: string;
+  majorGroup: string;
+  subMajor: string;
+  minorGroup: string;
+  unitGroup: string;
+  version: string;
+}
+
 export default function NewPositionPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [occupations, setOccupations] = useState<Occupation[]>([]);
+  const [occupationSearch, setOccupationSearch] = useState('');
+  const [showOccupationDropdown, setShowOccupationDropdown] = useState(false);
+  const [selectedOccupation, setSelectedOccupation] = useState<Occupation | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     code: '',
@@ -21,10 +35,34 @@ export default function NewPositionPage() {
     description: '',
     requirements: '',
     salaryRange: '',
+    jobProfessionCode: '',
+    jobProfessionName: '',
   });
 
   useEffect(() => {
     fetchDepartments();
+  }, []);
+
+  useEffect(() => {
+    if (occupationSearch.trim()) {
+      searchOccupations(occupationSearch);
+    } else {
+      setOccupations([]);
+    }
+  }, [occupationSearch]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.occupation-dropdown')) {
+        setShowOccupationDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const fetchDepartments = async () => {
@@ -38,6 +76,43 @@ export default function NewPositionPage() {
       }
     } catch (error) {
       console.error('Хэлтсүүдийг авахад алдаа гарлаа:', error);
+    }
+  };
+
+  const searchOccupations = async (search: string) => {
+    try {
+      const response = await fetch(`/api/hr/occupations?search=${encodeURIComponent(search)}&limit=20`);
+      if (response.ok) {
+        const data = await response.json();
+        setOccupations(data.occupations || []);
+      }
+    } catch (error) {
+      console.error('Ажил мэргэжлийн жагсаалт авахад алдаа гарлаа:', error);
+    }
+  };
+
+  const handleOccupationSelect = (occupation: Occupation) => {
+    setSelectedOccupation(occupation);
+    setOccupationSearch(occupation.titleMn);
+    setFormData(prev => ({
+      ...prev,
+      jobProfessionCode: occupation.code,
+      jobProfessionName: occupation.titleMn,
+      code: occupation.code
+    }));
+    setShowOccupationDropdown(false);
+  };
+
+  const handleOccupationSearchChange = (value: string) => {
+    setOccupationSearch(value);
+    setShowOccupationDropdown(true);
+    if (!value.trim()) {
+      setSelectedOccupation(null);
+      setFormData(prev => ({
+        ...prev,
+        jobProfessionCode: '',
+        jobProfessionName: '',
+      }));
     }
   };
 
@@ -57,15 +132,17 @@ export default function NewPositionPage() {
       const response = await fetch('/api/hr/positions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          jobProfessionCode: selectedOccupation?.code || '',
+          jobProfessionName: selectedOccupation?.titleMn || '',
+        }),
       });
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.error || `Алдаа гарлаа (${response.status})`);
       }
-
-      // ✅ Employer хэсгийн зөв маршрут руу чиглүүлэв
       router.push('/employer/hr/positions');
     } catch (error) {
       console.error('Алдаа:', error);
@@ -78,7 +155,6 @@ export default function NewPositionPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto py-8 px-4">
-        {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => router.back()}
@@ -100,19 +176,51 @@ export default function NewPositionPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Тушаалын нэр *
+                  Ажил мэргэжил
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Жишээ: Программист"
-                />
+                <div className="relative occupation-dropdown">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={occupationSearch}
+                    onChange={(e) => handleOccupationSearchChange(e.target.value)}
+                    onFocus={() => setShowOccupationDropdown(true)}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Ажил мэргэжлийн нэрээр хайх..."
+                  />
+                  {showOccupationDropdown && occupations.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {occupations.map((occupation) => (
+                        <div
+                          key={occupation.code}
+                          onClick={() => handleOccupationSelect(occupation)}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-gray-900">
+                                {occupation.titleMn}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Код: {occupation.code} | Ангилал: {occupation.majorGroup}-{occupation.subMajor}-{occupation.minorGroup}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {selectedOccupation && (
+                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                    <div className="text-sm text-blue-800">
+                      <strong>Сонгосон:</strong> {selectedOccupation.titleMn} ({selectedOccupation.code})
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {/* Код */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Код *
@@ -154,8 +262,6 @@ export default function NewPositionPage() {
                   ))}
                 </select>
               </div>
-
-              {/* Цалин хязгаар */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Цалин хязгаар
@@ -168,8 +274,6 @@ export default function NewPositionPage() {
                   placeholder="Жишээ: 2,000,000 - 3,500,000 MNT"
                 />
               </div>
-
-              {/* Тайлбар */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Тайлбар
@@ -182,8 +286,6 @@ export default function NewPositionPage() {
                   placeholder="Тушаалын тайлбар..."
                 />
               </div>
-
-              {/* Шаардлага */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Шаардлага
@@ -197,8 +299,6 @@ export default function NewPositionPage() {
                 />
               </div>
             </div>
-
-            {/* Actions */}
             <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
               <button
                 type="button"

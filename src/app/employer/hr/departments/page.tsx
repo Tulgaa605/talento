@@ -252,16 +252,6 @@ export default function DepartmentsPage() {
             <div className="text-sm sm:text-base text-gray-500">
               {searchTerm ? 'Хайлтын үр дүн олдсонгүй' : 'Хэлтэс олдсонгүй'}
             </div>
-            {!searchTerm && (
-              <Link
-                href="/hr/departments/new"
-                className="mt-3 sm:mt-4 inline-flex items-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Эхний хэлтэс үүсгэх</span>
-                <span className="sm:hidden">Хэлтэс үүсгэх</span>
-              </Link>
-            )}
           </div>
         )}
     </div>

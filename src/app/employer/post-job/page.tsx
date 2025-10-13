@@ -1,4 +1,20 @@
 "use client";
+
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { MapPinIcon, PhotoIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import Image from "next/image";
+
+interface Occupation {
+  code: string;
+  titleMn: string;
+  majorGroup: string;
+  subMajor: string;
+  minorGroup: string;
+  unitGroup: string;
+  version: string;
+}
+
   const handleTitleInput = (e: React.FormEvent<HTMLInputElement>) => {
     const value = e.currentTarget.value;
     if (value.length > 0) {
@@ -10,11 +26,6 @@
     e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
   };
 
-import { useState, useRef } from "react";
-import Link from "next/link";
-import { MapPinIcon, PhotoIcon } from '@heroicons/react/24/outline';
-import Image from "next/image";
-
 
 export default function PostJobPageWithNewDesign() {
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +35,62 @@ export default function PostJobPageWithNewDesign() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  
+  // Ажил мэргэжлийн хайлтын state
+  const [occupations, setOccupations] = useState<Occupation[]>([]);
+  const [occupationSearch, setOccupationSearch] = useState('');
+  const [showOccupationDropdown, setShowOccupationDropdown] = useState(false);
+  const [selectedOccupation, setSelectedOccupation] = useState<Occupation | null>(null);
+
+  // Ажил мэргэжлийн хайлтын функцууд
+  useEffect(() => {
+    if (occupationSearch.trim()) {
+      searchOccupations(occupationSearch);
+    } else {
+      setOccupations([]);
+    }
+  }, [occupationSearch]);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.occupation-dropdown')) {
+        setShowOccupationDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const searchOccupations = async (search: string) => {
+    try {
+      const response = await fetch(`/api/hr/occupations?search=${encodeURIComponent(search)}&limit=20`);
+      if (response.ok) {
+        const data = await response.json();
+        setOccupations(data.occupations || []);
+      }
+    } catch (error) {
+      console.error('Ажил мэргэжлийн жагсаалт авахад алдаа гарлаа:', error);
+    }
+  };
+
+  const handleOccupationSelect = (occupation: Occupation) => {
+    setSelectedOccupation(occupation);
+    setOccupationSearch(occupation.titleMn);
+    setShowOccupationDropdown(false);
+  };
+
+  const handleOccupationSearchChange = (value: string) => {
+    setOccupationSearch(value);
+    setShowOccupationDropdown(true);
+    if (!value.trim()) {
+      setSelectedOccupation(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -44,6 +111,8 @@ export default function PostJobPageWithNewDesign() {
       companyUrl: formData.get("companyUrl") as string,
       contactPhone: formData.get("contactPhone") as string,
       otherInfo: formData.get("otherInfo") as string,
+      jobProfessionCode: selectedOccupation?.code || '',
+      jobProfessionName: selectedOccupation?.titleMn || '',
     };
 
     // Validate required fields
@@ -70,6 +139,9 @@ export default function PostJobPageWithNewDesign() {
         formRef.current.reset();
       }
       setLogoUrl(null);
+      // Ажил мэргэжлийн мэдээллийг цэвэрлэх
+      setSelectedOccupation(null);
+      setOccupationSearch('');
     } catch (error) {
       setError(error instanceof Error ? error.message : "Тодорхойгүй алдаа гарлаа.");
     } finally {
@@ -146,14 +218,56 @@ export default function PostJobPageWithNewDesign() {
                 {/* Input Fields Next to Logo */} 
                 <div className="flex-grow grid grid-cols-1 gap-y-4 content-start">
                     <div>
-                        <input 
-                          type="text" 
-                          name="title" 
-                          required 
-                          className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400  rounded-md focus:outline-none  focus:ring-gray-500 focus:border-gray-500"} ${inputPadding}`}
-                          placeholder="Албан тушаал..."
-                          onInput={handleTitleInput}
-                        />
+                        <div className="relative occupation-dropdown">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+                          </div>
+                          <input 
+                            type="text" 
+                            name="title" 
+                            required 
+                            value={occupationSearch || ''}
+                            onChange={(e) => {
+                              handleOccupationSearchChange(e.target.value);
+                              handleTitleInput(e);
+                            }}
+                            onFocus={() => setShowOccupationDropdown(true)}
+                            className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400  rounded-md focus:outline-none  focus:ring-gray-500 focus:border-gray-500"} ${inputPadding} pl-10`}
+                            placeholder="Албан тушаал эсвэл мэргэжил хайх..."
+                          />
+                          
+                          {/* Dropdown */}
+                          {showOccupationDropdown && occupations.length > 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                              {occupations.map((occupation) => (
+                                <div
+                                  key={occupation.code}
+                                  onClick={() => handleOccupationSelect(occupation)}
+                                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {occupation.titleMn}
+                                      </div>
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        Код: {occupation.code} | Ангилал: {occupation.majorGroup}-{occupation.subMajor}-{occupation.minorGroup}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {selectedOccupation && (
+                          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                            <div className="text-xs text-blue-800">
+                              <strong>Сонгосон мэргэжил:</strong> {selectedOccupation.titleMn} ({selectedOccupation.code})
+                            </div>
+                          </div>
+                        )}
                     </div>
                     <div>
                         <input type="url" name="companyUrl" className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400  rounded-md focus:outline-none  focus:ring-gray-500 focus:border-gray-500"} ${inputPadding}`} placeholder="Байгууллагын линк URL"/>
@@ -225,7 +339,7 @@ export default function PostJobPageWithNewDesign() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <input type="text" name="salary" className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400  rounded-md focus:outline-none  focus:ring-gray-500 focus:border-gray-500"} ${inputPadding}`} placeholder="Үнэлгээ"/>
+                        <input type="text" name="salary" className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400  rounded-md focus:outline-none  focus:ring-gray-500 focus:border-gray-500"} ${inputPadding}`} placeholder="Байгууллага"/>
                     </div>
                     <select name="type" className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400 rounded-md focus:outline-none focus:ring-gray-500 focus:border-gray-500"} ${inputPadding}`}>
                         <option value="">Ажлын цаг</option>
@@ -237,10 +351,7 @@ export default function PostJobPageWithNewDesign() {
                 </div>
             </div>
           </div>
-
-          {/* Middle Section: Requirements Card */}
           <div className=" rounded-lg mt-2">
-            {/* <label htmlFor="requirements" className={`${labelBaseClass} font-medium mb-2 block`}>Үндсэн тавигдах шаардлага <span className="text-red-500">*</span></label> */}
             <textarea 
               id="requirements" 
               name="requirements" 
@@ -260,7 +371,6 @@ export default function PostJobPageWithNewDesign() {
             />
           </div>
 
-      {/* Submit Buttons */}
       <div className="flex justify-end space-x-3">
         <Link
           href="/employer/profile" 

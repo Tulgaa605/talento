@@ -75,8 +75,12 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
     const { id } = await params; // await the promise
     const questionnaireId = id;
 
-    const body = (await request.json()) as { answers?: QuestionnaireAnswers };
-    const { answers } = body;
+    const body = (await request.json()) as { 
+      answers?: QuestionnaireAnswers;
+      attachmentFile?: string;
+      attachmentUrl?: string;
+    };
+    const { answers, attachmentFile, attachmentUrl } = body;
     if (!answers) {
       return NextResponse.json(
         { error: "Answers are required" },
@@ -87,7 +91,12 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
     // Questionnaire exists?
     const questionnaire = await prisma.questionnaire.findUnique({
       where: { id: questionnaireId },
-      include: { questions: true },
+      include: { 
+        questions: true, 
+        company: { 
+          include: { users: true } 
+        } 
+      },
     });
     if (!questionnaire) {
       return NextResponse.json(
@@ -112,6 +121,8 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
       data: {
         questionnaireId,
         userId: session.user.id,
+        attachmentFile,
+        attachmentUrl,
         answers: {
           create: questionnaire.questions.map((question: QuestionShape) => ({
             questionId: question.id,
@@ -121,6 +132,18 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
       },
       include: {
         answers: { include: { question: true } },
+        user: { select: { name: true, email: true } },
+      },
+    });
+
+    // Create notification for employer
+    await prisma.notification.create({
+      data: {
+        userId: questionnaire.company.users[0]?.id || session.user.id, // Get first company user
+        title: "Асуулгын хариу ирлээ",
+        message: `${session.user.name} ${questionnaire.title} асуулганд хариулсан байна`,
+        type: "QUESTIONNAIRE_RESPONSE",
+        link: `/employer/questionnaires/${questionnaireId}/responses`,
       },
     });
 

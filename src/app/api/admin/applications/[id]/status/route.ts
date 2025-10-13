@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-
-// Тохирохоор нь enum/union-оо өөрийн схемтэй тааруулна уу
 type Params = { id: string };
 type Status =
   | 'PENDING'
@@ -14,7 +12,7 @@ type Status =
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<Params> }  // ← Promise болголоо
+  { params }: { params: Promise<Params> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -23,7 +21,7 @@ export async function PATCH(
     }
 
     const { status }: { status: Status } = await request.json();
-    const { id: applicationId } = await params; // ← await хийж задлаж авна
+    const { id: applicationId } = await params;
 
     const currentApplication = await prisma.jobApplication.findUnique({
       where: { id: applicationId },
@@ -70,18 +68,17 @@ export async function PATCH(
 
       const userEmail = updatedApplication.user.email ?? '';
       if (userEmail) {
-        // Employee.email талбар unique биш бол findFirst ашиглаарай
         const existingEmployee = await prisma.employee.findUnique({ where: { email: userEmail } }).catch(() => null);
 
         if (!existingEmployee) {
           const department = await prisma.department.upsert({
-            where: { code: 'UNASSIGNED' }, // code нь unique байх ёстой
+            where: { code: 'UNASSIGNED' },
             update: {},
             create: { name: 'Тодорхойгүй', description: 'Анхны автоматаар үүсгэсэн хэлтэс', code: 'UNASSIGNED' },
           });
 
           const position = await prisma.position.upsert({
-            where: { code: 'UNASSIGNED' }, // code нь unique байх ёстой
+            where: { code: 'UNASSIGNED' },
             update: {},
             create: {
               title: 'Тодорхойгүй',

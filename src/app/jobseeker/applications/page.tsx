@@ -10,6 +10,11 @@ interface JobApplication {
   createdAt: string;
   status: string;
   message: string;
+  questionnaireId?: string;
+  questionnaireResponse?: {
+    id: string;
+    createdAt: string;
+  };
   job: {
     id: string;
     title: string;
@@ -25,6 +30,7 @@ interface JobApplication {
   questionnaire?: {
     id: string;
     title: string;
+    type: string;
   };
 }
 

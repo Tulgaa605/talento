@@ -8,16 +8,13 @@ import { existsSync } from "fs";
 
 export async function GET(request: Request) {
   try {
-    console.log("Download request received");
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      console.log("No session found");
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const cvId = searchParams.get("cvId");
-    console.log("CV ID:", cvId);
 
     if (!cvId) {
       return new NextResponse("CV ID is required", { status: 400 });
@@ -30,10 +27,7 @@ export async function GET(request: Request) {
       },
     });
 
-    console.log("CV from database:", cv);
-
     if (!cv || !cv.fileUrl) {
-      console.log("CV not found in database or no fileUrl");
       return new NextResponse("CV not found", { status: 404 });
     }
 
@@ -52,45 +46,42 @@ export async function GET(request: Request) {
       },
     });
 
-    console.log("Job application found:", jobApplication);
-
     if (!jobApplication) {
-      console.log("No job application found for this CV");
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    console.log("Original fileUrl:", cv.fileUrl);
-    const filePath = path.join(process.cwd(), "public", cv.fileUrl);
-    console.log("Attempting to read file from:", filePath);
+    // Handle different file URL formats
+    let filePath: string;
+    
+    if (cv.fileUrl.startsWith('/uploads/')) {
+      filePath = path.join(process.cwd(), "public", cv.fileUrl);
+    } else if (cv.fileUrl.startsWith('uploads/')) {
+      filePath = path.join(process.cwd(), "public", "/", cv.fileUrl);
+    } else {
+      filePath = path.join(process.cwd(), "public", "uploads", "cvs", cv.fileUrl);
+    }
 
-    if (!existsSync(filePath)) {
-      console.log("File not found at primary path, trying alternative paths");
-      const possiblePaths = [
-        path.join(process.cwd(), "public", "uploads", "cvs", path.basename(cv.fileUrl.replace(/^\/uploads\/cvs\//, ''))),
-      ];
+    // Try multiple possible paths
+    const possiblePaths = [
+      filePath,
+      path.join(process.cwd(), "public", "uploads", "cvs", path.basename(cv.fileUrl)),
+      path.join(process.cwd(), "uploads", "cvs", path.basename(cv.fileUrl)),
+      path.join(process.cwd(), "public", cv.fileUrl.replace(/^\/+/, '')),
+    ];
 
-      console.log("Checking possible paths:");
-      for (const altPath of possiblePaths) {
-        console.log("Trying path:", altPath);
-        if (existsSync(altPath)) {
-          console.log("File found at:", altPath);
+    for (const altPath of possiblePaths) {
+      if (existsSync(altPath)) {
+        try {
           const fileBuffer = await readFile(altPath);
           return sendFileResponse(fileBuffer, cv.fileName);
+        } catch (error) {
+          console.error("Error reading file from path:", altPath, error);
+          continue;
         }
       }
-      
-      console.log("File not found in any location");
-      return new NextResponse("File not found", { status: 404 });
     }
-
-    try {
-      console.log("Reading file from primary path");
-      const fileBuffer = await readFile(filePath);
-      return sendFileResponse(fileBuffer, cv.fileName);
-    } catch (error) {
-      console.error("Error reading file:", error);
-      return new NextResponse("Error reading file", { status: 500 });
-    }
+    
+    return new NextResponse("File not found", { status: 404 });
   } catch (error) {
     console.error("Error downloading CV:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
@@ -98,7 +89,6 @@ export async function GET(request: Request) {
 }
 
 function sendFileResponse(fileBuffer: Buffer, fileName: string) {
-  console.log("Sending file response for:", fileName);
   const headers = new Headers();
   const fileExtension = path.extname(fileName).toLowerCase();
   const contentType =

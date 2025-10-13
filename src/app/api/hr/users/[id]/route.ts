@@ -1,12 +1,9 @@
-// File: src/app/api/hr/users/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient, JobApplicationStatus } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 type RouteCtx = { params: Promise<{ id: string }> }
-
-// Хэрэглэгчийн мэдээллийг авах
 export async function GET(_req: NextRequest, { params }: RouteCtx) {
   const { id } = await params
   try {
@@ -29,7 +26,6 @@ export async function GET(_req: NextRequest, { params }: RouteCtx) {
       return NextResponse.json({ error: 'Хэрэглэгч олдсонгүй' }, { status: 404 })
     }
 
-    // Гэрээтэй ажилчдын имэйлүүд
     const employeesWithAnyContract = await prisma.employee.findMany({
       where: { contracts: { some: {} } },
       select: { email: true },
@@ -66,7 +62,6 @@ export async function GET(_req: NextRequest, { params }: RouteCtx) {
   }
 }
 
-// Хэрэглэгчийн мэдээллийг шинэчлэх
 export async function PUT(req: NextRequest, { params }: RouteCtx) {
   const { id } = await params
   try {
