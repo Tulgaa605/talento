@@ -206,17 +206,16 @@ export default function QuestionnaireResponseView({
               {parsedFormData.education && (
                 <div className="border border-gray-200 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-900 mb-4">Боловсролын мэдээлэл</h3>
-                  {parsedFormData.education.generalEducation && (
-                    <div className="space-y-3">
-                      {parsedFormData.education.generalEducation.map((edu: any, index: number) => (
-                        <div key={index} className="bg-gray-50 p-3 rounded">
-                          <p><span className="font-medium">Сургууль:</span> {edu.schoolName}</p>
-                          <p><span className="font-medium">Эзэмшсэн зэрэг:</span> {edu.degree}</p>
-                          <p><span className="font-medium">Төгссөн огноо:</span> {edu.endDate}</p>
-                        </div>
-                      ))}
-                    </div>
+                  {parsedFormData.education.generalEducation.map(
+                    (edu: { schoolName: string; degree: string; endDate: string }, index: number) => (
+                      <div key={index} className="bg-gray-50 p-3 rounded">
+                        <p><span className="font-medium">Сургууль:</span> {edu.schoolName}</p>
+                        <p><span className="font-medium">Эзэмшсэн зэрэг:</span> {edu.degree}</p>
+                        <p><span className="font-medium">Төгссөн огноо:</span> {edu.endDate}</p>
+                      </div>
+                    )
                   )}
+
                 </div>
               )}
 
@@ -225,13 +224,16 @@ export default function QuestionnaireResponseView({
                 <div className="border border-gray-200 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-900 mb-4">Ажлын туршлага</h3>
                   <div className="space-y-3">
-                    {parsedFormData.workExperience.map((work: any, index: number) => (
+                  {parsedFormData.workExperience.map(
+                    (work: { organization: string; position: string; startDate: string; endDate: string }, index: number) => (
                       <div key={index} className="bg-gray-50 p-3 rounded">
                         <p><span className="font-medium">Байгууллага:</span> {work.organization}</p>
                         <p><span className="font-medium">Албан тушаал:</span> {work.position}</p>
                         <p><span className="font-medium">Ажилласан хугацаа:</span> {work.startDate} - {work.endDate}</p>
                       </div>
-                    ))}
+                    )
+                  )}
+
                   </div>
                 </div>
               )}
@@ -241,12 +243,16 @@ export default function QuestionnaireResponseView({
                 <div className="border border-gray-200 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-900 mb-4">Ур чадвар</h3>
                   <div className="space-y-2">
-                    {Object.entries(parsedFormData.skills).map(([category, skills]: [string, any]) => (
-                      <div key={category}>
-                        <h4 className="font-medium text-gray-700 capitalize">{category}:</h4>
-                        <p className="text-gray-600 ml-4">{JSON.stringify(skills)}</p>
-                      </div>
-                    ))}
+                  {Object.entries(parsedFormData.skills as Record<string, string[] | Record<string, unknown>>).map(
+                  ([category, skills]) => (
+                    <div key={category}>
+                      <h4 className="font-medium text-gray-700 capitalize">{category}:</h4>
+                      <p className="text-gray-600 ml-4">{JSON.stringify(skills)}</p>
+                    </div>
+                  )
+                )}
+
+
                   </div>
                 </div>
               )}

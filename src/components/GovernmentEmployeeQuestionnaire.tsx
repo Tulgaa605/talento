@@ -170,6 +170,7 @@ interface GovernmentEmployeeQuestionnaireProps {
   onCancel: () => void;
 }
 
+
 export default function GovernmentEmployeeQuestionnaire({
   onSubmit,
   onCancel,
@@ -271,45 +272,65 @@ export default function GovernmentEmployeeQuestionnaire({
 
     workExperience: [],
   });
-  const updateField = (path: string[], value: any) => {
+
+  type AnyObject = Record<string, unknown>;
+
+  const updateField = (path: string[], value: unknown) => {
     setFormData(prev => {
-      const newData = { ...prev } as any;
+      const newData = { ...prev } as AnyObject;
       let current = newData;
-      
+  
       for (let i = 0; i < path.length - 1; i++) {
-        current = current[path[i]] = { ...current[path[i]] };
+        const key = path[i] as string;
+        current[key] = { ...(current[key] as AnyObject) };
+        current = current[key] as AnyObject;
       }
-      
-      current[path[path.length - 1]] = value;
-      return newData;
-    });
-  };
-  const addArrayItem = (path: string[], newItem: any) => {
-    setFormData(prev => {
-      const newData = { ...prev } as any;
-      let current = newData;
-      
-      for (let i = 0; i < path.length - 1; i++) {
-        current = current[path[i]] = { ...current[path[i]] };
-      }
-      
-      current[path[path.length - 1]] = [...current[path[path.length - 1]], newItem];
-      return newData;
+  
+      current[path[path.length - 1] as string] = value;
+      return newData as unknown as GovernmentEmployeeForm;
     });
   };
 
-  const removeArrayItem = (path: string[], index: number) => {
+  const addArrayItem = (path: string[], newItem: unknown) => {
     setFormData(prev => {
-      const newData = { ...prev } as any;
-      let current = newData;
-      
+      const newData = { ...prev } as AnyObject;
+      let current: AnyObject = newData;
+  
       for (let i = 0; i < path.length - 1; i++) {
-        current = current[path[i]] = { ...current[path[i]] };
+        const key = path[i];
+        current[key] = { ...(current[key] as AnyObject) };
+        current = current[key] as AnyObject;
       }
-      current[path[path.length - 1]] = current[path[path.length - 1]].filter((_: any, i: number) => i !== index);
-      return newData;
+  
+      const lastKey = path[path.length - 1];
+      const arr = (current[lastKey] as unknown[]) || [];
+      current[lastKey] = [...arr, newItem];
+  
+      // ✅ convert via unknown first (avoids TS2352)
+      return newData as unknown as GovernmentEmployeeForm;
     });
   };
+  
+  const removeArrayItem = (path: string[], index: number) => {
+    setFormData(prev => {
+      const newData = { ...prev } as AnyObject;
+      let current: AnyObject = newData;
+  
+      for (let i = 0; i < path.length - 1; i++) {
+        const key = path[i];
+        current[key] = { ...(current[key] as AnyObject) };
+        current = current[key] as AnyObject;
+      }
+  
+      const lastKey = path[path.length - 1];
+      const arr = (current[lastKey] as unknown[]) || [];
+      current[lastKey] = arr.filter((_, i) => i !== index);
+  
+      // ✅ same here
+      return newData as unknown as GovernmentEmployeeForm;
+    });
+  };
+  
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
