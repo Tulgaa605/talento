@@ -35,7 +35,7 @@ export default function NewEmployeePage() {
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
-  const [managers, setManagers] = useState<Employee[]>([]);
+  const [, setManagers] = useState<Employee[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
 
   const [formData, setFormData] = useState({

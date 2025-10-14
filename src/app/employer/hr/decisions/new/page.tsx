@@ -98,16 +98,9 @@ export default function NewDecisionPage() {
     { value: 'OTHER', label: 'Бусад' },
   ];
 
-  const statusOptions = [
-    { value: 'ACTIVE', label: 'Идэвхтэй' },
-    { value: 'PENDING', label: 'Хүлээгдэж буй' },
-    { value: 'CANCELLED', label: 'Цуцлагдсан' },
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto py-8 px-4">
-        {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => router.back()}
