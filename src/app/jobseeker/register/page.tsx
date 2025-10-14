@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -19,7 +21,6 @@ export default function JobseekerRegisterPage() {
 
   useEffect(() => {
     if (pageRef.current && formRef.current && imageRef.current) {
-      // Initial animation for page load
       gsap.fromTo(
         pageRef.current,
         { opacity: 0, scale: 0.99 },
@@ -31,7 +32,6 @@ export default function JobseekerRegisterPage() {
         }
       );
 
-      // Stagger animation for form elements
       gsap.fromTo(
         formRef.current.children,
         { opacity: 0, y: 5 },
@@ -45,7 +45,6 @@ export default function JobseekerRegisterPage() {
         }
       );
 
-      // Image animation
       gsap.fromTo(
         imageRef.current,
         { opacity: 0, x: -10 },
@@ -76,7 +75,6 @@ export default function JobseekerRegisterPage() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    // Validate required fields
     if (!email || !password || !firstName || !lastName) {
       setError("Бүх талбарыг бөглөнө үү");
       setIsLoading(false);
@@ -87,7 +85,7 @@ export default function JobseekerRegisterPage() {
       email,
       password,
       name: `${firstName} ${lastName}`.trim(),
-      role: "USER", // Explicitly set role for jobseeker
+      role: "USER",
     };
 
     try {

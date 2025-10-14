@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Building2 } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function NewDepartmentPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -72,7 +74,6 @@ export default function NewDepartmentPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <form onSubmit={handleSubmit} className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Хэлтсийн нэр */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Хэлтсийн нэр *
@@ -81,7 +82,11 @@ export default function NewDepartmentPage() {
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const capitalized = value.charAt(0).toUpperCase() + value.slice(1);
+                    setFormData(prev => ({ ...prev, name: capitalized }));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Жишээ: Хүний нөөцийн хэлтэс"
                 />

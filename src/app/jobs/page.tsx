@@ -1,4 +1,3 @@
-// File: src/app/jobs/page.tsx
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -62,9 +61,7 @@ export default function JobsPage() {
             >
               <JobsList onJobSelect={setSelectedJob} />
             </Suspense>
-          </div>
-
-          {/* Right: Job Details */}
+          </div> 
           <div className="hidden lg:block lg:col-span-3">
             <Suspense
               fallback={
@@ -75,6 +72,8 @@ export default function JobsPage() {
             >
               {selectedJob ? (
                 <JobDetails job={selectedJob} />
+
+
               ) : (
                 <div className="bg-white rounded-lg shadow p-4 sm:p-6 md:p-8 text-center">
                   <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">

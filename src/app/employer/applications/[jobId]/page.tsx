@@ -8,6 +8,8 @@ import { revalidatePath } from "next/cache";
 import QuestionnaireDropdown from "./QuestionnaireDropdown";
 import QuestionnaireResponseButton from "@/components/QuestionnaireResponseButton";
 import Image from "next/image";
+
+export const dynamic = 'force-dynamic';
 import CvDownloadButton from "./CvDownloadButton";
 
 interface PageProps {

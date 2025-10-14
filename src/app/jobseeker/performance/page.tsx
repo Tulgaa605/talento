@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
@@ -202,7 +204,6 @@ export default function JobseekerPerformancePage() {
   return (
     <div className="w-full min-h-screen bg-white">
     <main className="max-w-7xl mt-10 mx-auto px-4 py-8 bg-white">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Миний гүйцэтгэлийн үнэлгээ</h1>
         <p className="text-gray-600">Таны ажлын гүйцэтгэлийн үнэлгээний мэдээлэл</p>
@@ -289,7 +290,6 @@ export default function JobseekerPerformancePage() {
             </div>
           </div>
 
-          {/* Recent Evaluations */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-[#0C213A]">Сүүлийн үнэлгээ</h3>

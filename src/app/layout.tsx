@@ -17,6 +17,8 @@ export const metadata = {
   description: "Upload and analyze your CV using AI",
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: {
