@@ -62,7 +62,7 @@ export default function EditDecisionPage() {
           status: data.status || 'PENDING',
         });
       } else {
-        router.push('/hr/decisions');
+        router.push('/employer/hr/decisions');
       }
     } catch (error) {
       console.error('Мэдээлэл авахад алдаа гарлаа:', error);
@@ -87,7 +87,7 @@ export default function EditDecisionPage() {
       });
 
       if (response.ok) {
-        router.push('/hr/decisions');
+        router.push('/employer/hr/decisions');
       } else {
         const errorData = await response.json();
         alert(errorData.error || 'Шидвэрийн мэдээлэл шинэчлэхэд алдаа гарлаа');

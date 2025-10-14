@@ -48,7 +48,7 @@ export default function EditPositionPage() {
 
         if (!posRes.ok) {
           console.error('Албан тушаал олдсонгүй');
-          router.push('/hr/positions');
+          router.push('/employer/hr/positions');
           return;
         }
 

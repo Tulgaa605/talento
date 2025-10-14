@@ -134,7 +134,7 @@ export default function ContractsPage() {
         </div>
         <div className="sm:flex-row gap-4">
           <Link
-            href="/hr/contracts/new"
+            href="/employer/hr/contracts/new"
             className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,7 +189,6 @@ export default function ContractsPage() {
                 <option value="PART_TIME">Хагас цагийн</option>
                 <option value="CONTRACT">Гэрээт</option>
                 <option value="INTERNSHIP">Дадлага</option>
-                <option value="PROBATION">Туршилтын</option>
               </select>
             </div>
             <div className="flex items-end">
@@ -275,14 +274,14 @@ export default function ContractsPage() {
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
                     <div className="flex space-x-1 sm:space-x-2">
                       <Link
-                        href={`/hr/contracts/${contract.id}`}
+                        href={`/employer/hr/contracts/${contract.id}`}
                         className="text-blue-600 hover:text-blue-900 p-1"
                       >
                         <span className="hidden sm:inline">Харах</span>
                         <span className="sm:hidden">👁️</span>
                       </Link>
                       <Link
-                        href={`/hr/contracts/${contract.id}/edit`}
+                        href={`/employer/hr/contracts/${contract.id}/edit`}
                         className="text-green-600 hover:text-green-900 p-1"
                       >
                         <span className="hidden sm:inline">Засах</span>

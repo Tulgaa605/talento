@@ -43,11 +43,6 @@ interface Employee {
   }>;
   isUser?: boolean;
   userData?: UserItem;
-  mainGroup?: string;
-  subGroup?: string;
-  minorGroup?: string;
-  unitGroup?: string;
-  jobProfession?: string;
 }
 
 interface UserItem {
@@ -65,52 +60,13 @@ interface UserItem {
   department?: string;
 }
 
-const YAMAT8_CLASSIFICATIONS = [
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '01 Зэвсэгт хүчний зэрэг, цол бүхий офицер', minorGroup: '011 Зэвсэгт хүчний зэрэг, цол бүхий офицер', unitGroup: '0110 Зэвсэгт хүчний зэрэг, цол бүхий офицер', jobProfession: '0110-11 Дэслэгч-салааны' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '01 Зэвсэгт хүчний зэрэг, цол бүхий офицер', minorGroup: '011 Зэвсэгт хүчний зэрэг, цол бүхий офицер', unitGroup: '0110 Зэвсэгт хүчний зэрэг, цол бүхий офицер', jobProfession: '0110-12 Ахлах дэслэгч-салааны' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '01 Зэвсэгт хүчний зэрэг, цол бүхий офицер', minorGroup: '011 Зэвсэгт хүчний зэрэг, цол бүхий офицер', unitGroup: '0110 Зэвсэгт хүчний зэрэг, цол бүхий офицер', jobProfession: '0110-13 Хошууч рот /батарей/-ны' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '01 Зэвсэгт хүчний зэрэг, цол бүхий офицер', minorGroup: '011 Зэвсэгт хүчний зэрэг, цол бүхий офицер', unitGroup: '0110 Зэвсэгт хүчний зэрэг, цол бүхий офицер', jobProfession: '0110-14 Дэд хурандаа-батальон /дивизион/-ны' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '01 Зэвсэгт хүчний зэрэг, цол бүхий офицер', minorGroup: '011 Зэвсэгт хүчний зэрэг, цол бүхий офицер', unitGroup: '0110 Зэвсэгт хүчний зэрэг, цол бүхий офицер', jobProfession: '0110-15 Хурандаа-бригад /хороо/-ны' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '01 Зэвсэгт хүчний зэрэг, цол бүхий офицер', minorGroup: '011 Зэвсэгт хүчний зэрэг, цол бүхий офицер', unitGroup: '0110 Зэвсэгт хүчний зэрэг, цол бүхий офицер', jobProfession: '0110-22 Ахмад-батальоны сэтгэл зүйч, соёл хүмүүжлийн' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '01 Зэвсэгт хүчний зэрэг, цол бүхий офицер', minorGroup: '011 Зэвсэгт хүчний зэрэг, цол бүхий офицер', unitGroup: '0110 Зэвсэгт хүчний зэрэг, цол бүхий офицер', jobProfession: '0110-29 Генерал-зэвсэгт хүчний командлагч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-11 Сургагч ахлагч-рот /батарей/-ны жагсаалын дарга' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-12 Тэргүүн ахлагч-батальон, хороо, бригад, Жанжин штабын ахлагч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-13 Ахлах ахлагч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-14 Ахлагч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-15 Дэд Ахлагч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-16 Буудагч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-17 Явган цэргийн байлдааны машины наводчик-операторч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-18 Механик жолооч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-19 Танкийн буудагч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-20 Зенитийн өөрөө явагчийн операторч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-21 Радиолокацын станцын операторч - планшетчин' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-22 Пуужин чиглүүлэх станцын операторч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-23 Онгоц, нисдэг тэрэгний хөдөлгүүрийн механик' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-24 Телеграфын холбооны нууцлах хэрэгслийн техникч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-25 Телехолбооны техникч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-26 Артиллерийн буудагч /миномётчин/' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-27 БМ-ын наводчик' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-28 Артиллерийн тооцоочин- гал засварлагч' },
-  { mainGroup: '0 Зэвсэгт хүчний ажил, мэргэжил', subGroup: '02 Зэвсэгт хүчний ахлагч', minorGroup: '021 Зэвсэгт хүчний ахлагч', unitGroup: '0210 Зэвсэгт хүчний ахлагч', jobProfession: '0210-29 Артиллерийн тагнуулчин' },
-];
-
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState('');
-  const [contractFilter, setContractFilter] = useState('');
   const [viewMode, setViewMode] = useState<'EMPLOYEES' | 'USERS'>('EMPLOYEES');
-  const [approvalFilter, setApprovalFilter] = useState('');
-  const [, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
-  const [, setPositions] = useState<Array<{ id: string; title: string; department: { id: string; name: string } }>>([]);
-  const [mainGroupFilter, setMainGroupFilter] = useState('');
-  const [subGroupFilter, setSubGroupFilter] = useState('');
-  const [minorGroupFilter, setMinorGroupFilter] = useState('');
-  const [unitGroupFilter, setUnitGroupFilter] = useState('');
 
   // --- Fetchers wrapped in useCallback to satisfy exhaustive-deps ---
   const fetchEmployees = useCallback(async () => {
@@ -133,37 +89,10 @@ export default function EmployeesPage() {
     }
   }, []);
 
-  const fetchDepartments = useCallback(async () => {
-    try {
-      const response = await fetch('/api/hr/departments');
-      if (response.ok) {
-        const data = await response.json();
-        setDepartments(data);
-      }
-    } catch (error) {
-      console.error('Хэлтсүүдийг авахад алдаа гарлаа:', error);
-    }
-  }, []);
-
-  const fetchPositions = useCallback(async () => {
-    try {
-      const response = await fetch('/api/hr/positions');
-      if (response.ok) {
-        const data = await response.json();
-        setPositions(data);
-      }
-    } catch (error) {
-      console.error('Албан тушаалуудыг авахад алдаа гарлаа:', error);
-    }
-  }, []);
-
   const fetchUsers = useCallback(async () => {
     try {
       setUsersLoading(true);
-      const query = new URLSearchParams();
-      if (contractFilter) query.set('contract', contractFilter);
-      if (approvalFilter) query.set('approval', approvalFilter);
-      const response = await fetch(`/api/hr/users?${query.toString()}`);
+      const response = await fetch('/api/hr/users');
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
@@ -173,31 +102,12 @@ export default function EmployeesPage() {
     } finally {
       setUsersLoading(false);
     }
-  }, [contractFilter, approvalFilter]);
-
-  const fetchUsersApprovalOnly = useCallback(async () => {
-    try {
-      setUsersLoading(true);
-      const query = new URLSearchParams();
-      if (approvalFilter) query.set('approval', approvalFilter);
-      const response = await fetch(`/api/hr/users?${query.toString()}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
-      }
-    } catch (error) {
-      console.error('Хэрэглэгчдийг авахад алдаа гарлаа:', error);
-    } finally {
-      setUsersLoading(false);
-    }
-  }, [approvalFilter]);
+  }, []);
 
   // Mount: load all reference data once
   useEffect(() => {
     fetchEmployees();
-    fetchDepartments();
-    fetchPositions();
-  }, [fetchEmployees, fetchDepartments, fetchPositions]);
+  }, [fetchEmployees]);
 
   // Refresh employees when tab regains focus / visibility
   useEffect(() => {
@@ -225,20 +135,6 @@ export default function EmployeesPage() {
       fetchUsers();
     }
   }, [viewMode, users.length, usersLoading, fetchUsers]);
-
-  // Refetch users when filters change while in USERS view
-  useEffect(() => {
-    if (viewMode === 'USERS') {
-      fetchUsers();
-    }
-  }, [contractFilter, approvalFilter, viewMode, fetchUsers]);
-
-  // When filtering employees by approval, pull approval list
-  useEffect(() => {
-    if (viewMode === 'EMPLOYEES' && approvalFilter) {
-      fetchUsersApprovalOnly();
-    }
-  }, [viewMode, approvalFilter, fetchUsersApprovalOnly]);
 
   // Merge employees with admin-approved users
   const mergedEmployees = useMemo(() => {
@@ -274,88 +170,35 @@ export default function EmployeesPage() {
         : [],
       isUser: true,
       userData: u,
-      mainGroup: undefined,
-      subGroup: undefined,
-      minorGroup: undefined,
-      unitGroup: undefined,
-      jobProfession: undefined,
     }));
 
-    const employeesWithClassification = employees.map((emp, index) => {
-      const classification =
-        YAMAT8_CLASSIFICATIONS[index % YAMAT8_CLASSIFICATIONS.length];
-      return {
-        ...emp,
-        mainGroup: classification.mainGroup,
-        subGroup: classification.subGroup,
-        minorGroup: classification.minorGroup,
-        unitGroup: classification.unitGroup,
-        jobProfession: classification.jobProfession,
-      };
-    });
-
-    return [...employeesWithClassification, ...adminApprovedUsers];
+    return [...employees, ...adminApprovedUsers];
   }, [employees, users]);
 
-  const approvalEmailSet = useMemo(
-    () => new Set(users.map((u) => (u.email || '').toLowerCase())),
-    [users]
-  );
-
   const filteredEmployees = mergedEmployees.filter((employee) => {
-    const matchesSearch =
-      employee.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus = !statusFilter || employee.status === statusFilter;
-    const matchesDepartment =
-      !departmentFilter || employee.department.name === departmentFilter;
-    const matchesContract =
-      !contractFilter ||
-      (contractFilter === 'HAS' && employee.contracts.length > 0) ||
-      (contractFilter === 'NONE' && employee.contracts.length === 0);
-    const matchesApproval =
-      !approvalFilter ||
-      approvalEmailSet.has(employee.email.toLowerCase());
-
-    const matchesMainGroup =
-      !mainGroupFilter || employee.mainGroup === mainGroupFilter;
-    const matchesSubGroup =
-      !subGroupFilter || employee.subGroup === subGroupFilter;
-    const matchesMinorGroup =
-      !minorGroupFilter || employee.minorGroup === minorGroupFilter;
-    const matchesUnitGroup =
-      !unitGroupFilter || employee.unitGroup === unitGroupFilter;
-
+    if (!searchTerm) return true;
+    
+    const search = searchTerm.toLowerCase();
     return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesDepartment &&
-      matchesContract &&
-      matchesApproval &&
-      matchesMainGroup &&
-      matchesSubGroup &&
-      matchesMinorGroup &&
-      matchesUnitGroup
+      employee.firstName.toLowerCase().includes(search) ||
+      employee.lastName.toLowerCase().includes(search) ||
+      employee.employeeId.toLowerCase().includes(search) ||
+      employee.email.toLowerCase().includes(search) ||
+      employee.phoneNumber?.toLowerCase().includes(search) ||
+      employee.position.title.toLowerCase().includes(search) ||
+      employee.department.name.toLowerCase().includes(search)
     );
   });
 
   const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.phoneNumber || '')
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-
-    const matchesContract =
-      !contractFilter ||
-      (contractFilter === 'HAS' && user.hasContract) ||
-      (contractFilter === 'NONE' && !user.hasContract);
-
-    return matchesSearch && matchesContract;
+    if (!searchTerm) return true;
+    
+    const search = searchTerm.toLowerCase();
+    return (
+      (user.name || '').toLowerCase().includes(search) ||
+      (user.email || '').toLowerCase().includes(search) ||
+      (user.phoneNumber || '').toLowerCase().includes(search)
+    );
   });
 
   if (loading && viewMode === 'EMPLOYEES') {
@@ -377,7 +220,7 @@ export default function EmployeesPage() {
                 Ажилтны бүртгэл
               </h1>
               <p className="mt-2 text-sm sm:text-base text-gray-600">
-                Зэвсэгт хүчний ажил, мэргэжлийн ангиллын жагсаалт
+                Компанийн ажилтнуудын бүртгэл, мэдээлэл
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
@@ -419,218 +262,20 @@ export default function EmployeesPage() {
           </div>
         </div>
 
-        {/* Шүүлтүүр */}
+        {/* Хайлт */}
         <div className="bg-white rounded-lg shadow mb-6 p-4 sm:p-6">
-          <div
-            className={`grid grid-cols-1 sm:grid-cols-2 ${
-              viewMode === 'EMPLOYEES' ? 'lg:grid-cols-9' : 'lg:grid-cols-4'
-            } gap-3 sm:gap-4`}
-          >
-            <div className="sm:col-span-2 lg:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Хайх
-              </label>
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Нэр, дугаар, имэйл..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 sm:pl-10 pr-4 py-2 border border-gray-300 rounded-md text-gray-700 focus:ring-blue-500 focus:border-blue-500 w-full text-sm"
-                />
-              </div>
-            </div>
-
-            {viewMode === 'EMPLOYEES' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Төлөв
-                </label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                >
-                  <option value="">Бүгд</option>
-                  <option value="ACTIVE">Идэвхтэй</option>
-                  <option value="INACTIVE">Идэвхгүй</option>
-                  <option value="ON_LEAVE">Чөлөөтэй</option>
-                  <option value="TERMINATED">Халагдсан</option>
-                </select>
-              </div>
-            )}
-
-            {viewMode === 'EMPLOYEES' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Үндсэн бүлэг
-                  </label>
-                  <select
-                    value={mainGroupFilter}
-                    onChange={(e) => setMainGroupFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  >
-                    <option value="">Бүгд</option>
-                    {Array.from(
-                      new Set(YAMAT8_CLASSIFICATIONS.map((c) => c.mainGroup))
-                    ).map((group) => (
-                      <option key={group} value={group}>
-                        {group}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Дэд бүлэг
-                  </label>
-                  <select
-                    value={subGroupFilter}
-                    onChange={(e) => setSubGroupFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  >
-                    <option value="">Бүгд</option>
-                    {Array.from(
-                      new Set(
-                        YAMAT8_CLASSIFICATIONS.filter(
-                          (c) => !mainGroupFilter || c.mainGroup === mainGroupFilter
-                        ).map((c) => c.subGroup)
-                      )
-                    ).map((group) => (
-                      <option key={group} value={group}>
-                        {group}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Бага бүлэг
-                  </label>
-                  <select
-                    value={minorGroupFilter}
-                    onChange={(e) => setMinorGroupFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  >
-                    <option value="">Бүгд</option>
-                    {Array.from(
-                      new Set(
-                        YAMAT8_CLASSIFICATIONS.filter(
-                          (c) =>
-                            (!mainGroupFilter || c.mainGroup === mainGroupFilter) &&
-                            (!subGroupFilter || c.subGroup === subGroupFilter)
-                        ).map((c) => c.minorGroup)
-                      )
-                    ).map((group) => (
-                      <option key={group} value={group}>
-                        {group}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Нэгж бүлэг
-                  </label>
-                  <select
-                    value={unitGroupFilter}
-                    onChange={(e) => setUnitGroupFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  >
-                    <option value="">Бүгд</option>
-                    {Array.from(
-                      new Set(
-                        YAMAT8_CLASSIFICATIONS.filter(
-                          (c) =>
-                            (!mainGroupFilter || c.mainGroup === mainGroupFilter) &&
-                            (!subGroupFilter || c.subGroup === subGroupFilter) &&
-                            (!minorGroupFilter || c.minorGroup === minorGroupFilter)
-                        ).map((c) => c.unitGroup)
-                      )
-                    ).map((group) => (
-                      <option key={group} value={group}>
-                        {group}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Хэлтэс
-                  </label>
-                  <select
-                    value={departmentFilter}
-                    onChange={(e) => setDepartmentFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  >
-                    <option value="">Бүгд</option>
-                    {Array.from(new Set(employees.map((emp) => emp.department.name))).map(
-                      (dept) => (
-                        <option key={dept} value={dept}>
-                          {dept}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
-              </>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Гэрээ
-              </label>
-              <select
-                value={contractFilter}
-                onChange={(e) => setContractFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              >
-                <option value="">Бүгд</option>
-                <option value="HAS">Байгаа</option>
-                <option value="NONE">Байхгүй</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Баталгаажуулалт
-              </label>
-              <select
-                value={approvalFilter}
-                onChange={(e) => setApprovalFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              >
-                <option value="">Бүгд</option>
-                <option value="EMPLOYER">Ажил олгогч зөвшөөрсөн</option>
-                <option value="ADMIN">Админ зөвшөөрсөн</option>
-                <option value="APPROVED">Бүрэн зөвшөөрсөн</option>
-              </select>
-            </div>
-
-            <div className="flex items-end">
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setStatusFilter('');
-                  setDepartmentFilter('');
-                  setContractFilter('');
-                  setApprovalFilter('');
-                  setMainGroupFilter('');
-                  setSubGroupFilter('');
-                  setMinorGroupFilter('');
-                  setUnitGroupFilter('');
-                }}
-                className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors duration-200 text-sm"
-              >
-                Цэвэрлэх
-              </button>
-            </div>
+          <div className="relative max-w-md">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Хайх
+            </label>
+            <MagnifyingGlassIcon className="absolute left-3 top-11 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Нэр, дугаар, имэйл, албан тушаал, хэлтэс..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 sm:pl-10 pr-4 py-2 border border-gray-300 rounded-md text-gray-700 focus:ring-blue-500 focus:border-blue-500 w-full text-sm"
+            />
           </div>
         </div>
 
@@ -658,106 +303,82 @@ export default function EmployeesPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      N
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Үндсэн бүлэг
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Дэд бүлэг
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Бага бүлэг
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Нэгж бүлэг
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ажил мэргэжил
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider w-3/4">
                       Ажилтны мэдээлэл
                     </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider w-1/4">
                       Үйлдэл
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredEmployees.map((employee, index) => (
+                  {filteredEmployees.map((employee) => (
                     <tr
                       key={employee.id}
-                      className={`hover:bg-gray-50 ${employee.isUser ? 'bg-white' : ''}`}
+                      className={`hover:bg-gray-50 transition-colors ${employee.isUser ? 'bg-blue-50' : ''}`}
                     >
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-center">
-                        <div className="text-sm font-medium text-gray-900">
-                          {index + 1}
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <div className="text-xs sm:text-sm text-gray-900">
-                          {employee.mainGroup || '-'}
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <div className="text-xs sm:text-sm text-gray-900">
-                          {employee.subGroup || '-'}
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <div className="text-xs sm:text-sm text-gray-900">
-                          {employee.minorGroup || '-'}
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <div className="text-xs sm:text-sm text-gray-900">
-                          {employee.unitGroup || '-'}
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <div className="text-xs sm:text-sm text-gray-900">
-                          {employee.jobProfession || '-'}
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {employee.firstName} {employee.lastName}
+                      <td className="px-6 py-5">
+                        <div className="space-y-3">
+                          {/* Нэр */}
+                          <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                            <div className="text-lg font-bold text-gray-900">
+                              {employee.firstName} {employee.lastName}
+                            </div>
                             {employee.isUser && (
-                              <span className="text-xs text-gray-500 ml-2">
-                                (Хэрэглэгч)
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                                Хэрэглэгч
                               </span>
                             )}
                           </div>
-                          <div className="text-xs sm:text-sm text-gray-500">
-                            {employee.employeeId}
-                          </div>
-                          <div className="text-xs sm:text-sm text-gray-500">
-                            {employee.email}
-                          </div>
-                          <div className="text-xs sm:text-sm text-gray-500">
-                            {employee.position.title} - {employee.department.name}
+                          
+                          {/* Мэдээлэл */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5">
+                            <div className="flex flex-col space-y-0.5">
+                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">ID дугаар</span>
+                              <span className="text-sm font-medium text-gray-900">{employee.employeeId}</span>
+                            </div>
+                            
+                            <div className="flex flex-col space-y-0.5">
+                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Имэйл хаяг</span>
+                              <span className="text-sm font-medium text-gray-900 break-all">{employee.email}</span>
+                            </div>
+                            
+                            {employee.phoneNumber && (
+                              <div className="flex flex-col space-y-0.5">
+                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Утасны дугаар</span>
+                                <span className="text-sm font-medium text-gray-900">{employee.phoneNumber}</span>
+                              </div>
+                            )}
+                            
+                            <div className="flex flex-col space-y-0.5">
+                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Албан тушаал</span>
+                              <span className="text-sm font-medium text-gray-900">{employee.position.title}</span>
+                            </div>
+                            
+                            <div className="flex flex-col space-y-0.5 md:col-span-2">
+                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Хэлтэс</span>
+                              <span className="text-sm font-medium text-gray-900">{employee.department.name}</span>
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-1 sm:space-x-2">
+                      <td className="px-6 py-5">
+                        <div className="flex items-center justify-center gap-3">
                           {!employee.isUser ? (
                             <>
                               <Link
                                 href={`/employer/hr/employees/${employee.id}`}
-                                className="text-blue-600 hover:text-blue-900 p-1"
+                                className="inline-flex items-center justify-center p-2 text-blue-600 hover:text-white hover:bg-blue-600 rounded-lg transition-colors border border-blue-600"
                                 title="Харах"
                               >
-                                <EyeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <EyeIcon className="h-5 w-5" />
                               </Link>
                               <Link
                                 href={`/employer/hr/employees/${employee.id}/edit`}
-                                className="text-green-600 hover:text-green-900 p-1"
+                                className="inline-flex items-center justify-center p-2 text-green-600 hover:text-white hover:bg-green-600 rounded-lg transition-colors border border-green-600"
                                 title="Засах"
                               >
-                                <PencilIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <PencilIcon className="h-5 w-5" />
                               </Link>
                               <button
                                 onClick={async () => {
@@ -780,20 +401,20 @@ export default function EmployeesPage() {
                                     }
                                   }
                                 }}
-                                className="text-red-600 hover:text-red-900 p-1"
+                                className="inline-flex items-center justify-center p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-colors border border-red-600"
                                 title="Устгах"
                               >
-                                <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <TrashIcon className="h-5 w-5" />
                               </button>
                             </>
                           ) : (
                             <>
                               <Link
                                 href={`/employer/hr/employees/${employee.id}/edit`}
-                                className="text-green-600 hover:text-green-900 p-1"
+                                className="inline-flex items-center justify-center p-2 text-green-600 hover:text-white hover:bg-green-600 rounded-lg transition-colors border border-green-600"
                                 title="Засах"
                               >
-                                <PencilIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <PencilIcon className="h-5 w-5" />
                               </Link>
                               <button
                                 onClick={async () => {
@@ -816,10 +437,10 @@ export default function EmployeesPage() {
                                     }
                                   }
                                 }}
-                                className="text-red-600 hover:text-red-900 p-1"
+                                className="inline-flex items-center justify-center p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-colors border border-red-600"
                                 title="Устгах"
                               >
-                                <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <TrashIcon className="h-5 w-5" />
                               </button>
                             </>
                           )}
@@ -839,67 +460,76 @@ export default function EmployeesPage() {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Хэрэглэгч
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                          Хэрэглэгчийн мэдээлэл
                         </th>
-                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Имэйл
-                        </th>
-                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Утас
-                        </th>
-                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider w-48">
                           Гэрээ
                         </th>
-                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider w-56">
                           Зөвшөөрөлт
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredUsers.map((u) => (
-                        <tr key={u.id} className="hover:bg-gray-50">
-                          <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                            <div className="text-xs sm:text-sm font-medium text-gray-900">
-                              {u.name || '-'}
+                        <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-5">
+                            <div className="space-y-3">
+                              {/* Нэр */}
+                              <div className="pb-2 border-b border-gray-100">
+                                <div className="text-lg font-bold text-gray-900">
+                                  {u.name || 'Нэргүй хэрэглэгч'}
+                                </div>
+                              </div>
+                              
+                              {/* Мэдээлэл */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5">
+                                <div className="flex flex-col space-y-0.5">
+                                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Имэйл хаяг</span>
+                                  <span className="text-sm font-medium text-gray-900 break-all">{u.email}</span>
+                                </div>
+                                
+                                {u.phoneNumber && (
+                                  <div className="flex flex-col space-y-0.5">
+                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Утасны дугаар</span>
+                                    <span className="text-sm font-medium text-gray-900">{u.phoneNumber}</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </td>
-                          <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                            <div className="text-xs sm:text-sm text-gray-900">
-                              {u.email}
-                            </div>
-                          </td>
-                          <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                            <div className="text-xs sm:text-sm text-gray-900">
-                              {u.phoneNumber || '-'}
-                            </div>
-                          </td>
-                          <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-5 text-center">
                             {u.hasContract ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Гэрээтэй
+                              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                                ✓ Гэрээтэй
                               </span>
                             ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                Гэрээгүй
+                              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold bg-gray-100 text-gray-800">
+                                ✗ Гэрээгүй
                               </span>
                             )}
                           </td>
-                          <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                            <div className="flex flex-col space-y-1">
+                          <td className="px-6 py-5">
+                            <div className="flex flex-wrap gap-2 justify-center">
                               {u.employerApproved && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
                                   Ажил олгогч
                                 </span>
                               )}
                               {u.adminApproved && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
                                   Админ
                                 </span>
                               )}
                               {u.approved && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                                  Бүрэн
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+                                  Бүрэн зөвшөөрсөн
+                                </span>
+                              )}
+                              {!u.employerApproved && !u.adminApproved && !u.approved && (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                                  Хүлээгдэж байна
                                 </span>
                               )}
                             </div>

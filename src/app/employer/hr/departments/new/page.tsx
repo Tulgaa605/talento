@@ -41,7 +41,7 @@ export default function NewDepartmentPage() {
         throw new Error(error.error || 'Алдаа гарлаа');
       }
 
-      router.push('/hr/departments');
+      router.push('/employer/hr/departments');
     } catch (error) {
       console.error('Алдаа:', error);
       alert(error instanceof Error ? error.message : 'Алдаа гарлаа');

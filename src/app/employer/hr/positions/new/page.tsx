@@ -98,9 +98,10 @@ export default function NewPositionPage() {
     setOccupationSearch(occupation.titleMn);
     setFormData(prev => ({
       ...prev,
+      title: occupation.titleMn,
+      code: occupation.code,
       jobProfessionCode: occupation.code,
       jobProfessionName: occupation.titleMn,
-      code: occupation.code
     }));
     setShowOccupationDropdown(false);
   };
@@ -108,10 +109,15 @@ export default function NewPositionPage() {
   const handleOccupationSearchChange = (value: string) => {
     setOccupationSearch(value);
     setShowOccupationDropdown(true);
+    setFormData(prev => ({
+      ...prev,
+      title: value,
+    }));
     if (!value.trim()) {
       setSelectedOccupation(null);
       setFormData(prev => ({
         ...prev,
+        title: '',
         jobProfessionCode: '',
         jobProfessionName: '',
       }));
@@ -128,17 +134,19 @@ export default function NewPositionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.title.trim()) {
+      alert('Ажил мэргэжил оруулна уу');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const response = await fetch('/api/hr/positions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          jobProfessionCode: selectedOccupation?.code || '',
-          jobProfessionName: selectedOccupation?.titleMn || '',
-        }),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
@@ -176,9 +184,10 @@ export default function NewPositionPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <form onSubmit={handleSubmit} className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Ажил мэргэжил */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ажил мэргэжил
+                  Ажил мэргэжил *
                 </label>
                 <div className="relative occupation-dropdown">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -186,6 +195,7 @@ export default function NewPositionPage() {
                   </div>
                   <input
                     type="text"
+                    required
                     value={occupationSearch}
                     onChange={(e) => handleOccupationSearchChange(e.target.value)}
                     onFocus={() => setShowOccupationDropdown(true)}
@@ -223,6 +233,7 @@ export default function NewPositionPage() {
                   </div>
                 )}
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Код *
@@ -274,18 +285,6 @@ export default function NewPositionPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, salaryRange: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Жишээ: 2,000,000 - 3,500,000 MNT"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Тайлбар
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Тушаалын тайлбар..."
                 />
               </div>
               <div className="md:col-span-2">

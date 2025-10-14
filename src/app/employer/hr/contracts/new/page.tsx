@@ -110,7 +110,7 @@ export default function NewContractPage() {
       });
 
       if (response.ok) {
-        router.push('/hr/contracts');
+        router.push('/employer/hr/contracts');
       } else {
         const error = await response.json();
         alert(`Алдаа: ${error.message}`);
@@ -149,7 +149,7 @@ export default function NewContractPage() {
             <p className="text-gray-600">Ажилтны хөдөлмөрийн гэрээ үүсгэх</p>
           </div>
           <Link
-            href="/hr/contracts"
+            href="/employer/hr/contracts"
             className="inline-flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,29 +229,10 @@ export default function NewContractPage() {
                   <option value="PART_TIME">Хагас цагийн</option>
                   <option value="CONTRACT">Гэрээт</option>
                   <option value="INTERNSHIP">Дадлага</option>
-                  <option value="PROBATION">Туршилтын</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Төлөв *
-                </label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="ACTIVE">Идэвхтэй</option>
-                  <option value="PENDING">Хүлээгдэж буй</option>
                 </select>
               </div>
             </div>
           </div>
-
-          {/* Огноо болон хугацаа */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Огноо болон хугацаа</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -356,24 +337,9 @@ export default function NewContractPage() {
 
           {/* Нэмэлт мэдээлэл */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Нэмэлт мэдээлэл</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Урамшуулал, нэмэлт тэтгэмж
-                </label>
-                <textarea
-                  name="benefits"
-                  value={formData.benefits}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500"
-                  placeholder="Эрүүл мэндийн даатгал, хоолны тэтгэмж, тээврийн зардал..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-lg font-medium text-gray-700 mb-2">
                   Гэрээний нөхцөл, заалт
                 </label>
                 <textarea
@@ -391,7 +357,7 @@ export default function NewContractPage() {
           {/* Товчлуурууд */}
           <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
             <Link
-              href="/hr/contracts"
+              href="/employer/hr/contracts"
               className="px-6 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
             >
               Цуцлах

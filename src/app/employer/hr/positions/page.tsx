@@ -247,14 +247,14 @@ export default function PositionsPage() {
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
                     <div className="flex space-x-1 sm:space-x-2">
                       <Link
-                        href={`/hr/positions/${position.id}`}
+                        href={`/employer/hr/positions/${position.id}`}
                         className="text-blue-600 hover:text-blue-900 p-1"
                       >
                         <span className="hidden sm:inline">Харах</span>
                         <span className="sm:hidden">👁️</span>
                       </Link>
                       <Link
-                        href={`/hr/positions/${position.id}/edit`}
+                        href={`/employer/hr/positions/${position.id}/edit`}
                         className="text-green-600 hover:text-green-900 p-1"
                       >
                         <span className="hidden sm:inline">Засах</span>

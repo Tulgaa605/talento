@@ -40,7 +40,7 @@ export default function EditDepartmentPage() {
           });
         } else {
           console.error('Хэлтэс олдсонгүй');
-          router.push('/hr/departments');
+          router.push('/employer/hr/departments');
         }
       } catch (err) {
         console.error('Мэдээлэл авахад алдаа гарлаа:', err);

@@ -148,7 +148,7 @@ export default function DepartmentsPage() {
                   </div>
                   <div className="flex space-x-1 sm:space-x-2 ml-2">
                     <Link
-                      href={`/hr/departments/${department.id}/edit`}
+                      href={`/employer/hr/departments/${department.id}/edit`}
                       className="text-green-600 hover:text-green-900 p-1"
                     >
                       <PencilIcon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -236,7 +236,7 @@ export default function DepartmentsPage() {
                       Үүсгэсэн: {new Date(department.createdAt).toLocaleDateString('mn-MN')}
                     </span>
                     <Link
-                      href={`/hr/departments/${department.id}`}
+                      href={`/employer/hr/departments/${department.id}`}
                       className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium"
                     >
                       Дэлгэрэнгүй харах →

@@ -80,7 +80,7 @@ export default function NewDecisionPage() {
         throw new Error(error.error || 'Алдаа гарлаа');
       }
 
-      router.push('/hr/decisions');
+      router.push('/employer/hr/decisions');
     } catch (error) {
       console.error('Алдаа:', error);
       alert(error instanceof Error ? error.message : 'Алдаа гарлаа');
@@ -172,7 +172,7 @@ export default function NewDecisionPage() {
               </div>
 
               {/* Гарчиг */}
-              <div className="md:col-span-2">
+              <div className="">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Гарчиг *
                 </label>
@@ -205,26 +205,6 @@ export default function NewDecisionPage() {
                   ))}
                 </select>
               </div>
-
-              {/* Төлөв */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Төлөв
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {statusOptions.map((status) => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Шидвэр гарсан огноо */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Шидвэр гарсан огноо *
@@ -237,8 +217,6 @@ export default function NewDecisionPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-
-              {/* Хэрэгжих огноо */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Хэрэгжих огноо
@@ -250,23 +228,6 @@ export default function NewDecisionPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-
-              {/* Тайлбар */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Тайлбар *
-                </label>
-                <textarea
-                  required
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Шидвэрийн тайлбар..."
-                />
-              </div>
-
-              {/* Шалтгаан */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Шалтгаан
@@ -279,23 +240,7 @@ export default function NewDecisionPage() {
                   placeholder="Шидвэр гаргасан шалтгаан..."
                 />
               </div>
-
-              {/* Дэлгэрэнгүй мэдээлэл */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Дэлгэрэнгүй мэдээлэл
-                </label>
-                <textarea
-                  value={formData.details}
-                  onChange={(e) => setFormData(prev => ({ ...prev, details: e.target.value }))}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Нэмэлт дэлгэрэнгүй мэдээлэл..."
-                />
-              </div>
             </div>
-
-            {/* Actions */}
             <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
               <button
                 type="button"

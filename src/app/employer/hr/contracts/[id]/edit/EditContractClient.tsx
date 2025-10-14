@@ -57,7 +57,7 @@ export default function EditContractClient({ id }: { id: string }) {
         const res = await fetch(`/api/hr/contracts/${id}`);
         if (!res.ok) {
           console.error('Гэрээ олдсонгүй');
-          router.push('/hr/contracts');
+          router.push('/employer/hr/contracts');
           return;
         }
         const data: Contract = await res.json();
