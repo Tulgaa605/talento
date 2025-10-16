@@ -36,8 +36,20 @@ export default function JobseekerPerformancePage() {
   const [showSubmitToEmployerModal, setShowSubmitToEmployerModal] = useState(false);
   const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [performanceStats, setPerformanceStats] = useState<any[]>([]);
-  const [topPerformers, setTopPerformers] = useState<any[]>([]);
+  const [performanceStats, setPerformanceStats] = useState<{
+    label: string;
+    value: string;
+    change: string;
+    color: string;
+    icon: string;
+  }[]>([]);
+  const [topPerformers, setTopPerformers] = useState<{
+    name: string;
+    position: string;
+    score: number;
+    department: string;
+    trend: string;
+  }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch data on component mount

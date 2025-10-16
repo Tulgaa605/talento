@@ -20,13 +20,13 @@ export async function GET() {
     // Calculate statistics
     const totalEvaluations = evaluations.length;
     const averageScore = evaluations.length > 0 
-      ? evaluations.reduce((sum, eval) => sum + eval.score, 0) / evaluations.length 
+      ? evaluations.reduce((sum, evaluation) => sum + evaluation.score, 0) / evaluations.length 
       : 0;
     const highestScore = evaluations.length > 0 
-      ? Math.max(...evaluations.map(eval => eval.score)) 
+      ? Math.max(...evaluations.map(evaluation => evaluation.score)) 
       : 0;
     const lowestScore = evaluations.length > 0 
-      ? Math.min(...evaluations.map(eval => eval.score)) 
+      ? Math.min(...evaluations.map(evaluation => evaluation.score)) 
       : 0;
 
     // Calculate top performers (this would need to be adjusted based on your business logic)
@@ -41,7 +41,7 @@ export async function GET() {
       distinct: ['employeeRefId']
     });
 
-    const formattedTopPerformers = topPerformers.map((performer, index) => ({
+    const formattedTopPerformers = topPerformers.map((performer) => ({
       name: performer.employee,
       position: "Ажилтан", // This would need to come from employee data
       score: performer.score,

@@ -65,14 +65,13 @@ export async function POST(request: Request) {
       comment,
       strengths,
       improvements,
-      evaluationType,
-      employerName,
-      employerEmail
+      evaluationType
     } = body;
 
     // Create a new performance evaluation
     const evaluation = await prisma.performanceEvaluation.create({
       data: {
+        legacyId: Date.now(), // Generate a unique legacy ID
         employee: session.user.name || "Unknown",
         employeeRefId: session.user.id,
         evaluator: evaluator || "Ажил олгогч",
