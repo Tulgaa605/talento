@@ -9,8 +9,9 @@ import QuestionnaireDropdown from "./QuestionnaireDropdown";
 import QuestionnaireResponseButton from "@/components/QuestionnaireResponseButton";
 import Image from "next/image";
 
-export const dynamic = 'force-dynamic';
 import CvDownloadButton from "./CvDownloadButton";
+
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{
