@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 
 type EvaluatorType = "Manager" | "Peer" | "HR" | "Self" | "Employer" | string;
@@ -35,6 +35,42 @@ export default function JobseekerPerformancePage() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showSubmitToEmployerModal, setShowSubmitToEmployerModal] = useState(false);
   const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null);
+  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [performanceStats, setPerformanceStats] = useState<any[]>([]);
+  const [topPerformers, setTopPerformers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch data on component mount
+  useEffect(() => {
+    if (session?.user) {
+      fetchPerformanceData();
+    }
+  }, [session]);
+
+  const fetchPerformanceData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch evaluations
+      const evaluationsResponse = await fetch('/api/jobseeker/performance');
+      if (evaluationsResponse.ok) {
+        const evaluationsData = await evaluationsResponse.json();
+        setEvaluations(evaluationsData);
+      }
+
+      // Fetch performance stats
+      const statsResponse = await fetch('/api/jobseeker/performance/stats');
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        setPerformanceStats(statsData.performanceStats);
+        setTopPerformers(statsData.topPerformers);
+      }
+    } catch (error) {
+      console.error('Error fetching performance data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const openDetailModal = (evaluation: Evaluation) => {
     setSelectedEvaluation(evaluation);
@@ -46,101 +82,47 @@ export default function JobseekerPerformancePage() {
     setSelectedEvaluation(null);
   };
 
-  const performanceStats = [
-    { label: "Нийт үнэлгээ", value: "156", change: "+12%", color: "text-blue-600", icon: "📊" },
-    { label: "Дундаж оноо", value: "4.2", change: "+0.3", color: "text-green-600", icon: "⭐" },
-    { label: "Шилдэг ажилтнууд", value: "24", change: "+5", color: "text-purple-600", icon: "🏆" },
-    { label: "Хөгжүүлэх шаардлагатай", value: "8", change: "-3", color: "text-orange-600", icon: "📈" }
-  ];
-
-  const topPerformers = [
-    { name: "Батбаяр", position: "Менежер", score: 4.8, department: "Маркетинг", trend: "up" },
-    { name: "Сайханбаяр", position: "Программист", score: 4.7, department: "IT", trend: "up" },
-    { name: "Оюунчимэг", position: "HR мэргэжилтэн", score: 4.6, department: "HR", trend: "up" },
-    { name: "Энхтуяа", position: "Нягтлан бодогч", score: 4.5, department: "Санхүү", trend: "stable" }
-  ];
-
-  const userEvaluations: Evaluation[] = [
-    { 
-      id: 1, 
-      employee: session?.user?.name || "Таны нэр", 
-      employeeId: (session?.user?.id as string) || "USER001",
-      evaluator: "Д.Сайханбаяр", 
-      evaluatorType: "Manager",
-      score: 4.8, 
-      period: "2024 Q1", 
-      status: "Дууссан",
-      evaluationDate: "2024-03-15",
-      comment: "Ажлын бүтээмж маш сайн, багтай хамтран ажиллах чадвар өндөр",
-      strengths: "Ажлын хурд, чанар, хариуцлага",
-      improvements: "Илтгэх ур чадварыг сайжруулах",
-      averageScore: 4.8,
-      evaluationType: "Улирлын үнэлгээ"
-    },
-    { 
-      id: 2, 
-      employee: session?.user?.name || "Таны нэр", 
-      employeeId: (session?.user?.id as string) || "USER001",
-      evaluator: "Б.Оюунчимэг", 
-      evaluatorType: "Peer",
-      score: 4.7, 
-      period: "2024 Q2", 
-      status: "Дууссан",
-      evaluationDate: "2024-06-20",
-      comment: "Техникийн мэдлэг өндөр, шинэ технологийг хурдан сурдаг",
-      strengths: "Техникийн мэдлэг, сурах чадвар",
-      improvements: "Харилцааны ур чадвар",
-      averageScore: 4.7,
-      evaluationType: "Улирлын үнэлгээ"
-    },
-    { 
-      id: 3, 
-      employee: session?.user?.name || "Таны нэр", 
-      employeeId: (session?.user?.id as string) || "USER001",
-      evaluator: "Э.Энхтуяа", 
-      evaluatorType: "HR",
-      score: 4.6, 
-      period: "2024 Q3", 
-      status: "Хүлээгдэж буй",
-      evaluationDate: "2024-09-25",
-      comment: "HR үйл ажиллагаа сайн, ажилтнуудтай харилцаа сайхан",
-      strengths: "Харилцааны ур чадвар, багийн ажиллагаа",
-      improvements: "Ажлын хурд",
-      averageScore: 4.6,
-      evaluationType: "Улирлын үнэлгээ"
-    }
-  ];
-
-  const [evaluations, setEvaluations] = useState<Evaluation[]>(userEvaluations);
 
   const openSubmitToEmployerModal = () => setShowSubmitToEmployerModal(true);
   const closeSubmitToEmployerModal = () => setShowSubmitToEmployerModal(false);
 
-  const handleSubmitToEmployer = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitToEmployer = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const employerEvaluation: Evaluation = {
-      id: Date.now(),
-      employee: session?.user?.name || "Таны нэр",
-      employeeId: (session?.user?.id as string) || "USER001",
-      evaluator: "Ажил олгогч",
-      evaluatorType: "Employer",
-      score: Number(fd.get('score') || 0),
-      period: String(fd.get('period') || `${new Date().getFullYear()} Q1`),
-      status: "Илгээгдсэн",
-      evaluationDate: String(fd.get('evaluationDate') || new Date().toISOString().slice(0,10)),
-      comment: String(fd.get('comment') || ""),
-      strengths: String(fd.get('strengths') || ""),
-      improvements: String(fd.get('improvements') || ""),
-      averageScore: Number(fd.get('score') || 0),
-      evaluationType: String(fd.get('evaluationType') || "Ажил олгогчд илгээсэн үнэлгээ"),
-      employerName: String(fd.get('employerName') || ""),
-      employerEmail: String(fd.get('employerEmail') || ""),
-    };
-    setEvaluations((prev) => [employerEvaluation, ...prev]);
-    closeSubmitToEmployerModal();
-    setActiveTab('evaluations');
-    alert('Ажил олгогчд үнэлгээ амжилттай илгээгдлээ!');
+    
+    try {
+      const response = await fetch('/api/jobseeker/performance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          evaluator: "Ажил олгогч",
+          evaluatorType: "Employer",
+          score: Number(fd.get('score') || 0),
+          period: String(fd.get('period') || `${new Date().getFullYear()} Q1`),
+          comment: String(fd.get('comment') || ""),
+          strengths: String(fd.get('strengths') || ""),
+          improvements: String(fd.get('improvements') || ""),
+          evaluationType: String(fd.get('evaluationType') || "Ажил олгогчд илгээсэн үнэлгээ"),
+          employerName: String(fd.get('employerName') || ""),
+          employerEmail: String(fd.get('employerEmail') || ""),
+        }),
+      });
+
+      if (response.ok) {
+        // Refresh the data
+        await fetchPerformanceData();
+        closeSubmitToEmployerModal();
+        setActiveTab('evaluations');
+        alert('Ажил олгогчд үнэлгээ амжилттай илгээгдлээ!');
+      } else {
+        alert('Үнэлгээ илгээхэд алдаа гарлаа. Дахин оролдоно уу.');
+      }
+    } catch (error) {
+      console.error('Error submitting evaluation:', error);
+      alert('Үнэлгээ илгээхэд алдаа гарлаа. Дахин оролдоно уу.');
+    }
   };
 
   const evaluationCriteria = [
@@ -200,6 +182,19 @@ export default function JobseekerPerformancePage() {
       ]
     }
   ];
+
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen bg-white">
+        <main className="max-w-7xl mt-10 mx-auto px-4 py-8 bg-white">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0C213A]"></div>
+            <span className="ml-3 text-[#0C213A]">Мэдээлэл ачааллаж байна...</span>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen bg-white">
@@ -479,19 +474,34 @@ export default function JobseekerPerformancePage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                   <span className="font-medium text-gray-700">Дундаж үнэлгээ</span>
-                  <span className="text-2xl font-bold text-[#0C213A]">4.2</span>
+                  <span className="text-2xl font-bold text-[#0C213A]">
+                    {evaluations.length > 0 
+                      ? (evaluations.reduce((sum, evaluation) => sum + evaluation.score, 0) / evaluations.length).toFixed(1)
+                      : "0.0"
+                    }
+                  </span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                   <span className="font-medium text-gray-700">Хамгийн өндөр</span>
-                  <span className="text-2xl font-bold text-green-600">4.8</span>
+                  <span className="text-2xl font-bold text-green-600">
+                    {evaluations.length > 0 
+                      ? Math.max(...evaluations.map(evaluation => evaluation.score)).toFixed(1)
+                      : "0.0"
+                    }
+                  </span>
                 </div>
-                <div className="flex justify_between items-center p-4 bg-gray-50 rounded-lg">
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                   <span className="font-medium text-gray-700">Хамгийн бага</span>
-                  <span className="text-2xl font-bold text-red-600">3.1</span>
+                  <span className="text-2xl font-bold text-red-600">
+                    {evaluations.length > 0 
+                      ? Math.min(...evaluations.map(evaluation => evaluation.score)).toFixed(1)
+                      : "0.0"
+                    }
+                  </span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                   <span className="font-medium text-gray-700">Нийт үнэлгээ</span>
-                  <span className="text-2xl font-bold text-purple-600">156</span>
+                  <span className="text-2xl font-bold text-purple-600">{evaluations.length}</span>
                 </div>
               </div>
             </div>
@@ -596,8 +606,6 @@ export default function JobseekerPerformancePage() {
           </div>
         </div>
       )}
-
-      {/* Submit to Employer Modal */}
       {showSubmitToEmployerModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">

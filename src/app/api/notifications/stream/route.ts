@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -10,7 +9,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Set up SSE headers
     const response = new NextResponse(
       new ReadableStream({
         start(controller) {
@@ -18,12 +16,7 @@ export async function GET(request: NextRequest) {
             const message = `data: ${JSON.stringify(data)}\n\n`;
             controller.enqueue(new TextEncoder().encode(message));
           };
-
-
-          // Send initial connection message
           sendNotification({ type: 'connected', message: 'Connected to notification stream' });
-
-          // Set up polling for new notifications
           let lastCheck = new Date();
           
           const checkForNewNotifications = async () => {

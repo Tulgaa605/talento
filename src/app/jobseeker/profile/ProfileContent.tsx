@@ -36,13 +36,67 @@ interface User {
   }>;
 }
 
+interface QuestionnaireResponse {
+  id: string;
+  questionnaireId: string;
+  questionnaireTitle: string;
+  questionnaireDescription: string;
+  questionnaireType: string;
+  companyName: string;
+  companyLogoUrl: string | null;
+  submittedAt: string;
+  attachmentFile: string | null;
+  attachmentUrl: string | null;
+  formData: string | null;
+  type: 'response' | 'created';
+  responseCount?: number;
+  answers: Array<{
+    questionId: string;
+    questionText: string;
+    questionType: string;
+    value: string;
+  }>;
+}
+
 interface ProfileContentProps {
   user: User;
 }
 
 export default function ProfileContent({ user }: ProfileContentProps) {
   const [activeTab, setActiveTab] = useState("profile");
+  const [questionnaireResponses, setQuestionnaireResponses] = useState<QuestionnaireResponse[]>([]);
+  const [loadingQuestionnaires, setLoadingQuestionnaires] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Fetch questionnaire responses when questionnaires tab is activated
+  const fetchQuestionnaireResponses = async () => {
+    setLoadingQuestionnaires(true);
+    try {
+      console.log('Fetching questionnaire responses...');
+      const response = await fetch('/api/jobseeker/questionnaires');
+      console.log('Response status:', response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Received questionnaire data:', data);
+        setQuestionnaireResponses(data);
+      } else {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+      }
+    } catch (error) {
+      console.error('Анкетуудыг авахад алдаа гарлаа:', error);
+    } finally {
+      setLoadingQuestionnaires(false);
+    }
+  };
+
+  // Fetch questionnaires when tab is clicked
+  const handleTabClick = (tab: string) => {
+    setActiveTab(tab);
+    if (tab === 'questionnaires') {
+      fetchQuestionnaireResponses();
+    }
+  };
   const [editedUser, setEditedUser] = useState({
     name: user.name || "",
     phoneNumber: user.phoneNumber || "",
@@ -85,6 +139,8 @@ export default function ProfileContent({ user }: ProfileContentProps) {
         <Image
           src="/images/cover.jpeg"
           alt="Profile cover"
+          width={1920}
+          height={640}
           className="w-full h-full object-cover object-center"
         />
         <div className="absolute left-0 bottom-0 flex items-center gap-3 md:gap-6 lg:gap-8 2xl:gap-5 px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8 w-full bg-gradient-to-t from-black/60 to-transparent">
@@ -129,7 +185,7 @@ export default function ProfileContent({ user }: ProfileContentProps) {
                 ? "border-[#0C213A] text-[#0C213A]"
                 : "border-transparent text-[#0C213A]/60 hover:text-[#0C213A] hover:bg-[#0C213A]/5"
             }`}
-            onClick={() => setActiveTab("profile")}
+            onClick={() => handleTabClick("profile")}
           >
             Хувийн мэдээлэл
           </button>
@@ -139,9 +195,19 @@ export default function ProfileContent({ user }: ProfileContentProps) {
                 ? "border-[#0C213A] text-[#0C213A]"
                 : "border-transparent text-[#0C213A]/60 hover:text-[#0C213A] hover:bg-[#0C213A]/5"
             }`}
-            onClick={() => setActiveTab("cvs")}
+            onClick={() => handleTabClick("cvs")}
           >
             CV жагсаалт
+          </button>
+          <button
+            className={`px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-none border-b-2 transition-all duration-200 cursor-pointer whitespace-nowrap ${
+              activeTab === "questionnaires"
+                ? "border-[#0C213A] text-[#0C213A]"
+                : "border-transparent text-[#0C213A]/60 hover:text-[#0C213A] hover:bg-[#0C213A]/5"
+            }`}
+            onClick={() => handleTabClick("questionnaires")}
+          >
+            Анкетууд
           </button>
           <button
             className={`px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-none border-b-2 transition-all duration-200 cursor-pointer whitespace-nowrap ${
@@ -149,7 +215,7 @@ export default function ProfileContent({ user }: ProfileContentProps) {
                 ? "border-[#0C213A] text-[#0C213A]"
                 : "border-transparent text-[#0C213A]/60 hover:text-[#0C213A] hover:bg-[#0C213A]/5"
             }`}
-            onClick={() => setActiveTab("saved")}
+            onClick={() => handleTabClick("saved")}
           >
             Таалагдсан
           </button>
@@ -289,6 +355,148 @@ export default function ProfileContent({ user }: ProfileContentProps) {
             <div className="mt-4 sm:mt-6">
               <ProfileCVUpload />
             </div>
+          </div>
+        )}
+
+        {activeTab === "questionnaires" && (
+          <div className="w-full px-4 sm:px-6 md:px-8 lg:px-0">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#0C213A]">
+                Үүсгэсэн анкетууд
+              </h2>
+              <button
+                onClick={() => {
+                  // TODO: Implement questionnaire creation modal/page
+                  alert('Анкет үүсгэх функц хараахан бэлэн болоогүй байна');
+                }}
+                className="bg-[#0C213A] text-white px-4 py-2 rounded-lg hover:bg-[#0C213A]/90 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Шинэ анкет үүсгэх
+              </button>
+            </div>
+            
+            {loadingQuestionnaires ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0C213A]"></div>
+                <span className="ml-3 text-[#0C213A]">Анкетуудыг ачааллаж байна...</span>
+              </div>
+            ) : questionnaireResponses.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-500 text-lg mb-2">Анкет олдсонгүй</div>
+                <div className="text-gray-400">Та одоогоор анкет илгээгээгүй байна.</div>
+              </div>
+            ) : (
+              <div className="grid gap-6">
+                {questionnaireResponses.map((response) => (
+                  <div key={response.id} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-xl font-semibold text-[#0C213A]">
+                            {response.questionnaireTitle}
+                          </h3>
+                          {response.type === 'created' && (
+                            <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                              Үүсгэсэн
+                            </span>
+                          )}
+                          {response.type === 'response' && (
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
+                              Хариулсан
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-gray-600 mb-3">
+                          {response.questionnaireDescription}
+                        </p>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">Эх үүсвэр:</span>
+                            {response.companyName}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">Төрөл:</span>
+                            {response.questionnaireType}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">
+                              {response.type === 'created' ? 'Үүсгэсэн:' : 'Илгээсэн:'}
+                            </span>
+                            {new Date(response.submittedAt).toLocaleDateString('mn-MN')}
+                          </span>
+                          {response.type === 'created' && response.responseCount !== undefined && (
+                            <span className="flex items-center gap-1">
+                              <span className="font-medium">Хариулт:</span>
+                              {response.responseCount}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Answers - only show for responses, not created questionnaires */}
+                    {response.type === 'response' && response.answers.length > 0 && (
+                      <div className="border-t pt-4">
+                        <h4 className="font-semibold text-gray-800 mb-3">Таны хариултууд:</h4>
+                        <div className="space-y-3">
+                          {response.answers.map((answer, index) => (
+                            <div key={answer.questionId} className="bg-gray-50 p-3 rounded-md">
+                              <div className="font-medium text-gray-700 mb-1">
+                                {index + 1}. {answer.questionText}
+                              </div>
+                              <div className="text-gray-600">
+                                {answer.questionType === 'MULTIPLE_CHOICE' || answer.questionType === 'SINGLE_CHOICE' ? (
+                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                                    {answer.value}
+                                  </span>
+                                ) : (
+                                  <span>{answer.value}</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Show different message for created questionnaires */}
+                    {response.type === 'created' && (
+                      <div className="border-t pt-4">
+                        <div className="bg-blue-50 p-4 rounded-md">
+                          <p className="text-blue-800 font-medium mb-2">
+                            Та энэ анкетыг үүсгэсэн
+                          </p>
+                          <p className="text-blue-600 text-sm">
+                            {response.responseCount === 0 
+                              ? 'Одоогоор хэн ч хариулсангүй' 
+                              : `${response.responseCount} хүн хариулсан`
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Attachment */}
+                    {response.attachmentUrl && (
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="font-semibold text-gray-800 mb-2">Хавсралт:</h4>
+                        <a 
+                          href={response.attachmentUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-blue-600 hover:text-blue-800 underline"
+                        >
+                          {response.attachmentFile || 'Хавсралт файл'}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
