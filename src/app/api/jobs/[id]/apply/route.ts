@@ -22,7 +22,6 @@ export async function POST(
       return NextResponse.json({ error: "CV сонгоно уу" }, { status: 400 });
     }
 
-    // Check if job exists
     const job = await prisma.job.findUnique({
       where: { id: jobId },
     });
@@ -34,7 +33,6 @@ export async function POST(
       );
     }
 
-    // Check if CV exists and belongs to user
     const cv = await prisma.cV.findFirst({
       where: {
         id: cvId,
@@ -46,7 +44,6 @@ export async function POST(
       return NextResponse.json({ error: "CV олдсонгүй" }, { status: 404 });
     }
 
-    // Check if user has already applied
     const existingApplication = await prisma.jobApplication.findFirst({
       where: {
         jobId: jobId,
@@ -64,7 +61,6 @@ export async function POST(
       );
     }
 
-    // Create job application
     const application = await prisma.jobApplication.create({
       data: {
         jobId: jobId,
@@ -75,10 +71,9 @@ export async function POST(
       },
     });
 
-    // Create a notification for the employer
     await prisma.notification.create({
       data: {
-        userId: job.companyId, // Send to company
+        userId: job.companyId,
         title: "Шинэ өргөдөл ирлээ",
         message: `${job.title} ажлын байрт шинэ өргөдөл ирлээ`,
         type: "APPLICATION",

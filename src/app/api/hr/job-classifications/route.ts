@@ -1,4 +1,3 @@
-// src/app/api/hr/job-classifications/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 

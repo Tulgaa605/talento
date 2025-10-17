@@ -9,8 +9,6 @@ export async function GET() {
     if (!session?.user || session.user.role !== "USER") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    // Fetch questionnaire responses
     const responses = await prisma.questionnaireResponse.findMany({
       where: {
         userId: session.user.id,
@@ -42,7 +40,6 @@ export async function GET() {
       },
     });
 
-    // Fetch questionnaires created by the user (through the dummy company)
     const createdQuestionnaires = await prisma.questionnaire.findMany({
       where: {
         company: {
@@ -71,7 +68,6 @@ export async function GET() {
     console.log(`Found ${responses.length} questionnaire responses for user ${session.user.id}`);
     console.log(`Found ${createdQuestionnaires.length} created questionnaires`);
 
-    // Format responses
     const formattedResponses = responses.map((response) => ({
       id: response.id,
       questionnaireId: response.questionnaireId,
@@ -93,7 +89,6 @@ export async function GET() {
       })),
     }));
 
-    // Format created questionnaires
     const formattedCreated = createdQuestionnaires.map((questionnaire) => ({
       id: questionnaire.id,
       questionnaireId: questionnaire.id,
@@ -111,7 +106,6 @@ export async function GET() {
       questions: questionnaire.questions,
     }));
 
-    // Combine and sort by date
     const allQuestionnaires = [...formattedResponses, ...formattedCreated].sort(
       (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
     );

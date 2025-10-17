@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Бүх ажлын байр авах
 export async function GET() {
   try {
     const jobs = await prisma.job.findMany({
@@ -13,7 +12,6 @@ export async function GET() {
       },
     });
 
-    // Хэрэв ажлын байр байхгүй бол жишээ компани, ажил үүсгэнэ
     if (jobs.length === 0) {
       const company = await prisma.company.create({
         data: {
@@ -55,7 +53,6 @@ export async function GET() {
   }
 }
 
-// Шинэ ажил нэмэх
 export async function POST(req: Request) {
   try {
     const { title, companyId, description, requirements, location, salary } =

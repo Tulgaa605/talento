@@ -3,7 +3,6 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Бүх хэлтсүүдийг авах
 export async function GET() {
   try {
     const departments = await prisma.department.findMany({
@@ -42,7 +41,6 @@ export async function GET() {
   }
 }
 
-// Шинэ хэлтэс нэмэх
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -55,7 +53,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Код давхцал шалгах
     const existingDepartment = await prisma.department.findUnique({
       where: { code },
     });

@@ -1,4 +1,3 @@
-// File: src/app/api/hr/decisions/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
@@ -6,7 +5,6 @@ const prisma = new PrismaClient();
 
 type Params = { id: string };
 
-// Шийдвэрийн мэдээллийг авах
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<Params> }
@@ -49,7 +47,6 @@ export async function GET(
   }
 }
 
-// Шийдвэрийн мэдээллийг шинэчлэх
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<Params> }
@@ -77,7 +74,6 @@ export async function PUT(
       );
     }
 
-    // Дугаарын давхцал шалгах
     const existingDecision = await prisma.decision.findFirst({
       where: { decisionNumber, id: { not: id } },
     });
@@ -128,7 +124,6 @@ export async function PUT(
   }
 }
 
-// Шийдвэр устгах
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<Params> }

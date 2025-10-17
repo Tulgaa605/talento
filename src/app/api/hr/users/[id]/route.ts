@@ -113,7 +113,6 @@ export async function PUT(req: NextRequest, { params }: RouteCtx) {
   }
 }
 
-// Хэрэглэгчийг устгах
 export async function DELETE(_req: NextRequest, { params }: RouteCtx) {
   const { id } = await params
   try {

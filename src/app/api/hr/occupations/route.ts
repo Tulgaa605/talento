@@ -12,21 +12,18 @@ interface Occupation {
   version: string;
 }
 
-// Ажил мэргэжлийн жагсаалт авах
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    // Read occupations from JSON file
     const occupationsPath = path.join(process.cwd(), 'occupations.json');
     const occupationsData = fs.readFileSync(occupationsPath, 'utf8');
     const occupations = JSON.parse(occupationsData) as Occupation[];
 
     let filteredOccupations = occupations;
 
-    // Хайлт хийх
     if (search.trim()) {
       const searchLower = search.toLowerCase();
       filteredOccupations = occupations.filter((occupation: Occupation) =>
@@ -35,7 +32,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Хязгаарлах
     const limitedResults = filteredOccupations.slice(0, limit);
 
     return NextResponse.json({

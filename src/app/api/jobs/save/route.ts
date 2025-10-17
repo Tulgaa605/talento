@@ -27,7 +27,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const jobId = body.jobId;
 
-    // Check if job exists
     const job = await prisma.job.findUnique({
       where: {
         id: jobId,
@@ -38,7 +37,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    // Check if job is already saved
     const existingSavedJob = await prisma.savedJob.findFirst({
       where: {
         userId: session.user.id,
@@ -47,7 +45,6 @@ export async function POST(request: Request) {
     });
 
     if (existingSavedJob) {
-      // If job is already saved, unsave it
       await prisma.savedJob.delete({
         where: {
           id: existingSavedJob.id,
@@ -56,7 +53,6 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ saved: false });
     } else {
-      // If job is not saved, save it
       await prisma.savedJob.create({
         data: {
           userId: session.user.id,

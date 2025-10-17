@@ -10,7 +10,6 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch performance evaluations from the database
     const evaluations = await prisma.performanceEvaluation.findMany({
       where: {
         employeeRefId: session.user.id
@@ -20,7 +19,6 @@ export async function GET() {
       }
     });
 
-    // Format the evaluations to match the frontend interface
     const formattedEvaluations = evaluations.map((evaluation) => ({
       id: evaluation.id,
       employee: evaluation.employee,
@@ -68,10 +66,9 @@ export async function POST(request: Request) {
       evaluationType
     } = body;
 
-    // Create a new performance evaluation
     const evaluation = await prisma.performanceEvaluation.create({
       data: {
-        legacyId: Date.now(), // Generate a unique legacy ID
+        legacyId: Date.now(),
         employee: session.user.name || "Unknown",
         employeeRefId: session.user.id,
         evaluator: evaluator || "Ажил олгогч",

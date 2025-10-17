@@ -1,4 +1,3 @@
-// File: src/app/api/employer/questionnaires/[id]/upload-attachment/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -9,7 +8,6 @@ import { existsSync } from "fs";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Next.js 15: params нь Promise байх ёстой
 type RouteCtx = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, _ctx: RouteCtx) {
@@ -29,9 +27,9 @@ export async function POST(request: NextRequest, _ctx: RouteCtx) {
     }
 
     const allowedTypes = [
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
-      "application/msword", // .doc
-      "application/pdf", // .pdf
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
+      "application/pdf",
     ];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
@@ -40,7 +38,7 @@ export async function POST(request: NextRequest, _ctx: RouteCtx) {
       );
     }
 
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json(
         { error: "Файлын хэмжээ 10MB-аас ихгүй байх ёстой" },

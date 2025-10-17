@@ -49,10 +49,8 @@ export async function GET(request: NextRequest) {
             }
           };
 
-          // Check for new notifications every 5 seconds
           const interval = setInterval(checkForNewNotifications, 5000);
 
-          // Clean up on disconnect
           request.signal.addEventListener('abort', () => {
             clearInterval(interval);
             controller.close();

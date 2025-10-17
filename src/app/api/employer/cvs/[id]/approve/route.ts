@@ -15,7 +15,6 @@ export async function POST(
 
     const { id: cvId } = await params;
 
-    // Get the CV and verify ownership
     const cv = await prisma.cV.findUnique({
       where: {
         id: cvId,
@@ -29,7 +28,6 @@ export async function POST(
       return NextResponse.json({ error: "CV not found" }, { status: 404 });
     }
 
-    // Verify that the user is associated with the company
     const user = await prisma.user.findUnique({
       where: {
         id: session.user.id,
@@ -43,7 +41,6 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Update CV status
     const updatedCV = await prisma.cV.update({
       where: {
         id: cvId,
@@ -53,7 +50,6 @@ export async function POST(
       },
     });
 
-    // Create notification for the applicant
     await prisma.notification.create({
       data: {
         userId: cv.userId,

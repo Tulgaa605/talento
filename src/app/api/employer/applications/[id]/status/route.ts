@@ -1,4 +1,3 @@
-// src/app/api/employer/applications/[id]/status/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -8,7 +7,6 @@ type Params = { id: string };
 
 export async function PATCH(
   request: NextRequest,
-  // ⬇️ params-ийг Promise болгож, дотор нь await хийнэ
   { params }: { params: Promise<Params> }
 ) {
   try {
@@ -18,7 +16,7 @@ export async function PATCH(
       return NextResponse.json({ message: 'Нэвтрэх эрхгүй байна' }, { status: 401 });
     }
 
-    const { id: applicationId } = await params; // ⬅️ эндээс id-гаа авна
+    const { id: applicationId } = await params;
     const { status } = await request.json();
 
     const currentApplication = await prisma.jobApplication.findUnique({

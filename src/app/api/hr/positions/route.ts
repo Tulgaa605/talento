@@ -3,7 +3,6 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Бүх албан тушаал авах
 export async function GET() {
   try {
     const positions = await prisma.position.findMany({
@@ -46,7 +45,6 @@ export async function GET() {
   }
 }
 
-// Шинэ албан тушаал нэмэх
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -68,7 +66,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Код давхцал
     const existingPosition = await prisma.position.findUnique({ where: { code } });
     if (existingPosition) {
       return NextResponse.json(
@@ -77,7 +74,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Хэлтэс шалгах
     const department = await prisma.department.findUnique({ where: { id: departmentId } });
     if (!department) {
       return NextResponse.json({ error: 'Хэлтэс олдсонгүй' }, { status: 404 });

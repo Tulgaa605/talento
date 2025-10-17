@@ -49,7 +49,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify that the user is associated with the company
     const user = await prisma.user.findUnique({
       where: {
         id: session.user.id,
@@ -63,7 +62,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Create a notification for the user
     await prisma.notification.create({
       data: {
         userId: cv.userId,

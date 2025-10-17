@@ -22,21 +22,16 @@ interface OpenRouterResponse {
     };
   }>;
 }
-
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
-    // Create a temporary file
     const tempFile = join(tmpdir(), `pdf-${Date.now()}.pdf`);
     await writeFile(tempFile, buffer);
 
-    // Run Python script
     const pythonProcess = spawn("python", ["scripts/pdf_parser.py"]);
 
-    // Send PDF data to Python script
     pythonProcess.stdin.write(buffer.toString("base64"));
     pythonProcess.stdin.end();
 
-    // Get result from Python script
     const result = await new Promise<PythonResult>((resolve, reject) => {
       let output = "";
       pythonProcess.stdout.on("data", (data) => {
@@ -73,7 +68,6 @@ async function analyzeCV(content: string) {
   try {
     console.log("Starting CV analysis...");
 
-    // First try with OpenRouter API
     if (process.env.OPENROUTER_API_KEY) {
       try {
         const response: Response = await fetch(
@@ -146,7 +140,6 @@ CV Шинжилгээ:
           const contentFromLLM = data.choices?.[0]?.message?.content;
           if (contentFromLLM) {
             const analysis = contentFromLLM;
-            // Validate that the analysis contains the expected sections
             if (
               analysis.includes("CV Шинжилгээ:") &&
               analysis.includes("Хүч талууд:") &&
@@ -161,7 +154,6 @@ CV Шинжилгээ:
       }
     }
 
-    // Fallback to local analysis if API fails or rate limited
     console.log("Using fallback analysis...");
     return generateFallbackAnalysis(content);
   } catch (error) {

@@ -3,14 +3,12 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Бүртгэлтэй хэрэглэгчид (role=USER) -ийг гэрээтэй/гэрээгүй төлвөөр нь ялган авах
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const contractFilter = searchParams.get('contract'); // HAS | NONE | null
-    const approvalFilter = searchParams.get('approval'); // EMPLOYER | ADMIN | APPROVED | null
+    const contractFilter = searchParams.get('contract');
+    const approvalFilter = searchParams.get('approval');
 
-    // Бүх USER хэрэглэгчид
     const users = await prisma.user.findMany({
       where: { role: 'USER' },
       select: {
@@ -29,7 +27,6 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Гэрээтэй ажилчдын имэйлүүдийг тодорхойлох (ямар нэг гэрээтэй байх)
     const employeesWithAnyContract = await prisma.employee.findMany({
       where: {
         contracts: {

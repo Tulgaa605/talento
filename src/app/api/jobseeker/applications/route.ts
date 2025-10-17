@@ -5,7 +5,6 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET () {
   try {
-    // Хэрэглэгчийн session-г шалгах
     const session = await getServerSession(authOptions);
     
     if (!session || session.user?.role !== 'USER') {
@@ -15,7 +14,6 @@ export async function GET () {
       );
     }
 
-    // Хэрэглэгчийн өргөдлүүдийг авах
     const applications = await prisma.jobApplication.findMany({
       where: {
         userId: session.user.id,

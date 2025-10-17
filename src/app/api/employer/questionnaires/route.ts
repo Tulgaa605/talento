@@ -1,4 +1,3 @@
-// src/app/api/employer/questionnaires/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -171,12 +170,10 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Clean existing answers tied to questions
     for (const question of existingQuestionnaire.questions) {
       await prisma.answer.deleteMany({ where: { questionId: question.id } });
     }
 
-    // Remove existing questions
     await prisma.question.deleteMany({ where: { questionnaireId: id } });
 
     const questionnaire = await prisma.questionnaire.update({
@@ -241,23 +238,18 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Delete answers tied to responses
     for (const response of questionnaire.responses) {
       await prisma.answer.deleteMany({ where: { responseId: response.id } });
     }
-    // Delete responses
     await prisma.questionnaireResponse.deleteMany({
       where: { questionnaireId: id },
     });
 
-    // Delete answers tied to questions (defensive)
     for (const question of questionnaire.questions) {
       await prisma.answer.deleteMany({ where: { questionId: question.id } });
     }
-    // Delete questions
     await prisma.question.deleteMany({ where: { questionnaireId: id } });
 
-    // Delete questionnaire
     await prisma.questionnaire.delete({ where: { id } });
 
     return NextResponse.json({ success: true });

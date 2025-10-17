@@ -63,7 +63,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Шинэ ажилтны бүртгэл нэмэх
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -129,7 +128,6 @@ export async function POST(request: NextRequest) {
       if (!manager) return NextResponse.json({ error: 'Удирдагч олдсонгүй' }, { status: 404 });
     }
 
-    // Prisma-ийн FK-уудыг шууд оноодог хэлбэр -> UncheckedCreateInput тохиромжтой
     const employeeData: Prisma.EmployeeUncheckedCreateInput = {
       employeeId,
       firstName,
@@ -153,7 +151,6 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date(),
     };
 
-    // Ажил мэргэжлийн ангилал: id эсвэл кодоор оноох/үүсгэх
     if (jobClassificationId && jobClassificationId.trim() !== '') {
       employeeData.jobClassificationId = jobClassificationId;
     } else if (

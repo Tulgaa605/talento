@@ -10,11 +10,9 @@ export async function GET(request: NextRequest) {
     const employeeId = searchParams.get('employeeId');
     const contractType = searchParams.get('contractType');
 
-    // ✅ Use Prisma type instead of `any`
     const where: Prisma.EmploymentContractWhereInput = {};
 
     if (status) {
-      // Cast to enum if your schema uses enums
       where.status = status as EmploymentContractStatus;
     }
 

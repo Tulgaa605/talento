@@ -3,7 +3,6 @@ import { PrismaClient, Prisma, DecisionType, DecisionStatus } from '@prisma/clie
 
 const prisma = new PrismaClient();
 
-// Бүх шийдвэрүүдийг авах
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -54,7 +53,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Шинэ шийдвэр нэмэх
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

@@ -46,7 +46,6 @@ export async function POST(
       );
     }
 
-    //
     const updatedApplication = await prisma.jobApplication.update({
       where: {
         id: applicationId,

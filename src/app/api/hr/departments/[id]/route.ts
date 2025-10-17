@@ -5,7 +5,6 @@ const prisma = new PrismaClient();
 
 type Params = { id: string };
 
-// Хэлтсийн мэдээллийг авах
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<Params> }
@@ -32,7 +31,6 @@ export async function GET(
   }
 }
 
-// Хэлтсийн мэдээллийг шинэчлэх
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<Params> }
@@ -49,7 +47,6 @@ export async function PUT(
       );
     }
 
-    // Код давхцал шалгах (өөр хэлтсүүдэд)
     const existingDepartment = await prisma.department.findFirst({
       where: { code, id: { not: id } },
     });
@@ -84,7 +81,6 @@ export async function PUT(
   }
 }
 
-// Хэлтсийн устгах
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<Params> }
@@ -92,7 +88,6 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    // Хэлтэс байгаа эсэхийг шалгах
     const department = await prisma.department.findUnique({
       where: { id },
       include: { employees: true, positions: true },

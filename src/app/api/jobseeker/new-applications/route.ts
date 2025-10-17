@@ -14,7 +14,6 @@ export async function GET() {
       );
     }
 
-    // Get user's applications
     const newApplicationsCount = await prisma.jobApplication.count({
       where: {
         user: {
@@ -23,7 +22,7 @@ export async function GET() {
         status: "PENDING",
         OR: [
           { viewedAt: null },
-          { viewedAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } }, // Applications not viewed in last 24 hours
+          { viewedAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
         ],
       },
     });

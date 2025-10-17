@@ -10,14 +10,12 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch all performance evaluations for the user
     const evaluations = await prisma.performanceEvaluation.findMany({
       where: {
         employeeRefId: session.user.id
       }
     });
 
-    // Calculate statistics
     const totalEvaluations = evaluations.length;
     const averageScore = evaluations.length > 0 
       ? evaluations.reduce((sum, evaluation) => sum + evaluation.score, 0) / evaluations.length 
@@ -29,7 +27,6 @@ export async function GET() {
       ? Math.min(...evaluations.map(evaluation => evaluation.score)) 
       : 0;
 
-    // Calculate top performers (this would need to be adjusted based on your business logic)
     const topPerformers = await prisma.performanceEvaluation.findMany({
       where: {
         status: "APPROVED"
@@ -43,10 +40,10 @@ export async function GET() {
 
     const formattedTopPerformers = topPerformers.map((performer) => ({
       name: performer.employee,
-      position: "Ажилтан", // This would need to come from employee data
+      position: "Ажилтан",
       score: performer.score,
-      department: "Тодорхойгүй", // This would need to come from employee data
-      trend: "up" // This would need to be calculated based on historical data
+      department: "Тодорхойгүй",
+      trend: "up"
     }));
 
     const stats = {

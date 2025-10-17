@@ -47,12 +47,10 @@ export async function PATCH(request: Request) {
         { status: 400 }
       );
     }
-
-    // Mark notification as read
     const updatedNotification = await prisma.notification.update({
       where: {
         id: notificationId,
-        userId: session.user.id, // Ensure user owns the notification
+        userId: session.user.id,
       },
       data: {
         read: true,

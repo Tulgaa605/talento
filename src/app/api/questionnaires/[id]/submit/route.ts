@@ -1,10 +1,8 @@
-// File: src/app/api/questionnaires/[id]/submit/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-/** ---- Types for request body (answers) and question shape ---- */
 type QuestionnaireAnswers = {
   personalInfo?: {
     fatherName?: string;
@@ -62,7 +60,6 @@ type QuestionnaireAnswers = {
 
 type QuestionShape = { id: string; text: string };
 
-// 👇 Next.js 15: params must be a Promise and should be awaited
 type RouteCtx = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, { params }: RouteCtx) {
@@ -72,7 +69,7 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params; // await the promise
+    const { id } = await params;
     const questionnaireId = id;
 
     const body = (await request.json()) as { 
@@ -88,7 +85,6 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
       );
     }
 
-    // Questionnaire exists?
     const questionnaire = await prisma.questionnaire.findUnique({
       where: { id: questionnaireId },
       include: { 
@@ -105,7 +101,6 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
       );
     }
 
-    // Already submitted?
     const existingResponse = await prisma.questionnaireResponse.findFirst({
       where: { questionnaireId, userId: session.user.id },
     });
@@ -116,7 +111,6 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
       );
     }
 
-    // Create response + answers
     const response = await prisma.questionnaireResponse.create({
       data: {
         questionnaireId,
@@ -136,10 +130,9 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
       },
     });
 
-    // Create notification for employer
     await prisma.notification.create({
       data: {
-        userId: questionnaire.company.users[0]?.id || session.user.id, // Get first company user
+        userId: questionnaire.company.users[0]?.id || session.user.id,
         title: "Асуулгын хариу ирлээ",
         message: `${session.user.name} ${questionnaire.title} асуулганд хариулсан байна`,
         type: "QUESTIONNAIRE_RESPONSE",
@@ -157,14 +150,12 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
   }
 }
 
-/** ---- Pure helper with strict types ---- */
 function getAnswerValue(
   answers: QuestionnaireAnswers,
   question: QuestionShape
 ): string {
   const q = question.text.toLowerCase();
 
-  // Personal Information
   if (q.includes("эцэг") || q.includes("эх")) return answers.personalInfo?.fatherName ?? "";
   if (q.includes("нэр") && !q.includes("эцэг") && !q.includes("эх"))
     return answers.personalInfo?.name ?? "";
@@ -181,7 +172,6 @@ function getAnswerValue(
     return answers.personalInfo?.ethnicity ?? "";
   if (q.includes("нийгмийн гарал")) return answers.personalInfo?.socialOrigin ?? "";
 
-  // Contact Information
   if (q.includes("оршин суугаа аймаг") || q.includes("оршин суугаа хот"))
     return answers.personalInfo?.currentAddress?.aimag ?? "";
   if (q.includes("оршин суугаа сум") || q.includes("оршин суугаа дүүрэг"))
@@ -195,7 +185,6 @@ function getAnswerValue(
   if (q.includes("и-мэйл хаяг"))
     return answers.personalInfo?.currentAddress?.email ?? "";
 
-  // Education
   const edu0 = answers.education?.generalEducation?.[0];
   if (q.includes("сургуулийн нэр")) return edu0?.schoolName ?? "";
   if (q.includes("эзэмшсэн боловсрол") || q.includes("мэргэжил"))
@@ -203,7 +192,6 @@ function getAnswerValue(
   if (q.includes("төгссөн он") || q.includes("төгссөн сар"))
     return edu0?.endDate ?? "";
 
-  // Skills
   if (q.includes("өөрийгөө танин мэдэх"))
     return (answers.skills?.individualSkills?.selfAwareness?.values ?? []).toString();
   if (q.includes("стрессээ тайлах"))
@@ -211,7 +199,6 @@ function getAnswerValue(
   if (q.includes("асуудлыг бүтээлчээр шийдвэрлэх"))
     return (answers.skills?.individualSkills?.problemSolving?.appropriateApproaches ?? []).toString();
 
-  // Foreign Languages
   if (q.includes("гадаад хэлний мэдлэг")) {
     const languages = answers.foreignLanguages ?? [];
     return languages
@@ -222,7 +209,6 @@ function getAnswerValue(
       .join("; ");
   }
 
-  // Computer Skills
   if (q.includes("эзэмшсэн программын нэр")) {
     const software = answers.computerSkills?.software ?? [];
     return software.map((s) => `${s.name}: ${s.level ?? ""}`).join("; ");
@@ -231,7 +217,6 @@ function getAnswerValue(
     return answers.computerSkills?.officeEquipment?.internet ?? "";
   }
 
-  // Work Experience
   const work0 = answers.workExperience?.[0];
   if (q.includes("ажилласан байгууллагын нэр")) return work0?.organization ?? "";
   if (q.includes("албан тушаал")) return work0?.position ?? "";
@@ -240,6 +225,5 @@ function getAnswerValue(
   if (q.includes("ажлаас гарсан он") || q.includes("ажлаас гарсан сар"))
     return work0?.endDate ?? "";
 
-  // Default fallback
   return "";
 }

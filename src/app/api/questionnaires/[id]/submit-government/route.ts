@@ -30,7 +30,6 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
       );
     }
 
-    // Check if questionnaire exists and is of type GOVERNMENT_EMPLOYEE
     const questionnaire = await prisma.questionnaire.findUnique({
       where: { id: questionnaireId },
       include: { company: true },
@@ -50,7 +49,6 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
       );
     }
 
-    // Check if already submitted
     const existingResponse = await prisma.questionnaireResponse.findFirst({
       where: { questionnaireId, userId: session.user.id },
     });
@@ -62,17 +60,15 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
       );
     }
 
-    // Create response with government employee form data
     const response = await prisma.questionnaireResponse.create({
       data: {
         questionnaireId,
         userId: session.user.id,
         attachmentFile,
         attachmentUrl,
-        formData: JSON.stringify(formData), // Store the complete form data
+        formData: JSON.stringify(formData),
         answers: {
           create: [
-            // Store key information as answers for easier querying
             {
               questionId: "personal_info",
               value: JSON.stringify({
@@ -109,13 +105,11 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
       },
     });
 
-    // Create notification for employer
     const companyUsers = await prisma.user.findMany({
       where: { companyId: questionnaire.companyId },
       select: { id: true },
     });
 
-    // Notify all company users
     await Promise.all(
       companyUsers.map(user =>
         prisma.notification.create({

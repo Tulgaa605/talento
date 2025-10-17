@@ -53,7 +53,6 @@ export async function GET(
       return new NextResponse("Questionnaire not found", { status: 404 });
     }
 
-    // Add hasResponded flag to the response
     const response = {
       ...questionnaire,
       hasResponded: questionnaire.responses.length > 0,

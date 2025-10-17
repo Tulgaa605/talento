@@ -1,10 +1,8 @@
-// File: src/app/api/hr/positions/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 type RouteCtx = { params: Promise<{ id: string }> }
 
-// Албан тушаалын мэдээллийг авах
 export async function GET(_req: NextRequest, { params }: RouteCtx) {
   const { id } = await params
   try {
@@ -27,7 +25,6 @@ export async function GET(_req: NextRequest, { params }: RouteCtx) {
   }
 }
 
-// Албан тушаалын мэдээллийг шинэчлэх
 export async function PUT(req: NextRequest, { params }: RouteCtx) {
   const { id } = await params
   try {
@@ -46,7 +43,6 @@ export async function PUT(req: NextRequest, { params }: RouteCtx) {
       )
     }
 
-    // Код давхцал шалгах
     const existingPosition = await prisma.position.findFirst({
       where: { code, id: { not: id } },
     })
@@ -57,7 +53,6 @@ export async function PUT(req: NextRequest, { params }: RouteCtx) {
       )
     }
 
-    // Хэлтэс байгаа эсэхийг шалгах
     const department = await prisma.department.findUnique({ where: { id: departmentId } })
     if (!department) {
       return NextResponse.json({ error: 'Хэлтэс олдсонгүй' }, { status: 404 })
@@ -87,7 +82,6 @@ export async function PUT(req: NextRequest, { params }: RouteCtx) {
   }
 }
 
-// Албан тушаалын устгах
 export async function DELETE(_req: NextRequest, { params }: RouteCtx) {
   const { id } = await params
   try {

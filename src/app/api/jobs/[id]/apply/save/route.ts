@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-// params нь Promise байх ёстой
 type RouteCtx = { params: Promise<{ id: string }> }
 
 export async function POST(req: NextRequest, { params }: RouteCtx) {
@@ -13,8 +12,8 @@ export async function POST(req: NextRequest, { params }: RouteCtx) {
       return NextResponse.json({ error: 'Please log in to save jobs' }, { status: 401 })
     }
 
-    const { id } = await params           // <-- ЭНД await хэрэглэнэ
-    const jobId = id                      // хавтас [id]-тэй тул id-г jobId болгож ашиглая
+    const { id } = await params
+    const jobId = id
 
     const job = await prisma.job.findUnique({ where: { id: jobId } })
     if (!job) return NextResponse.json({ error: 'Job not found' }, { status: 404 })

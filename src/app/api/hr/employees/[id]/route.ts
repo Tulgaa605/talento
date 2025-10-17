@@ -5,7 +5,6 @@ const prisma = new PrismaClient();
 
 type Params = { id: string };
 
-// Ажилтны мэдээллийг авах
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<Params> }
@@ -34,7 +33,6 @@ export async function GET(
   }
 }
 
-// Ажилтны мэдээллийг шинэчлэх
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<Params> }
@@ -104,7 +102,6 @@ export async function PUT(
   }
 }
 
-// Ажилтныг устгах
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<Params> }

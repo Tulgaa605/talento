@@ -19,7 +19,6 @@ export async function DELETE(
 
     const { id: cvId } = await context.params;
 
-    // Check if the CV exists and belongs to the user
     const cv = await prisma.cV.findFirst({
       where: {
         id: cvId,
@@ -34,7 +33,6 @@ export async function DELETE(
       );
     }
 
-    // Delete the CV
     await prisma.cV.delete({
       where: {
         id: cvId,

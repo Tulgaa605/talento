@@ -16,7 +16,6 @@ export async function GET() {
       );
     }
 
-    // Get recruitment statistics
     const [
       totalApplications,
       newApplications,
@@ -31,7 +30,7 @@ export async function GET() {
         where: {
           status: 'PENDING',
           createdAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
           }
         }
       }),
@@ -124,10 +123,6 @@ export async function GET() {
   }
 }
 
-/**
- * POST /api/recruitment
- * Шинэ ажлын өргөдөл үүсгэх
- */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

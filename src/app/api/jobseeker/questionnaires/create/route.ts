@@ -55,7 +55,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create or find a dummy company for jobseeker questionnaires
     let dummyCompany = await prisma.company.findFirst({
       where: { name: "Хувийн анкет" }
     });
@@ -70,7 +69,6 @@ export async function POST(request: Request) {
       });
     }
 
-    // Create the questionnaire
     const questionnaire = await prisma.questionnaire.create({
       data: {
         title,

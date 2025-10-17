@@ -69,7 +69,6 @@ export async function PUT(
     const { id: jobId } = await context.params;
     const data = await request.json();
 
-    // Check if the job exists and belongs to the employer
     const existingJob = await prisma.job.findFirst({
       where: {
         id: jobId,
@@ -90,7 +89,6 @@ export async function PUT(
       );
     }
 
-    // Update the job
     const updatedJob = await prisma.job.update({
       where: {
         id: jobId,
@@ -126,12 +124,10 @@ export async function DELETE(
 ) {
   const { id: jobId } = await context.params;
   try {
-    // 1. Delete all job applications related to this job
     await prisma.jobApplication.deleteMany({
       where: { jobId },
     });
 
-    // 2. Delete the job itself
     await prisma.job.delete({
       where: { id: jobId },
     });

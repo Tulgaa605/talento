@@ -50,7 +50,6 @@ export async function GET(request: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Handle different file URL formats
     let filePath: string;
     
     if (cv.fileUrl.startsWith('/uploads/')) {
@@ -61,7 +60,6 @@ export async function GET(request: Request) {
       filePath = path.join(process.cwd(), "public", "uploads", "cvs", cv.fileUrl);
     }
 
-    // Try multiple possible paths
     const possiblePaths = [
       filePath,
       path.join(process.cwd(), "public", "uploads", "cvs", path.basename(cv.fileUrl)),
@@ -104,7 +102,7 @@ function sendFileResponse(fileBuffer: Buffer, fileName: string) {
   const encodedFileName = encodeURIComponent(fileName);
   headers.set("Content-Disposition", `attachment; filename*=UTF-8''${encodedFileName}`);
 
-  return new NextResponse(fileBuffer, {
+  return new NextResponse(new Uint8Array(fileBuffer), {
     status: 200,
     headers,
   });

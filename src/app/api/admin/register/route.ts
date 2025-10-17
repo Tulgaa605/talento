@@ -7,7 +7,7 @@ type RegisterBody = {
   name?: string;
   email?: string;
   password?: string;
-  role?: string; // comes as string from client
+  role?: string;
 };
 
 export async function POST(request: NextRequest) {
@@ -46,13 +46,11 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Map raw string -> Prisma enum
     const roleStr = (role ?? 'ADMIN').toUpperCase();
     const userRole: UserRole = Object.values(UserRole).includes(roleStr as UserRole)
       ? (roleStr as UserRole)
       : UserRole.ADMIN;
 
-    // Use `select` to avoid returning password (no unused var warning)
     const user = await prisma.user.create({
       data: {
         name,

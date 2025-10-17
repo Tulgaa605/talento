@@ -237,7 +237,6 @@ export async function POST(req: Request) {
 
     console.log("CV content received, length:", content.length);
 
-    // Calculate job matches with detailed information
     const matches = await calculateJobMatches(content);
     console.log("Found matches:", matches.length);
 
@@ -246,22 +245,17 @@ export async function POST(req: Request) {
       return NextResponse.json([]);
     }
 
-    // Filter out low matches and sort by score
     const filteredMatches = matches
       .filter((match) => {
-        // Get the job title and requirements in lowercase
         const jobTitle = match.job.title.toLowerCase();
         const jobRequirements = match.job.requirements.toLowerCase();
 
-        // Extract the main job title from the CV content
         const cvTitle = content.toLowerCase();
 
-        // Determine the CV's job category
         let cvCategory: keyof JobCategories | null = null;
         let maxKeywordMatches = 0;
         let maxTitleMatches = 0;
 
-        // Find the category with the most keyword and title matches
         for (const [category, data] of Object.entries(jobCategories) as [
           keyof JobCategories,
           JobCategory
@@ -269,17 +263,14 @@ export async function POST(req: Request) {
           let titleMatches = 0;
           let keywordMatches = 0;
 
-          // Count exact title matches (highest priority)
           data.titles.forEach((title) => {
             if (cvTitle.includes(title)) titleMatches += 3;
           });
 
-          // Count keyword matches
           data.keywords.forEach((keyword) => {
             if (cvTitle.includes(keyword)) keywordMatches += 1;
           });
 
-          // Update category if this one has more matches
           const totalMatches = titleMatches + keywordMatches;
           if (
             totalMatches > maxKeywordMatches ||
@@ -292,45 +283,38 @@ export async function POST(req: Request) {
           }
         }
 
-        // If we can't determine the CV's category with enough confidence, reject the match
         if (!cvCategory || (maxTitleMatches === 0 && maxKeywordMatches < 3)) {
           return false;
         }
 
-        // Check if the job matches the CV's category
         let jobTitleMatches = 0;
         let jobKeywordMatches = 0;
         const jobData = jobCategories[cvCategory];
 
-        // Count title matches in job title and requirements (highest priority)
         jobData.titles.forEach((title) => {
           if (jobTitle.includes(title)) jobTitleMatches += 3;
           if (jobRequirements.includes(title)) jobTitleMatches += 2;
         });
 
-        // Count keyword matches in job title and requirements
         jobData.keywords.forEach((keyword) => {
           if (jobTitle.includes(keyword)) jobKeywordMatches += 2;
           if (jobRequirements.includes(keyword)) jobKeywordMatches += 1;
         });
 
-        // If the job doesn't have enough matches with the CV category, reject it
         const totalJobMatches = jobTitleMatches + jobKeywordMatches;
         if (jobTitleMatches === 0 || totalJobMatches < 4) {
           return false;
         }
 
-        // For matching categories, apply appropriate thresholds
-        const hasGoodOverallScore = match.matchScore >= 65; // Increased threshold
-        const hasGoodSkills = match.matchDetails.skills >= 60; // Increased threshold
+        const hasGoodOverallScore = match.matchScore >= 65;
+        const hasGoodSkills = match.matchDetails.skills >= 60;
 
         return hasGoodOverallScore && hasGoodSkills;
       })
       .sort((a, b) => {
-        // Sort by match score
         return b.matchScore - a.matchScore;
       })
-      .slice(0, 10); // Show top 10 matches
+      .slice(0, 10);
 
     console.log("Filtered matches:", filteredMatches.length);
 
@@ -339,7 +323,6 @@ export async function POST(req: Request) {
       return NextResponse.json([]);
     }
 
-    // Add match details to response
     const response = filteredMatches.map((match) => ({
       ...match,
       matchDetails: {

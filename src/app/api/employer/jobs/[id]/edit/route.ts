@@ -21,7 +21,6 @@ export async function PUT(
     const body = await request.json();
     const { title, description, location, salary, status } = body;
 
-    // Check if the job exists and belongs to the employer
     const job = await prisma.job.findFirst({
       where: {
         id: jobId,
@@ -42,7 +41,6 @@ export async function PUT(
       );
     }
 
-    // Update the job
     const updatedJob = await prisma.job.update({
       where: {
         id: jobId

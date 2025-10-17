@@ -5,7 +5,6 @@ const prisma = new PrismaClient();
 
 type Params = { id: string };
 
-// GET /api/hr/contracts/[id]
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<Params> }
@@ -48,7 +47,6 @@ export async function GET(
   }
 }
 
-// PUT /api/hr/contracts/[id]
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<Params> }
@@ -127,7 +125,6 @@ export async function PUT(
   }
 }
 
-// DELETE /api/hr/contracts/[id]
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<Params> }

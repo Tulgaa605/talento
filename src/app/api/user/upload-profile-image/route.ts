@@ -6,10 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions); // Optional: Add auth check if needed
-
-  // Basic auth check (ensure user is logged in)
-  // You might want more robust checks depending on your needs
+  const session = await getServerSession(authOptions);
   if (!session || !session.user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }

@@ -41,7 +41,6 @@ export async function POST(request: Request) {
 
     const publicDir = join(process.cwd(), 'public', 'uploads');
 
-    // Ensure uploads directory exists
     await mkdir(publicDir, { recursive: true });
 
     const filePath = join(publicDir, filename);
