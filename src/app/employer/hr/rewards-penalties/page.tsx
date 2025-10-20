@@ -173,7 +173,8 @@ export default function RewardsPenaltiesPage() {
   };
 
   return (
-    <main className="max-w-7xl mt-10 mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <main className="max-w-7xl mt-10 mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Шагнал, шийтгэлийн бүртгэл</h1>
@@ -181,7 +182,7 @@ export default function RewardsPenaltiesPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         {stats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -228,7 +229,7 @@ export default function RewardsPenaltiesPage() {
 
       {/* Content based on active tab */}
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Recent Rewards */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -308,9 +309,9 @@ export default function RewardsPenaltiesPage() {
               Шинэ шагнал нэмэх
             </button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
+            <table className="w-full min-w-[800px]">
+              <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ажилтны ID</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ажилтан</th>
@@ -319,7 +320,6 @@ export default function RewardsPenaltiesPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дүн</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Олгосон</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Огноо</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Төлөв</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Үйлдэл</th>
                 </tr>
               </thead>
@@ -360,9 +360,9 @@ export default function RewardsPenaltiesPage() {
               Шинэ шийтгэл нэмэх
             </button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
+            <table className="w-full min-w-[800px]">
+              <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ажилтны ID</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ажилтан</th>
@@ -371,7 +371,6 @@ export default function RewardsPenaltiesPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Хэмжээ</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Шийдвэрлэсэн</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Огноо</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Төлөв</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Үйлдэл</th>
                 </tr>
               </thead>
@@ -405,7 +404,7 @@ export default function RewardsPenaltiesPage() {
       )}
 
       {activeTab === "reports" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-[#0C213A]">Статистик</h3>
@@ -459,7 +458,7 @@ export default function RewardsPenaltiesPage() {
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                <button className="w-full flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0C213A] hover:bg-[#0C213A]/5 transition-colors">
+                <button className="w-full flex items-center justify-center  p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0C213A] hover:bg-[#0C213A]/5 transition-colors">
                   <svg className="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
@@ -479,137 +478,131 @@ export default function RewardsPenaltiesPage() {
 
       {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-[#0C213A] mb-4">Шинэ шагнал нэмэх</h3>
-            <form onSubmit={handleAddReward} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ажилтан</label>
-                <input name="employee" className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Нэр" required />
-              </div>
-              <input name="employeeId" className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ажилтны ID" />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Шагналын төрөл</label>
-                <select name="type" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]">
-                  <option>Төрөл сонгох</option>
-                  <option>Шилдэг ажилтан</option>
-                  <option>Нэмэгдэл</option>
-                  <option>Урамшуулал</option>
-                  <option>Тусгай шагнал</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Дүн</label>
-                <input name="amount" type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]" placeholder="Жишээ: 500,000₮" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Тайлбар</label>
-                <textarea name="reason" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]" rows={3} placeholder="Шагналын шалтгаан..."></textarea>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Огноо</label>
-                  <input name="date" type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-lg font-semibold text-[#0C213A]">Шинэ шагнал нэмэх</h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-6">
+              <form onSubmit={handleAddReward} className="space-y-4">
+                <div className="grid grid-cols-1 text-gray-700 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Ажилтан</label>
+                    <input name="employee" className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Нэр" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Ажилтны ID</label>
+                    <input name="employeeId" className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ажилтны ID" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Шагналын төрөл</label>
+                    <select name="type" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]">
+                      <option>Төрөл сонгох</option>
+                      <option>Шилдэг ажилтан</option>
+                      <option>Нэмэгдэл</option>
+                      <option>Урамшуулал</option>
+                      <option>Тусгай шагнал</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Дүн</label>
+                    <input name="amount" type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]" placeholder="Жишээ: 500,000₮" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Огноо</label>
+                    <input name="date" type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Олгосон</label>
+                    <input name="issuedBy" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm text-gray-600 mb-1">Тайлбар</label>
+                    <textarea name="reason" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]" rows={3} placeholder="Шагналын шалтгаан..."></textarea>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Олгосон</label>
-                  <input name="issuedBy" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                <div className="pt-4 flex justify-end gap-3 border-t border-gray-200 mt-4">
+                  <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">Цуцлах</button>
+                  <button type="submit" className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90">Хадгалах</button>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Төлөв</label>
-                  <select name="status" className="w-full border border-gray-300 rounded-lg px-3 py-2">
-                    <option>Олгосон</option>
-                    <option>Хүлээгдэж буй</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Шийдвэрийн дугаар</label>
-                  <input name="orderNumber" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
-                </div>
-              </div>
-              <div className="flex space-x-3 pt-4">
-                <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                  Цуцлах
-                </button>
-                <button type="submit" className="flex-1 px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90 transition-colors">
-                  Хадгалах
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-      </div>
+        </div>
       )}
 
       {/* Add Penalty Modal */}
       {showAddPenaltyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-[#0C213A] mb-4">Шинэ шийтгэл нэмэх</h3>
-            <form onSubmit={handleAddPenalty} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ажилтан</label>
-                <input name="employee" className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Нэр" required />
-              </div>
-              <input name="employeeId" className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ажилтны ID" />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Шийтгэлийн төрөл</label>
-                <select name="type" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]">
-                  <option>Төрөл сонгох</option>
-                  <option>Анхааруулга</option>
-                  <option>Сануулах</option>
-                  <option>Торгууль</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Хэмжээ</label>
-                <input name="amount" type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]" placeholder="Жишээ: 100,000₮" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Шалтгаан</label>
-                <textarea name="reason" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]" rows={3} placeholder="Шийтгэлийн шалтгаан..."></textarea>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Огноо</label>
-                  <input name="date" type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-lg font-semibold text-[#0C213A]">Шинэ шийтгэл нэмэх</h3>
+              <button
+                onClick={() => setShowAddPenaltyModal(false)}
+                className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-6">
+              <form onSubmit={handleAddPenalty} className="space-y-4">
+                <div className="grid grid-cols-1 text-gray-700 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Ажилтан</label>
+                    <input name="employee" className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Нэр" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Ажилтны ID</label>
+                    <input name="employeeId" className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ажилтны ID" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Шийтгэлийн төрөл</label>
+                    <select name="type" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]">
+                      <option>Төрөл сонгох</option>
+                      <option>Анхааруулга</option>
+                      <option>Сануулах</option>
+                      <option>Торгууль</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Хэмжээ</label>
+                    <input name="amount" type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]" placeholder="Жишээ: 100,000₮" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Огноо</label>
+                    <input name="date" type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Шийдвэрлэсэн</label>
+                    <input name="decidedBy" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm text-gray-600 mb-1">Шалтгаан</label>
+                    <textarea name="reason" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]" rows={3} placeholder="Шийтгэлийн шалтгаан..."></textarea>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Шийдвэрлэсэн</label>
-                  <input name="decidedBy" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                <div className="pt-4 flex justify-end gap-3 border-t border-gray-200 mt-4">
+                  <button type="button" onClick={() => setShowAddPenaltyModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">Цуцлах</button>
+                  <button type="submit" className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90">Хадгалах</button>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Төлөв</label>
-                  <select name="status" className="w-full border border-gray-300 rounded-lg px-3 py-2">
-                    <option>Бүртгэгдсэн</option>
-                    <option>Хэрэгжүүлсэн</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text_sm font-medium text-gray-700 mb-1">Шийдвэрийн дугаар</label>
-                  <input name="orderNumber" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
-                </div>
-              </div>
-              <div className="flex space-x-3 pt-4">
-                <button type="button" onClick={() => setShowAddPenaltyModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                  Цуцлах
-                </button>
-                <button type="submit" className="flex-1 px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90 transition-colors">
-                  Хадгалах
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* Reward View/Edit Modal */}
       {selectedReward && rewardMode && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl w-full max-w-2xl p-6">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-[#0C213A]">Шагнал - {rewardMode === "view" ? "Дэлгэрэнгүй" : "Засах"}</h3>
               <button onClick={closeReward} className="p-2 hover:bg-gray-100 rounded-md">✕</button>
@@ -649,8 +642,8 @@ export default function RewardsPenaltiesPage() {
 
       {/* Penalty View/Edit Modal */}
       {selectedPenalty && penaltyMode && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl w-full max-w-2xl p-6">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-[#0C213A]">Шийтгэл - {penaltyMode === "view" ? "Дэлгэрэнгүй" : "Засах"}</h3>
               <button onClick={closePenalty} className="p-2 hover:bg-gray-100 rounded-md">✕</button>
@@ -685,9 +678,10 @@ export default function RewardsPenaltiesPage() {
               </form>
             )}
           </div>
-      </div>
+        </div>
       )}
-    </main>
+      </main>
+    </div>
   );
 }
 

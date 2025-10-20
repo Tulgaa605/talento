@@ -693,11 +693,11 @@ export default function ReportsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Тайлангийн нэр</label>
-                  <input name="name" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
+                  <input name="name" className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Төрөл</label>
-                  <select name="type" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
+                  <select name="type" className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required>
                     <option value="">Сонгох</option>
                     <option value="Ажилтны">Ажилтны</option>
                     <option value="Цалин">Цалин</option>
@@ -708,11 +708,11 @@ export default function ReportsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Хугацаа</label>
-                  <input name="period" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
+                  <input name="period" className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Төлөв</label>
-                  <select name="status" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
+                  <select name="status" className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required>
                     <option value="">Сонгох</option>
                     <option value="Дууссан">Дууссан</option>
                     <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
@@ -721,27 +721,18 @@ export default function ReportsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Формат</label>
-                  <select name="format" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
+                  <select name="format" className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required>
                     <option value="">Сонгох</option>
                     <option value="PDF">PDF</option>
                     <option value="Excel">Excel</option>
                     <option value="Word">Word</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Хэлтэс</label>
-                  <select name="department" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
-                    <option value="">Сонгох</option>
-                    <option value="HR">HR</option>
-                    <option value="Санхүү">Санхүү</option>
-                    <option value="IT">IT</option>
-                    <option value="Маркетинг">Маркетинг</option>
-                  </select>
-                </div>
+                
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Тайлбар</label>
-                <textarea name="description" rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
+                <textarea name="description" rows={3} className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required />
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button

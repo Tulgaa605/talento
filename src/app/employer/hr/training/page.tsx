@@ -154,12 +154,13 @@ export default function TrainingPage() {
   };
 
   return (
-    <main className="max-w-7xl mx-auto mt-10 px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <main className="max-w-7xl mx-auto mt-10 px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Сургалт хөгжлийн бүртгэл</h1>
         <p className="text-gray-600">Ажилтнуудын сургалт, хөгжлийн үйл ажиллагааг удирдах</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         {trainingStats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -199,7 +200,7 @@ export default function TrainingPage() {
         </div>
       </div>
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-[#0C213A]">Сүүлийн сургалтууд</h3>
@@ -288,7 +289,7 @@ export default function TrainingPage() {
             </button>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {trainings.map((training) => (
                 <div key={training.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-4">
@@ -336,9 +337,9 @@ export default function TrainingPage() {
               Оролцогч нэмэх
             </button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
+            <table className="w-full min-w-[800px]">
+              <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ажилтны ID</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Нэр</th>
@@ -388,8 +389,8 @@ export default function TrainingPage() {
               <h3 className="text-lg font-semibold text-[#0C213A]">Оролцогч нэмэх</h3>
               <button onClick={closeAddParticipant} className="p-2 rounded-md hover:bg-gray-100">✕</button>
             </div>
-            <div className="overflow-y-auto flex-1">
-              <form onSubmit={handleCreateParticipant} className="p-6 grid grid-cols-2 text-gray-700 gap-4 text-sm">
+            <div className="overflow-y-auto flex-1 p-6">
+              <form onSubmit={handleCreateParticipant} className="grid grid-cols-1 sm:grid-cols-2 text-gray-700 gap-4 text-sm">
               <input name="employeeId" placeholder="Ажилтны ID" className="border rounded-lg px-3 py-2" required />
               <input name="name" placeholder="Нэр" className="border rounded-lg px-3 py-2" required />
               <input name="position" placeholder="Албан тушаал" className="border rounded-lg px-3 py-2" />
@@ -410,7 +411,7 @@ export default function TrainingPage() {
                 <option>Тийм</option>
                 <option>Үгүй</option>
               </select>
-              <div className="col-span-2 flex justify-end gap-3 mt-2">
+              <div className="col-span-1 sm:col-span-2 flex justify-end gap-3 mt-2">
                 <button type="button" onClick={closeAddParticipant} className="px-4 py-2 border rounded-lg">Цуцлах</button>
                 <button type="submit" className="px-4 py-2 bg-[#0C213A] text-white rounded-lg">Хадгалах</button>
               </div>
@@ -421,7 +422,7 @@ export default function TrainingPage() {
       )}
 
       {activeTab === "reports" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-[#0C213A]">Сургалтын тайлан</h3>
@@ -484,7 +485,7 @@ export default function TrainingPage() {
               </button>
             </div>
             <div className="overflow-y-auto flex-1 p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
                 <div>
                   <p className="text-gray-500">Төрөл</p>
                   <p className="font-medium text-[#0C213A]">{selectedTraining.type}</p>
@@ -515,7 +516,7 @@ export default function TrainingPage() {
                     {selectedTraining.status}
                   </span>
                 </div>
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <p className="text-gray-500">Зорилго</p>
                   <p className="font-medium text-[#0C213A]">{selectedTraining.objective}</p>
                 </div>
@@ -552,7 +553,7 @@ export default function TrainingPage() {
               <button onClick={closeParticipant} className="p-2 rounded-md hover:bg-gray-100">✕</button>
             </div>
             <div className="overflow-y-auto flex-1 p-6">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <p><span className="text-gray-500">Ажилтны ID:</span> <span className="font-medium text-[#0C213A]">{selectedParticipant.employeeId}</span></p>
               <p><span className="text-gray-500">Нэр:</span> <span className="font-medium text-[#0C213A]">{selectedParticipant.name}</span></p>
               <p><span className="text-gray-500">Албан тушаал:</span> <span className="font-medium text-[#0C213A]">{selectedParticipant.position}</span></p>
@@ -563,7 +564,7 @@ export default function TrainingPage() {
               <p><span className="text-gray-500">Сертификат:</span> <span className="font-medium text-[#0C213A]">{selectedParticipant.certificate}</span></p>
             </div>
             {employeeTrainings.length > 0 && (
-              <div className="px-6 pb-6">
+              <div className="mt-6">
                 <h4 className="text-sm font-semibold text-[#0C213A] mb-3">Тухайн ажилтны хамрагдсан сургалтууд</h4>
                 <div className="space-y-3">
                   {employeeTrainings.map((t) => (
@@ -604,9 +605,9 @@ export default function TrainingPage() {
                 ✕
               </button>
             </div>
-            <div className="overflow-y-auto flex-1">
-              <form onSubmit={handleCreateTraining} className="p-6 space-y-4">
-              <div className="grid grid-cols-1 text-gray-700 md:grid-cols-2 gap-4">
+            <div className="overflow-y-auto flex-1 p-6">
+              <form onSubmit={handleCreateTraining} className="space-y-4">
+              <div className="grid grid-cols-1 text-gray-700 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Сургалтын нэр</label>
                   <input name="name" className="w-full border border-gray-300 rounded-lg px-3 py-2" required />
@@ -648,12 +649,12 @@ export default function TrainingPage() {
                     <option value="Дууссан">Дууссан</option>
                   </select>
                 </div>
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <label className="block text-sm text-gray-600 mb-1">Зорилго</label>
                   <input name="objective" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
                 </div>
               </div>
-              <div className="pt-2 flex justify-end gap-3 border-t border-gray-200 mt-4">
+              <div className="pt-4 flex justify-end gap-3 border-t border-gray-200 mt-4">
                 <button type="button" onClick={closeAddTraining} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">Цуцлах</button>
                 <button type="submit" className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90">Хадгалах</button>
               </div>
@@ -662,6 +663,7 @@ export default function TrainingPage() {
           </div>
         </div>
       )}
-    </main>
+      </main>
+    </div>
   );
 }

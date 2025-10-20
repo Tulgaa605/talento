@@ -193,12 +193,13 @@ export default function PerformancePage() {
   }, []);
 
   return (
-    <main className="max-w-7xl mt-10 mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <main className="max-w-7xl mx-auto mt-10 px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Ажлын гүйцэтгэл үнэлгээ</h1>
         <p className="text-gray-600">Ажилтнуудын ажлын гүйцэтгэлийг үнэлж, хөгжүүлэх</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         {performanceStats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -239,7 +240,7 @@ export default function PerformancePage() {
         </div>
       </div>
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-[#0C213A]">Шилдэг ажилтнууд</h3>
@@ -333,9 +334,9 @@ export default function PerformancePage() {
               </button>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
+            <table className="w-full min-w-[800px]">
+              <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ажилтан
@@ -412,7 +413,7 @@ export default function PerformancePage() {
       )}
 
       {activeTab === "criteria" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-[#0C213A]">Үнэлгээний шалгуур</h3>
@@ -428,7 +429,7 @@ export default function PerformancePage() {
                     <p className="text-sm text-gray-600 mb-3">{criteria.description}</p>
                     <div className="mb-3">
                       <h5 className="text-xs font-medium text-gray-500 mb-2">Дэлгэрэнгүй шалгуур:</h5>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {criteria.subCriteria.map((sub, subIndex) => (
                           <div key={subIndex} className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
                             • {sub}
@@ -490,7 +491,7 @@ export default function PerformancePage() {
       )}
 
       {activeTab === "reports" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-[#0C213A]">Гүйцэтгэлийн тайлан</h3>
@@ -559,7 +560,7 @@ export default function PerformancePage() {
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Ажилтны нэр</label>
                   <p className="text-sm text-gray-900">{selectedEvaluation.employee}</p>
@@ -640,7 +641,7 @@ export default function PerformancePage() {
               </button>
             </div>
             <form onSubmit={handleEditEvaluation} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Ажилтны нэр</label>
                   <input
@@ -791,106 +792,72 @@ export default function PerformancePage() {
 
       {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-6 border-b border-gray-200">
-              <h3 className="text-xl font-semibold text-[#0C213A]">Шинэ үнэлгээ нэмэх</h3>
-              <button onClick={closeAddModal} className="p-2 rounded-md hover:bg-gray-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-lg font-semibold text-[#0C213A]">Шинэ үнэлгээ нэмэх</h3>
+              <button
+                onClick={closeAddModal}
+                className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
+                aria-label="Close"
+              >
                 ✕
               </button>
             </div>
-            <form onSubmit={handleAddEvaluation} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ажилтны нэр</label>
-                  <input name="employee" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
+            <div className="overflow-y-auto flex-1 p-6">
+              <form onSubmit={handleAddEvaluation} className="space-y-4">
+                <div className="grid grid-cols-1 text-gray-700 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Ажилтны нэр</label>
+                    <input name="employee" className="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Ажилтны ID</label>
+                    <input name="employeeId" className="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Үнэлэгч</label>
+                    <input name="evaluator" className="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Оноо</label>
+                    <input
+                      name="score"
+                      type="number"
+                      min={1}
+                      max={5}
+                      step={0.1}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Үнэлгээний огноо</label>
+                    <input name="evaluationDate" type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm text-gray-600 mb-1">Сайжруулах талууд</label>
+                    <textarea name="improvements" rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ажилтны ID</label>
-                  <input name="employeeId" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
+                <div className="pt-4 flex justify-end gap-3 border-t border-gray-200 mt-4">
+                  <button
+                    type="button"
+                    onClick={closeAddModal}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                  >
+                    Цуцлах
+                  </button>
+                  <button type="submit" className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90">
+                    Нэмэх
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Үнэлэгч</label>
-                  <input name="evaluator" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Үнэлэгчийн төрөл</label>
-                  <select name="evaluatorType" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
-                    <option value="">Сонгох</option>
-                    <option value="Manager">Manager</option>
-                    <option value="Peer">Peer</option>
-                    <option value="HR">HR</option>
-                    <option value="Self">Self</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Оноо</label>
-                  <input
-                    name="score"
-                    type="number"
-                    min={1}
-                    max={5}
-                    step={0.1}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Хугацаа</label>
-                  <input name="period" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Төлөв</label>
-                  <select name="status" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
-                    <option value="">Сонгох</option>
-                    <option value="Дууссан">Дууссан</option>
-                    <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
-                    <option value="Эхлээгүй">Эхлээгүй</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Үнэлгээний огноо</label>
-                  <input name="evaluationDate" type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Үнэлгээний төрөл</label>
-                  <select name="evaluationType" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
-                    <option value="">Сонгох</option>
-                    <option value="Улирлын үнэлгээ">Улирлын үнэлгээ</option>
-                    <option value="Жилийн үнэлгээ">Жилийн үнэлгээ</option>
-                    <option value="Сарын үнэлгээ">Сарын үнэлгээ</option>
-                    <option value="Түр үнэлгээ">Түр үнэлгээ</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Коммент</label>
-                <textarea name="comment" rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Давуу талууд</label>
-                <textarea name="strengths" rows={2} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Сайжруулах талууд</label>
-                <textarea name="improvements" rows={2} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
-              </div>
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={closeAddModal}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Цуцлах
-                </button>
-                <button type="submit" className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90 transition-colors">
-                  Нэмэх
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}
-    </main>
+      </main>
+    </div>
   );
 }
