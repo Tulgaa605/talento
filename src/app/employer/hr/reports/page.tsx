@@ -430,7 +430,7 @@ export default function ReportsPage() {
                     Тайлангийн нэр
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Төрөл</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Хугацаа</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Огноо</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Хэмжээ</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-вider">Төлөв</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-вider">Үйлдэл</th>
@@ -707,17 +707,8 @@ export default function ReportsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Хугацаа</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Огноо</label>
                   <input name="period" className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Төлөв</label>
-                  <select name="status" className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required>
-                    <option value="">Сонгох</option>
-                    <option value="Дууссан">Дууссан</option>
-                    <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
-                    <option value="Эхлээгүй">Эхлээгүй</option>
-                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Формат</label>
