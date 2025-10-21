@@ -361,7 +361,10 @@ export default function ReportsPage() {
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 gap-4">
-                <button className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                <button 
+                  onClick={openAddModal}
+                  className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                >
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
                     <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -692,7 +695,7 @@ export default function ReportsPage() {
             <form onSubmit={handleAddReport} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Тайлангийн нэр</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Тайлан</label>
                   <input name="name" className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required />
                 </div>
                 <div>
