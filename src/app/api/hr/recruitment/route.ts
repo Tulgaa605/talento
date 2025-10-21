@@ -23,7 +23,9 @@ export async function GET() {
       successfulApplications,
       applications,
       jobs,
-      departments
+      departments,
+      governmentQuestionnaires,
+      governmentResponses
     ] = await Promise.all([
       prisma.jobApplication.count(),
       prisma.jobApplication.count({
@@ -78,6 +80,26 @@ export async function GET() {
           name: true,
           code: true
         }
+      }),
+      prisma.questionnaire.findMany({
+        where: { type: 'GOVERNMENT_EMPLOYEE' },
+        include: {
+          responses: {
+            include: {
+              user: { select: { name: true, email: true } }
+            }
+          }
+        }
+      }),
+      prisma.questionnaireResponse.findMany({
+        where: {
+          questionnaire: { type: 'GOVERNMENT_EMPLOYEE' }
+        },
+        include: {
+          user: { select: { name: true, email: true } },
+          questionnaire: { select: { title: true, type: true } }
+        },
+        orderBy: { createdAt: 'desc' }
       })
     ]);
 
@@ -108,11 +130,58 @@ export async function GET() {
       deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10) // 30 days from now
     }));
 
+    console.log('Government responses found:', governmentResponses.length);
+    governmentResponses.forEach((response, index) => {
+      console.log(`Response ${index + 1}:`, {
+        id: response.id,
+        userName: response.user?.name,
+        userEmail: response.user?.email,
+        questionnaireTitle: response.questionnaire?.title,
+        createdAt: response.createdAt,
+        hasFormData: !!response.formData
+      });
+    });
+
+    const processedGovernmentResponses = governmentResponses.map((response) => {
+      let formData = null;
+      try {
+        formData = response.formData ? JSON.parse(response.formData as string) : null;
+      } catch (error) {
+        console.error('Error parsing formData:', error);
+      }
+
+      // Get name from formData if available, otherwise use user name
+      const displayName = formData?.personalInfo?.name || response.user?.name || 'Unknown';
+
+      return {
+        id: response.id,
+        cvId: null, // Government questionnaires don't have CV
+        name: displayName,
+        position: 'Төрийн албан хаагч',
+        department: 'Төрийн байгууллага',
+        status: 'GOVERNMENT_QUESTIONNAIRE',
+        date: response.createdAt.toISOString().slice(0, 10),
+        score: 95, // Default high score for government employees
+        type: 'government',
+        responseId: response.id,
+        questionnaireId: response.questionnaireId, // Add questionnaire ID
+        formData: formData
+      };
+    });
+
+    // Combine regular applications with government questionnaire responses
+    const allApplications = [...processedApplications, ...processedGovernmentResponses];
+
+    console.log('Processed government responses:', processedGovernmentResponses.length);
+    console.log('All applications count:', allApplications.length);
+
     return NextResponse.json({
       stats,
-      applications: processedApplications,
+      applications: allApplications,
       jobs: processedJobs,
-      departments
+      departments,
+      governmentQuestionnaires,
+      governmentResponses: processedGovernmentResponses
     });
   } catch (error) {
     console.error('Recruitment data fetch error:', error);

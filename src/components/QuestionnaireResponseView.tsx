@@ -19,22 +19,27 @@ interface QuestionnaireResponse {
   }[];
   attachmentFile?: string;
   attachmentUrl?: string;
-  formData?: string; // For government employee questionnaires
+  formData?: string;
 }
 
 interface QuestionnaireResponseViewProps {
   response: QuestionnaireResponse;
   onClose: () => void;
+  onUpdate?: () => void;
 }
 
 export default function QuestionnaireResponseView({
   response,
   onClose,
+  onUpdate,
 }: QuestionnaireResponseViewProps) {
   const [activeTab, setActiveTab] = useState("answers");
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Try to parse formData if it exists (for government employee questionnaires)
-  const parsedFormData = response.formData ? JSON.parse(response.formData) : null;
+  const initialFormData = response.formData ? JSON.parse(response.formData) : null;
+  const [editedFormData, setEditedFormData] = useState(initialFormData);
 
   const formatValue = (value: string, type: string) => {
     if (type === "MULTIPLE_CHOICE" && value.includes(",")) {
@@ -80,6 +85,35 @@ export default function QuestionnaireResponseView({
     }
   };
 
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      const res = await fetch(`/api/employer/questionnaires/responses/${response.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formData: editedFormData }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update response");
+      }
+
+      alert("Амжилттай шинэчлэгдлээ!");
+      setIsEditing(false);
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error("Error updating response:", error);
+      alert("Хадгалахад алдаа гарлаа.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedFormData(initialFormData);
+    setIsEditing(false);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
@@ -87,20 +121,30 @@ export default function QuestionnaireResponseView({
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">
-              Асуулгын хариу
+              Асуулгын хариу {isEditing && <span className="text-blue-600">(Засварлаж байна)</span>}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               {response.user.name} • {new Date(response.createdAt).toLocaleDateString("mn-MN")}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            {initialFormData && !isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                Засах
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -116,7 +160,7 @@ export default function QuestionnaireResponseView({
             >
               Асуулгын хариулт
             </button>
-            {parsedFormData && (
+            {initialFormData && (
               <button
                 onClick={() => setActiveTab("form")}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
@@ -167,48 +211,122 @@ export default function QuestionnaireResponseView({
             </div>
           )}
 
-          {activeTab === "form" && parsedFormData && (
+          {activeTab === "form" && editedFormData && (
             <div className="space-y-6">
               {/* Personal Information */}
-              {parsedFormData.personalInfo && (
+              {editedFormData.personalInfo && (
                 <div className="border border-gray-200 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-900 mb-4">Хувь хүний мэдээлэл</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <span className="text-sm text-gray-600">Нэр:</span>
-                      <p className="font-medium">{parsedFormData.personalInfo.name}</p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editedFormData.personalInfo.name}
+                          onChange={(e) => setEditedFormData({
+                            ...editedFormData,
+                            personalInfo: { ...editedFormData.personalInfo, name: e.target.value }
+                          })}
+                          className="w-full mt-1 border border-gray-300 rounded px-2 py-1"
+                        />
+                      ) : (
+                        <p className="font-medium">{editedFormData.personalInfo.name}</p>
+                      )}
                     </div>
                     <div>
                       <span className="text-sm text-gray-600">Эцэг/эх/-ийн нэр:</span>
-                      <p className="font-medium">{parsedFormData.personalInfo.fatherName}</p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editedFormData.personalInfo.fatherName}
+                          onChange={(e) => setEditedFormData({
+                            ...editedFormData,
+                            personalInfo: { ...editedFormData.personalInfo, fatherName: e.target.value }
+                          })}
+                          className="w-full mt-1 border border-gray-300 rounded px-2 py-1"
+                        />
+                      ) : (
+                        <p className="font-medium">{editedFormData.personalInfo.fatherName}</p>
+                      )}
                     </div>
                     <div>
                       <span className="text-sm text-gray-600">Хүйс:</span>
-                      <p className="font-medium">{parsedFormData.personalInfo.gender}</p>
+                      {isEditing ? (
+                        <select
+                          value={editedFormData.personalInfo.gender}
+                          onChange={(e) => setEditedFormData({
+                            ...editedFormData,
+                            personalInfo: { ...editedFormData.personalInfo, gender: e.target.value }
+                          })}
+                          className="w-full mt-1 border border-gray-300 rounded px-2 py-1"
+                        >
+                          <option value="Эрэгтэй">Эрэгтэй</option>
+                          <option value="Эмэгтэй">Эмэгтэй</option>
+                        </select>
+                      ) : (
+                        <p className="font-medium">{editedFormData.personalInfo.gender}</p>
+                      )}
                     </div>
                     <div>
                       <span className="text-sm text-gray-600">Төрсөн он:</span>
-                      <p className="font-medium">{parsedFormData.personalInfo.birthYear}</p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editedFormData.personalInfo.birthYear}
+                          onChange={(e) => setEditedFormData({
+                            ...editedFormData,
+                            personalInfo: { ...editedFormData.personalInfo, birthYear: e.target.value }
+                          })}
+                          className="w-full mt-1 border border-gray-300 rounded px-2 py-1"
+                        />
+                      ) : (
+                        <p className="font-medium">{editedFormData.personalInfo.birthYear}</p>
+                      )}
                     </div>
                     <div>
                       <span className="text-sm text-gray-600">Төрсөн газар:</span>
-                      <p className="font-medium">{parsedFormData.personalInfo.birthPlace}</p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editedFormData.personalInfo.birthPlace}
+                          onChange={(e) => setEditedFormData({
+                            ...editedFormData,
+                            personalInfo: { ...editedFormData.personalInfo, birthPlace: e.target.value }
+                          })}
+                          className="w-full mt-1 border border-gray-300 rounded px-2 py-1"
+                        />
+                      ) : (
+                        <p className="font-medium">{editedFormData.personalInfo.birthPlace}</p>
+                      )}
                     </div>
                     <div>
                       <span className="text-sm text-gray-600">Үндэс угсаа:</span>
-                      <p className="font-medium">{parsedFormData.personalInfo.ethnicity}</p>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editedFormData.personalInfo.ethnicity}
+                          onChange={(e) => setEditedFormData({
+                            ...editedFormData,
+                            personalInfo: { ...editedFormData.personalInfo, ethnicity: e.target.value }
+                          })}
+                          className="w-full mt-1 border border-gray-300 rounded px-2 py-1"
+                        />
+                      ) : (
+                        <p className="font-medium">{editedFormData.personalInfo.ethnicity}</p>
+                      )}
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Education Information */}
-              {parsedFormData.education && (
+              {editedFormData.education && (
                 <div className="border border-gray-200 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-900 mb-4">Боловсролын мэдээлэл</h3>
-                  {parsedFormData.education.generalEducation.map(
+                  {editedFormData.education.generalEducation.map(
                     (edu: { schoolName: string; degree: string; endDate: string }, index: number) => (
-                      <div key={index} className="bg-gray-50 p-3 rounded">
+                      <div key={index} className="bg-gray-50 p-3 rounded mb-2">
                         <p><span className="font-medium">Сургууль:</span> {edu.schoolName}</p>
                         <p><span className="font-medium">Эзэмшсэн зэрэг:</span> {edu.degree}</p>
                         <p><span className="font-medium">Төгссөн огноо:</span> {edu.endDate}</p>
@@ -220,11 +338,11 @@ export default function QuestionnaireResponseView({
               )}
 
               {/* Work Experience */}
-              {parsedFormData.workExperience && (
+              {editedFormData.workExperience && (
                 <div className="border border-gray-200 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-900 mb-4">Ажлын туршлага</h3>
                   <div className="space-y-3">
-                  {parsedFormData.workExperience.map(
+                  {editedFormData.workExperience.map(
                     (work: { organization: string; position: string; startDate: string; endDate: string }, index: number) => (
                       <div key={index} className="bg-gray-50 p-3 rounded">
                         <p><span className="font-medium">Байгууллага:</span> {work.organization}</p>
@@ -239,11 +357,11 @@ export default function QuestionnaireResponseView({
               )}
 
               {/* Skills */}
-              {parsedFormData.skills && (
+              {editedFormData.skills && (
                 <div className="border border-gray-200 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-900 mb-4">Ур чадвар</h3>
                   <div className="space-y-2">
-                  {Object.entries(parsedFormData.skills as Record<string, string[] | Record<string, unknown>>).map(
+                  {Object.entries(editedFormData.skills as Record<string, string[] | Record<string, unknown>>).map(
                   ([category, skills]) => (
                     <div key={category}>
                       <h4 className="font-medium text-gray-700 capitalize">{category}:</h4>
@@ -285,12 +403,31 @@ export default function QuestionnaireResponseView({
 
         {/* Footer */}
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Хаах
-          </button>
+          {isEditing ? (
+            <>
+              <button
+                onClick={handleCancel}
+                disabled={isSaving}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                Цуцлах
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {isSaving ? "Хадгалж байна..." : "Хадгалах"}
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Хаах
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -53,57 +53,35 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
       where: { questionnaireId, userId: session.user.id },
     });
     
+    let response;
     if (existingResponse) {
-      return NextResponse.json(
-        { error: "You have already submitted this questionnaire" },
-        { status: 400 }
-      );
+      // Update existing response
+      response = await prisma.questionnaireResponse.update({
+        where: { id: existingResponse.id },
+        data: {
+          attachmentFile,
+          attachmentUrl,
+          formData: JSON.stringify(formData),
+        },
+        include: {
+          user: { select: { name: true, email: true } },
+        },
+      });
+    } else {
+      // Create new response
+      response = await prisma.questionnaireResponse.create({
+        data: {
+          questionnaireId,
+          userId: session.user.id,
+          attachmentFile,
+          attachmentUrl,
+          formData: JSON.stringify(formData),
+        },
+        include: {
+          user: { select: { name: true, email: true } },
+        },
+      });
     }
-
-    const response = await prisma.questionnaireResponse.create({
-      data: {
-        questionnaireId,
-        userId: session.user.id,
-        attachmentFile,
-        attachmentUrl,
-        formData: JSON.stringify(formData),
-        answers: {
-          create: [
-            {
-              questionId: "personal_info",
-              value: JSON.stringify({
-                name: formData.personalInfo.name,
-                fatherName: formData.personalInfo.fatherName,
-                gender: formData.personalInfo.gender,
-                birthYear: formData.personalInfo.birthYear,
-                birthPlace: formData.personalInfo.birthPlace,
-                ethnicity: formData.personalInfo.ethnicity,
-                currentAddress: formData.personalInfo.currentAddress,
-              })
-            },
-            {
-              questionId: "education_info",
-              value: JSON.stringify({
-                generalEducation: formData.education.generalEducation,
-                doctoralDegrees: formData.education.doctoralDegrees,
-              })
-            },
-            {
-              questionId: "work_experience",
-              value: JSON.stringify(formData.workExperience)
-            },
-            {
-              questionId: "skills_info",
-              value: JSON.stringify(formData.skills)
-            }
-          ]
-        }
-      },
-      include: {
-        answers: true,
-        user: { select: { name: true, email: true } },
-      },
-    });
 
     const companyUsers = await prisma.user.findMany({
       where: { companyId: questionnaire.companyId },

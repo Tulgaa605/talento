@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import GovernmentEmployeeQuestionnaire from "@/components/GovernmentEmployeeQuestionnaire";
+import QuestionnaireResponseView from "@/components/QuestionnaireResponseView";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -24,6 +25,10 @@ interface RecruitmentData {
     status: string;
     date: string;
     score: number;
+    type?: string;
+    responseId?: string;
+    questionnaireId?: string;
+    formData?: unknown;
   }[];
   jobs: {
     id: string;
@@ -38,6 +43,8 @@ interface RecruitmentData {
     name: string;
     code: string;
   }[];
+  governmentQuestionnaires?: { id: string; title: string; type: string }[];
+  governmentResponses?: { id: string; formData: unknown }[];
 }
 
 export default function RecruitmentPage() {
@@ -51,6 +58,14 @@ export default function RecruitmentPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
+  const [selectedResponse, setSelectedResponse] = useState<{
+    id: string;
+    createdAt: string;
+    user: { name: string; email: string };
+    answers: { id: string; value: string; question: { text: string; type: string } }[];
+    formData?: string;
+  } | null>(null);
+  const [showResponseModal, setShowResponseModal] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -90,6 +105,7 @@ export default function RecruitmentPage() {
       case 'ADMIN_APPROVED': return 'Админ баталгаажсан';
       case 'APPROVED': return 'Амжилттай';
       case 'REJECTED': return 'Татгалзсан';
+      case 'GOVERNMENT_QUESTIONNAIRE': return 'Төрийн анкет';
       default: return status;
     }
   };
@@ -101,6 +117,7 @@ export default function RecruitmentPage() {
       case 'ADMIN_APPROVED': return 'bg-yellow-100 text-yellow-800';
       case 'APPROVED': return 'bg-green-100 text-green-800';
       case 'REJECTED': return 'bg-red-100 text-red-800';
+      case 'GOVERNMENT_QUESTIONNAIRE': return 'bg-indigo-100 text-indigo-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -255,7 +272,6 @@ export default function RecruitmentPage() {
               { id: "overview", name: "Хянах самбар" },
               { id: "applications", name: "Анкетууд" },
               { id: "questionnaire", name: "Төрийн албан хаагчийн анкет" },
-              { id: "responses", name: "Асуулгын хариултууд" },
               { id: "positions", name: "Ажлын байр" }
             ].map((tab) => (
               <button
@@ -382,6 +398,7 @@ export default function RecruitmentPage() {
                   <option value="EMPLOYER_APPROVED">Ярилцлага</option>
                   <option value="APPROVED">Амжилттай</option>
                   <option value="REJECTED">Татгалзсан</option>
+                  <option value="GOVERNMENT_QUESTIONNAIRE">Төрийн анкет</option>
                 </select>
                 <button 
                   onClick={() => {
@@ -434,41 +451,60 @@ export default function RecruitmentPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{application.date}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <Link href={`/employer/applications/${application.id}`} className="text-[#0C213A] hover:text-[#0C213A]/80">Үзэх</Link>
-                        {application.cvId && (
-                          <button 
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(`/api/cv/download?cvId=${application.cvId}`);
-                                if (response.ok) {
-                                  const blob = await response.blob();
-                                  const url = window.URL.createObjectURL(blob);
-                                  const a = document.createElement('a');
-                                  a.href = url;
-                                  a.download = `${application.name}_CV.pdf`;
-                                  document.body.appendChild(a);
-                                  a.click();
-                                  window.URL.revokeObjectURL(url);
-                                  document.body.removeChild(a);
-                                } else if (response.status === 401) {
-                                  alert('Эрх байхгүй байна. Нэвтрэх эрхээ шалгана уу.');
-                                } else if (response.status === 404) {
-                                  alert('CV файл олдсонгүй байна.');
-                                } else {
-                                  alert('CV татахад алдаа гарлаа.');
-                                }
-                              } catch (error) {
-                                console.error('CV download error:', error);
-                                alert('CV татахад алдаа гарлаа.');
-                              }
-                            }}
-                            className="text-blue-600 hover:text-blue-800 hover:underline"
-                            title={`${application.name}-ийн CV татах`}
-                          >
-                            CV Татах
-                          </button>
+                        {application.type === 'government' ? (
+                          <>
+                            <Link 
+                              href={`/government-questionnaire/${application.questionnaireId}`}
+                              className="text-[#0C213A] hover:text-[#0C213A]/80"
+                            >
+                              Үзэх
+                            </Link>
+                            <Link 
+                              href={`/government-questionnaire/${application.questionnaireId}`}
+                              className="text-green-600 hover:text-green-800 hover:underline"
+                            >
+                              Засах
+                            </Link>
+                          </>
+                        ) : (
+                          <>
+                            <Link href={`/employer/applications/${application.id}`} className="text-[#0C213A] hover:text-[#0C213A]/80">Үзэх</Link>
+                            {application.cvId && (
+                              <button 
+                                onClick={async () => {
+                                  try {
+                                    const response = await fetch(`/api/cv/download?cvId=${application.cvId}`);
+                                    if (response.ok) {
+                                      const blob = await response.blob();
+                                      const url = window.URL.createObjectURL(blob);
+                                      const a = document.createElement('a');
+                                      a.href = url;
+                                      a.download = `${application.name}_CV.pdf`;
+                                      document.body.appendChild(a);
+                                      a.click();
+                                      window.URL.revokeObjectURL(url);
+                                      document.body.removeChild(a);
+                                    } else if (response.status === 401) {
+                                      alert('Эрх байхгүй байна. Нэвтрэх эрхээ шалгана уу.');
+                                    } else if (response.status === 404) {
+                                      alert('CV файл олдсонгүй байна.');
+                                    } else {
+                                      alert('CV татахад алдаа гарлаа.');
+                                    }
+                                  } catch (error) {
+                                    console.error('CV download error:', error);
+                                    alert('CV татахад алдаа гарлаа.');
+                                  }
+                                }}
+                                className="text-blue-600 hover:text-blue-800 hover:underline"
+                                title={`${application.name}-ийн CV татах`}
+                              >
+                                CV Татах
+                              </button>
+                            )}
+                            <button className="text-gray-500 hover:text-gray-700">Засах</button>
+                          </>
                         )}
-                        <button className="text-gray-500 hover:text-gray-700">Засах</button>
                       </td>
                     </tr>
                   ))
@@ -559,7 +595,8 @@ export default function RecruitmentPage() {
                 onSubmit={(data) => {
                   console.log('Questionnaire submitted:', data);
                   setShowQuestionnaire(false);
-                  alert('Анкет амжилттай илгээгдлээ!');
+                  // Refresh recruitment data to show the new questionnaire response
+                  fetchRecruitmentData();
                 }}
                 onCancel={() => setShowQuestionnaire(false)}
               />
@@ -568,30 +605,17 @@ export default function RecruitmentPage() {
         </div>
       )}
 
-      {activeTab === "responses" && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-[#0C213A]">Асуулгын хариултууд</h3>
-            <p className="text-sm text-gray-600 mt-1">Илгээсэн асуулгын хариултуудыг хянах</p>
-          </div>
-          <div className="p-6">
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h4 className="text-lg font-medium text-[#0C213A] mb-2">Асуулгын хариултууд</h4>
-              <p className="text-gray-600 mb-6">Илгээсэн асуулгын хариултуудыг хянах боломжтой</p>
-              <Link
-                href="/employer/questionnaires/responses"
-                className="bg-[#0C213A] text-white px-6 py-3 rounded-lg hover:bg-[#0C213A]/90 transition-colors inline-block"
-              >
-                Хариултуудыг харах
-              </Link>
-            </div>
-          </div>
-        </div>
+      {showResponseModal && selectedResponse && (
+        <QuestionnaireResponseView
+          response={selectedResponse}
+          onClose={() => {
+            setShowResponseModal(false);
+            setSelectedResponse(null);
+          }}
+          onUpdate={() => {
+            fetchRecruitmentData();
+          }}
+        />
       )}
     </main>
   );

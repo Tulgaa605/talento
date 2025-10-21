@@ -52,6 +52,8 @@ interface Questionnaire {
   attachmentUrl?: string;
   questions: Question[];
   createdAt: string;
+  type?: string;
+  responses?: QuestionnaireResponse[];
 }
 
 interface QuestionnaireResponse {
@@ -2245,6 +2247,11 @@ export default function EmployerProfile() {
                         <span className="bg-gray-100 text-gray-700 text-xs font-semibold px-2 sm:px-3 py-1 rounded-full">
                           {questionnaire.questions?.length ?? 0} асуулт
                         </span>
+                        {questionnaire.type === "GOVERNMENT_EMPLOYEE" && (
+                          <span className="bg-blue-100 text-blue-700 text-xs font-semibold px-2 sm:px-3 py-1 rounded-full">
+                            Төрийн анкет
+                          </span>
+                        )}
                       </div>
                       {questionnaire.description && (
                         <p className="text-gray-600 text-sm line-clamp-2">
@@ -2291,6 +2298,30 @@ export default function EmployerProfile() {
                               Татах
                             </button>
                           </div>
+                        </div>
+                      )}
+                      
+                      {questionnaire.type === "GOVERNMENT_EMPLOYEE" && (
+                        <div className="mt-4 space-y-2">
+                          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <span className="text-sm text-gray-700 font-medium">Нийт хариулт:</span>
+                            <span className="text-lg font-bold text-blue-600">
+                              {questionnaire.responses?.length || 0}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              // Navigate to responses page
+                              window.location.href = '/employer/questionnaires/responses';
+                            }}
+                            className="w-full px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            Бөглөсөн анкетуудыг үзэх
+                          </button>
                         </div>
                       )}
                     </div>

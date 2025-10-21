@@ -276,6 +276,9 @@ export default function QuestionnaireResponsesPage() {
             setShowModal(false);
             setSelectedResponse(null);
           }}
+          onUpdate={() => {
+            fetchQuestionnaires();
+          }}
         />
       )}
     </div>

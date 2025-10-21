@@ -89,6 +89,9 @@ export default function QuestionnaireResponseButton({
         <QuestionnaireResponseView
           response={response}
           onClose={() => setShowModal(false)}
+          onUpdate={() => {
+            handleViewResponse();
+          }}
         />
       )}
     </>

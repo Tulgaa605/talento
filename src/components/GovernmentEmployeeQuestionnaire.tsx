@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GovernmentEmployeeQuestionnaireSkills from './GovernmentEmployeeQuestionnaireSkills';
 
 type Level = '' | 'average' | 'good' | 'excellent';
@@ -166,12 +166,14 @@ export interface GovernmentEmployeeForm {
 }
 
 interface GovernmentEmployeeQuestionnaireProps {
+  initialData?: unknown;
   onSubmit: (data: GovernmentEmployeeForm) => void;
   onCancel: () => void;
 }
 
 
 export default function GovernmentEmployeeQuestionnaire({
+  initialData,
   onSubmit,
   onCancel,
 }: GovernmentEmployeeQuestionnaireProps) {
@@ -330,11 +332,52 @@ export default function GovernmentEmployeeQuestionnaire({
       return newData as unknown as GovernmentEmployeeForm;
     });
   };
-  
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Load initial data if provided
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData as GovernmentEmployeeForm);
+    }
+  }, [initialData]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    try {
+      // Find government questionnaire ID
+      const response = await fetch('/api/questionnaires');
+      if (!response.ok) throw new Error('Questionnaires fetch failed');
+      
+      const questionnaires = await response.json();
+      const governmentQuestionnaire = questionnaires.find((q: { type: string }) => q.type === 'GOVERNMENT_EMPLOYEE');
+      
+      if (!governmentQuestionnaire) {
+        alert('Төрийн анкет олдсонгүй. Админд хандана уу.');
+        return;
+      }
+
+      // Submit the questionnaire
+      const submitResponse = await fetch(`/api/questionnaires/${governmentQuestionnaire.id}/submit-government`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          formData: formData,
+        }),
+      });
+
+      if (!submitResponse.ok) {
+        const errorData = await submitResponse.json();
+        throw new Error(errorData.error || 'Анкет илгээхэд алдаа гарлаа');
+      }
+
+      alert('Анкет амжилттай илгээгдлээ!');
+      onSubmit(formData);
+    } catch (error) {
+      console.error('Error submitting questionnaire:', error);
+      alert(error instanceof Error ? error.message : 'Анкет илгээхэд алдаа гарлаа');
+    }
   };
 
   return (
