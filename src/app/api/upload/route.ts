@@ -325,21 +325,20 @@ export async function POST(req: Request) {
       }
 
       console.log("Saving to database...");
-      // Save CV to database
+      // Save CV to database (файлыг base64 хэлбэрээр хадгална)
+      const base64Content = buffer.toString('base64');
+      const filename = `${Date.now()}-${file.name}`;
+      
       const cv = await prisma.cV.create({
         data: {
           userId: session.user.id,
           fileName: file.name,
-          content: content,
+          content: base64Content, // base64 файл хадгална
           analysis: analysis,
           status: "PENDING",
-          fileUrl: `/uploads/${Date.now()}-${file.name}`,
+          fileUrl: filename, // filename-г хадгална
         },
       });
-
-      // Save file to public directory
-      const uploadDir = join(process.cwd(), "public", "uploads");
-      await writeFile(join(uploadDir, `${Date.now()}-${file.name}`), buffer);
 
       // Calculate job matches
       const matches = await calculateJobMatches(content);

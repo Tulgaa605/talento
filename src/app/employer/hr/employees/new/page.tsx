@@ -105,14 +105,59 @@ export default function NewEmployeePage() {
     }
   };
 
-  // ✅ textarea-г нэмсэн
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    let processedValue = value;
+    
+    // Регистерийн дугаар: эхний 2 үсэг (том), дараагийн 8 тоо
+    if (name === 'employeeId' && value) {
+      const upperValue = value.toUpperCase();
+      
+      // Эхний 2 тэмдэгт - зөвхөн үсэг
+      if (upperValue.length <= 2) {
+        if (/^[A-ZА-ЯЁӨҮ]*$/.test(upperValue)) {
+          processedValue = upperValue;
+        } else {
+          return; // Үсэг биш бол буцаах
+        }
+      }
+      // 3-аас эхлэн - зөвхөн тоо
+      else {
+        const letters = upperValue.slice(0, 2);
+        const numbers = upperValue.slice(2);
+        
+        if (/^[A-ZА-ЯЁӨҮ]{2}$/.test(letters) && /^[0-9]*$/.test(numbers)) {
+          processedValue = letters + numbers;
+        } else {
+          return; // Буруу формат бол буцаах
+        }
+      }
+    }
+    
+    if ((name === 'lastName' || name === 'firstName' || name === 'middleName' || name === 'emergencyContact') && value) {
+      const lettersOnly = /^[A-Za-zА-Яа-яЁёӨөҮү\s]*$/;
+      if (!lettersOnly.test(value)) {
+        return;
+      }
+      
+      // Эхний үсгийг том үсэг болгох
+      if (value.length > 0) {
+        processedValue = value.charAt(0).toUpperCase() + value.slice(1);
+      }
+    }
+    
+    if ((name === 'phoneNumber' || name === 'emergencyPhone') && value) {
+      const numbersOnly = /^[0-9]*$/;
+      if (!numbersOnly.test(value)) {
+        return;
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: processedValue
     }));
 
     if (name === 'departmentId') {
@@ -186,6 +231,9 @@ export default function NewEmployeePage() {
                   name="employeeId"
                   value={formData.employeeId}
                   onChange={handleInputChange}
+                  maxLength={10}
+                  placeholder="AA12345678"
+                  title="Эхний 2 үсэг, дараа нь 8 тоо (жишээ: AA12345678)"
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
                 />
@@ -198,6 +246,7 @@ export default function NewEmployeePage() {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
+                  pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
                 />
@@ -210,6 +259,7 @@ export default function NewEmployeePage() {
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
+                  pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
                 />
@@ -222,6 +272,7 @@ export default function NewEmployeePage() {
                   name="middleName"
                   value={formData.middleName}
                   onChange={handleInputChange}
+                  pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
                 />
               </div>
@@ -244,6 +295,8 @@ export default function NewEmployeePage() {
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
+                  pattern="[0-9]+"
+                  maxLength={8}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
                 />
@@ -312,6 +365,8 @@ export default function NewEmployeePage() {
                   name="emergencyPhone"
                   value={formData.emergencyPhone}
                   onChange={handleInputChange}
+                  pattern="[0-9]+"
+                  maxLength={8}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
                 />
               </div>

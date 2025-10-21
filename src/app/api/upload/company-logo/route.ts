@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -32,23 +30,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Зургийг base64 data URL болгон буцаана (serverless-friendly)
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const extension = file.name.split('.').pop();
-    const filename = `company-logo-${uniqueSuffix}.${extension}`;
-
-    const publicDir = join(process.cwd(), 'public', 'uploads');
-
-    await mkdir(publicDir, { recursive: true });
-
-    const filePath = join(publicDir, filename);
-
-    await writeFile(filePath, buffer);
+    const base64 = buffer.toString('base64');
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
     return NextResponse.json({
-      url: `/uploads/${filename}`,
+      url: dataUrl,
     });
   } catch (error) {
     console.error('Error uploading file:', error);

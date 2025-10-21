@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
 export async function POST(req: Request) {
   try {
@@ -20,33 +18,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Файл олдсонгүй" }, { status: 400 });
     }
 
+    // Файлыг base64 болгож база дээр хадгална (serverless-friendly)
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64Content = buffer.toString('base64');
     const filename = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "cvs");
-
-    try {
-      await mkdir(uploadDir, { recursive: true });
-    } catch (mkdirError) {
-      console.error("Хавтас үүсгэхэд алдаа гарлаа:", mkdirError);
-      return NextResponse.json(
-        { error: "Хавтас үүсгэхэд алдаа гарлаа" },
-        { status: 500 }
-      );
-    }
-
-    const filePath = path.join(uploadDir, filename);
-
-    await writeFile(filePath, buffer);
-
-    const fileUrl = `/uploads/cvs/${filename}`;
-
+    // Файлыг database дээр хадгална
     const cv = await prisma.cV.create({
       data: {
         userId: session.user.id,
         fileName: file.name,
-        fileUrl: fileUrl,
+        fileUrl: filename, // filename-г fileUrl-д хадгална
+        content: base64Content, // base64 content-ыг хадгална
         status: "PENDING",
       },
     });

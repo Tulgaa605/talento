@@ -282,9 +282,14 @@ export default function NewPositionPage() {
                 <input
                   type="text"
                   value={formData.salaryRange}
-                  onChange={(e) => setFormData(prev => ({ ...prev, salaryRange: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^[0-9,\-\s]*$/.test(value)) {
+                      setFormData(prev => ({ ...prev, salaryRange: value }));
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Жишээ: 2,000,000 - 3,500,000 MNT"
+                  placeholder="Жишээ: 2,000,000 - 3,500,000"
                 />
               </div>
               <div className="md:col-span-2">
@@ -293,7 +298,18 @@ export default function NewPositionPage() {
                 </label>
                 <textarea
                   value={formData.requirements}
-                  onChange={(e) => setFormData(prev => ({ ...prev, requirements: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Зөвхөн үсэг, зай, таслал, цэг зэрэг тэмдэгтүүд
+                    const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/;
+                    if (!lettersAndPunctuation.test(value)) {
+                      return; // Тоо эсвэл бусад тэмдэгт орсон бол буцаах
+                    }
+                    const processedValue = value.length > 0 
+                      ? value.charAt(0).toUpperCase() + value.slice(1)
+                      : value;
+                    setFormData(prev => ({ ...prev, requirements: processedValue }));
+                  }}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Тушаалын шаардлага..."

@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { readFile } from "fs/promises";
 import path from "path";
-import { existsSync } from "fs";
 
 export async function GET(request: Request) {
   try {
@@ -27,7 +25,7 @@ export async function GET(request: Request) {
       },
     });
 
-    if (!cv || !cv.fileUrl) {
+    if (!cv) {
       return new NextResponse("CV not found", { status: 404 });
     }
 
@@ -50,36 +48,13 @@ export async function GET(request: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    let filePath: string;
-    
-    if (cv.fileUrl.startsWith('/uploads/')) {
-      filePath = path.join(process.cwd(), "public", cv.fileUrl);
-    } else if (cv.fileUrl.startsWith('uploads/')) {
-      filePath = path.join(process.cwd(), "public", "/", cv.fileUrl);
-    } else {
-      filePath = path.join(process.cwd(), "public", "uploads", "cvs", cv.fileUrl);
+    // Файлыг database-аас base64 хэлбэрээр уншина
+    if (!cv.content) {
+      return new NextResponse("File content not found", { status: 404 });
     }
 
-    const possiblePaths = [
-      filePath,
-      path.join(process.cwd(), "public", "uploads", "cvs", path.basename(cv.fileUrl)),
-      path.join(process.cwd(), "uploads", "cvs", path.basename(cv.fileUrl)),
-      path.join(process.cwd(), "public", cv.fileUrl.replace(/^\/+/, '')),
-    ];
-
-    for (const altPath of possiblePaths) {
-      if (existsSync(altPath)) {
-        try {
-          const fileBuffer = await readFile(altPath);
-          return sendFileResponse(fileBuffer, cv.fileName);
-        } catch (error) {
-          console.error("Error reading file from path:", altPath, error);
-          continue;
-        }
-      }
-    }
-    
-    return new NextResponse("File not found", { status: 404 });
+    const fileBuffer = Buffer.from(cv.content, 'base64');
+    return sendFileResponse(fileBuffer, cv.fileName);
   } catch (error) {
     console.error("Error downloading CV:", error);
     return new NextResponse("Internal Server Error", { status: 500 });

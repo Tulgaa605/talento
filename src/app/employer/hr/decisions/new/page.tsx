@@ -173,7 +173,19 @@ export default function NewDecisionPage() {
                   type="text"
                   required
                   value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Зөвхөн үсэг, тэмдэглэгээ
+                    const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-()]*$/;
+                    if (!lettersAndPunctuation.test(value)) {
+                      return;
+                    }
+                    const capitalized = value.length > 0 
+                      ? value.charAt(0).toUpperCase() + value.slice(1)
+                      : value;
+                    setFormData(prev => ({ ...prev, title: capitalized }));
+                  }}
+                  pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-()]+"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Шидвэрийн гарчиг..."
                 />
@@ -228,7 +240,18 @@ export default function NewDecisionPage() {
                 <textarea
                   required
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Зөвхөн үсэг, тэмдэглэгээ
+                    const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/;
+                    if (!lettersAndPunctuation.test(value)) {
+                      return;
+                    }
+                    const capitalized = value.length > 0 
+                      ? value.charAt(0).toUpperCase() + value.slice(1)
+                      : value;
+                    setFormData(prev => ({ ...prev, description: capitalized }));
+                  }}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Шидвэрийн дэлгэрэнгүй тайлбар..."
@@ -241,7 +264,18 @@ export default function NewDecisionPage() {
                 </label>
                 <textarea
                   value={formData.reason}
-                  onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Зөвхөн үсэг, тэмдэглэгээ
+                    const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/;
+                    if (!lettersAndPunctuation.test(value)) {
+                      return;
+                    }
+                    const capitalized = value.length > 0 
+                      ? value.charAt(0).toUpperCase() + value.slice(1)
+                      : value;
+                    setFormData(prev => ({ ...prev, reason: capitalized }));
+                  }}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Шидвэр гаргасан шалтгаан..."

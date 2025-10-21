@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -31,34 +29,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    // Create a safe filename (e.g., timestamp + original name)
+    // Зургийг base64 data URL болгоно (serverless-friendly)
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const filename = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
-
-    // Create uploads directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "images");
-    try {
-      await mkdir(uploadDir, { recursive: true });
-    } catch (mkdirError) {
-      console.error("Failed to create directory:", mkdirError);
-      return NextResponse.json(
-        { message: "Серверийн дотоод алдаа (mkdir)" },
-        { status: 500 }
-      );
-    }
-
-    // Define the path to save the file
-    // IMPORTANT: Ensure this directory exists and the server has write permissions
-    // For production, use a proper file storage service (S3, Cloudinary, etc.)
-    const filePath = path.join(uploadDir, filename);
-
-    // Write the file to the server filesystem
-    await writeFile(filePath, buffer);
-    console.log(`File uploaded to: ${filePath}`);
-
-    // Generate the URL path for the image
-    const imageUrl = `/uploads/images/${filename}`;
+    const base64 = buffer.toString('base64');
+    const imageUrl = `data:${file.type};base64,${base64}`;
 
     // Update the user's profileImageUrl in the database
     const updatedUser = await prisma.user.update({

@@ -182,29 +182,17 @@ export default function Home() {
                             {Math.round(match.matchScore)}% ТОХИРОЛТ
                           </span>
                           <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center mr-4 overflow-hidden relative">
-                            {match.job.company.logoUrl ? (
-                              <Image
-                                src={match.job.company.logoUrl}
-                                alt={`${match.job.company.name} logo`}
-                                width={48}
-                                height={48}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.currentTarget as HTMLImageElement).src =
-                                    "/images/default-company-logo.svg";
-                                }}
-                                unoptimized
-                              />
-                            ) : (
-                              <Image
-                                src="/images/default-company-logo.svg"
-                                alt="Default company logo"
-                                width={48}
-                                height={48}
-                                className="w-full h-full object-contain"
-                                unoptimized
-                              />
-                            )}
+                            <Image
+                              src={match.job.company.logoUrl || "/images/default-company-logo.svg"}
+                              alt={`${match.job.company.name} logo`}
+                              width={48}
+                              height={48}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = "/images/default-company-logo.svg";
+                              }}
+                            />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="text-lg font-semibold text-gray-900 truncate">

@@ -235,7 +235,28 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    let processedValue = value;
+    
+    // Овог, нэр, эцэг/эхийн нэр, яаралтай холбоо барих нэрт зөвхөн үсэг
+    if ((name === 'lastName' || name === 'firstName' || name === 'middleName' || name === 'emergencyContact') && value) {
+      const lettersOnly = /^[A-Za-zА-Яа-яЁёӨөҮү\s]*$/;
+      if (!lettersOnly.test(value)) {
+        return;
+      }
+      if (value.length > 0) {
+        processedValue = value.charAt(0).toUpperCase() + value.slice(1);
+      }
+    }
+    
+    // Утасны дугаарт зөвхөн тоо
+    if ((name === 'phoneNumber' || name === 'emergencyPhone') && value) {
+      const numbersOnly = /^[0-9]*$/;
+      if (!numbersOnly.test(value)) {
+        return;
+      }
+    }
+    
+    setFormData(prev => ({ ...prev, [name]: processedValue }));
 
     if (name === 'departmentId') {
       setSelectedDepartment(value);

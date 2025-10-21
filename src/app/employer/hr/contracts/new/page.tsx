@@ -86,9 +86,38 @@ export default function NewContractPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    let processedValue = value;
+    
+    // Цалин - зөвхөн тоо
+    if (name === 'salary' && value) {
+      const numbersOnly = /^[0-9]*$/;
+      if (!numbersOnly.test(value)) {
+        return;
+      }
+    }
+    
+    // Ажлын хуваарь - эхний үсэг том
+    if (name === 'workSchedule' && value) {
+      if (value.length > 0) {
+        processedValue = value.charAt(0).toUpperCase() + value.slice(1);
+      }
+    }
+    
+    // Гэрээний нөхцөлд зөвхөн үсэг, тэмдэглэгээ
+    if (name === 'terms' && value) {
+      const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/;
+      if (!lettersAndPunctuation.test(value)) {
+        return; // Тоо эсвэл бусад тэмдэгт орсон бол буцаах
+      }
+      // Эхний үсгийг том үсэг болгох
+      if (value.length > 0) {
+        processedValue = value.charAt(0).toUpperCase() + value.slice(1);
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: processedValue
     }));
   };
 
@@ -290,13 +319,12 @@ export default function NewContractPage() {
                   Цалин *
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   name="salary"
                   value={formData.salary}
                   onChange={handleInputChange}
                   required
-                  min="0"
-                  step="1000"
+                  pattern="[0-9]+"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500"
                   placeholder="1000000"
                 />

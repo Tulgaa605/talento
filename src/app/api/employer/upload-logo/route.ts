@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -21,28 +19,12 @@ export async function POST(request: NextRequest) {
     if (!file) {
       return NextResponse.json({ message: 'Файл олдсонгүй' }, { status: 400 });
     }
+
+    // Зургийг base64 data URL болгоно (serverless-friendly)
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    const originalName = path.basename(file.name).replace(/\s+/g, '_');
-    const filename = `${Date.now()}-${originalName}`;
-
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'logos');
-
-    try {
-      await mkdir(uploadDir, { recursive: true });
-    } catch (mkdirError) {
-      console.error('Failed to create directory:', mkdirError);
-      return NextResponse.json(
-        { message: 'Хавтас үүсгэхэд алдаа гарлаа' },
-        { status: 500 }
-      );
-    }
-
-    const filePath = path.join(uploadDir, filename);
-    await writeFile(filePath, buffer);
-
-    const imageUrl = `/uploads/logos/${filename}`;
+    const base64 = buffer.toString('base64');
+    const imageUrl = `data:${file.type};base64,${base64}`;
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email! },
@@ -68,7 +50,6 @@ export async function POST(request: NextRequest) {
         where: { id: user.id },
         data: { companyId: company.id },
       });
-
     }
 
     return NextResponse.json(

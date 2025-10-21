@@ -84,9 +84,17 @@ export default function NewDepartmentPage() {
                   value={formData.name}
                   onChange={(e) => {
                     const value = e.target.value;
-                    const capitalized = value.charAt(0).toUpperCase() + value.slice(1);
+                    // Зөвхөн үсэг, тэмдэглэгээ
+                    const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-()]*$/;
+                    if (!lettersAndPunctuation.test(value)) {
+                      return;
+                    }
+                    const capitalized = value.length > 0 
+                      ? value.charAt(0).toUpperCase() + value.slice(1)
+                      : value;
                     setFormData(prev => ({ ...prev, name: capitalized }));
                   }}
+                  pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-()]+"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Жишээ: Хүний нөөцийн хэлтэс"
                 />
@@ -123,7 +131,18 @@ export default function NewDepartmentPage() {
                 </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Зөвхөн үсэг, тэмдэглэгээ
+                    const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/;
+                    if (!lettersAndPunctuation.test(value)) {
+                      return;
+                    }
+                    const capitalized = value.length > 0 
+                      ? value.charAt(0).toUpperCase() + value.slice(1)
+                      : value;
+                    setFormData(prev => ({ ...prev, description: capitalized }));
+                  }}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Хэлтсийн тайлбар..."

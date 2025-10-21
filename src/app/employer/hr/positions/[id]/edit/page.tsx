@@ -103,7 +103,31 @@ export default function EditPositionPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let processedValue = value;
+    
+    // Гарчиг - эхний үсэг том, зөвхөн үсэг
+    if (name === 'title' && value) {
+      const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-()]*$/;
+      if (!lettersAndPunctuation.test(value)) {
+        return;
+      }
+      if (value.length > 0) {
+        processedValue = value.charAt(0).toUpperCase() + value.slice(1);
+      }
+    }
+    
+    // Тайлбар - эхний үсэг том, зөвхөн үсэг
+    if (name === 'description' && value) {
+      const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/;
+      if (!lettersAndPunctuation.test(value)) {
+        return;
+      }
+      if (value.length > 0) {
+        processedValue = value.charAt(0).toUpperCase() + value.slice(1);
+      }
+    }
+    
+    setFormData((prev) => ({ ...prev, [name]: processedValue }));
   };
 
   if (loading) {
