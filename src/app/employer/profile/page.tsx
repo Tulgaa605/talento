@@ -2611,6 +2611,17 @@ export default function EmployerProfile() {
                           <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-4 z-10">
                             <h4 className="font-medium mb-2">Асуулга сонгох</h4>
                             <div className="space-y-2">
+                              <button
+                                onClick={() => {
+                                  router.push(`/employer/hr/employees/new?applicationId=${application.id}`);
+                                  setSelectedCV(null);
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                              >
+                                🏢 Шинэ ажилтны бүртгэл
+                              </button>
+                              
+                              {/* Бусад асуулгууд */}
                               {questionnaires?.map((q) => (
                                 <button
                                   key={q.id}

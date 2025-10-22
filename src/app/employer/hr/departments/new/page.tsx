@@ -23,6 +23,42 @@ export default function NewDepartmentPage() {
     setFormData(prev => ({ ...prev, code }));
   };
 
+  // const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  //   const { name, value } = e.target;
+  //   let processedValue = value;
+    
+  //   // Нэр талбар - зөвхөн үсэг, зай, тэмдэглэгээ, эхний үсэг том
+  //   if (name === 'name' && value) {
+  //     const lettersOnly = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-()]*$/;
+  //     if (!lettersOnly.test(value)) {
+  //       return;
+  //     }
+      
+  //     // Эхний үсгийг том үсэг болгох
+  //     if (value.length > 0) {
+  //       processedValue = value.charAt(0).toUpperCase() + value.slice(1);
+  //     }
+  //   }
+    
+  //   // Тайлбар талбар - зөвхөн үсэг, зай, тэмдэглэгээ, эхний үсэг том
+  //   if (name === 'description' && value) {
+  //     const lettersOnly = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/;
+  //     if (!lettersOnly.test(value)) {
+  //       return;
+  //     }
+      
+  //     // Эхний үсгийг том үсэг болгох
+  //     if (value.length > 0) {
+  //       processedValue = value.charAt(0).toUpperCase() + value.slice(1);
+  //     }
+  //   }
+    
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     [name]: processedValue
+  //   }));
+  // };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);

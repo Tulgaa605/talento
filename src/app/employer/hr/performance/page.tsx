@@ -186,7 +186,6 @@ export default function PerformancePage() {
           setEvaluations(typed);
         }
       } catch {
-        // ignore
       }
     };
     void load();

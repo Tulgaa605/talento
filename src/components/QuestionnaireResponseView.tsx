@@ -36,6 +36,7 @@ export default function QuestionnaireResponseView({
   const [activeTab, setActiveTab] = useState("answers");
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
   // Try to parse formData if it exists (for government employee questionnaires)
   const initialFormData = response.formData ? JSON.parse(response.formData) : null;
@@ -106,6 +107,29 @@ export default function QuestionnaireResponseView({
       alert("Хадгалахад алдаа гарлаа.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    setIsApproving(true);
+    try {
+      const res = await fetch(`/api/employer/questionnaires/responses/${response.id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to approve questionnaire");
+      }
+
+      alert("Анкет амжилттай зөвшөөрөгдлөө! Хэрэглэгч одоо ажилтны бүртгэлд орж болно.");
+      if (onUpdate) onUpdate();
+      onClose();
+    } catch (error) {
+      console.error("Error approving questionnaire:", error);
+      alert("Зөвшөөрөхөд алдаа гарлаа");
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -421,12 +445,21 @@ export default function QuestionnaireResponseView({
               </button>
             </>
           ) : (
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Хаах
-            </button>
+            <>
+              <button
+                onClick={handleApprove}
+                disabled={isApproving}
+                className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+              >
+                {isApproving ? "Зөвшөөрч байна..." : "Зөвшөөрөх"}
+              </button>
+              <button
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Хаах
+              </button>
+            </>
           )}
         </div>
       </div>

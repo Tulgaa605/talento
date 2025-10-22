@@ -125,15 +125,6 @@ export default function HRDashboardPage() {
 
   const sections = [
     {
-      title: 'Ажилтны мэдээллийн сан',
-      description: 'Ажилтны жагсаалт болон удирдлага',
-      icon: UsersIcon,
-      href: '/employer/hr/employees',
-      count: stats.totalEmployees,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-    },
-    {
       title: 'Ажилд авах процесс',
       description: 'Ажилд авах үйл явцын удирдлага',
       icon: UserGroupIcon,

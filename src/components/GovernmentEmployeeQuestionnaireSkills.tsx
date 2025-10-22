@@ -70,6 +70,23 @@ export default function GovernmentEmployeeQuestionnaireSkills({
   addArrayItem,
   removeArrayItem,
 }: SkillsSectionProps) {
+  
+  // Validation functions
+  const validateLettersAndPunctuation = (value: string) => {
+    return /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/.test(value);
+  };
+
+  const validateNumbersWithDots = (value: string) => {
+    return /^[0-9.]*$/.test(value);
+  };
+
+  const capitalizeFirstLetter = (value: string) => {
+    if (value.length > 0) {
+      return value.charAt(0).toUpperCase() + value.slice(1);
+    }
+    return value;
+  };
+
   const updateSkillLevel = (path: string[], value: 1 | 2 | 3) => {
     updateField(path, value);
   };
@@ -793,11 +810,16 @@ export default function GovernmentEmployeeQuestionnaireSkills({
                         className="w-full border-none focus:outline-none"
                         value={language?.language || ''}
                         onChange={(e) => {
+                          const value = e.target.value;
+                          if (!validateLettersAndPunctuation(value)) return;
+                          const capitalizedValue = capitalizeFirstLetter(value);
                           const newLanguages = [...formData.foreignLanguages];
                           if (!newLanguages[index]) newLanguages[index] = {};
-                          newLanguages[index].language = e.target.value;
+                          newLanguages[index].language = capitalizedValue;
                           updateField(['foreignLanguages'], newLanguages);
                         }}
+                        pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                        placeholder="Гадаад хэлний нэр"
                       />
                     </td>
                     {['listening'].map((skill) => (
@@ -922,11 +944,16 @@ export default function GovernmentEmployeeQuestionnaireSkills({
                             className="w-full border-none focus:outline-none"
                             value={software?.name || ''}
                             onChange={(e) => {
+                              const value = e.target.value;
+                              if (!validateLettersAndPunctuation(value)) return;
+                              const capitalizedValue = capitalizeFirstLetter(value);
                               const newSoftware = [...formData.computerSkills.software];
                               if (!newSoftware[index]) newSoftware[index] = {};
-                              newSoftware[index].name = e.target.value;
+                              newSoftware[index].name = capitalizedValue;
                               updateField(['computerSkills', 'software'], newSoftware);
                             }}
+                            pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                            placeholder="Программын нэр"
                           />
                         </td>
                         {['average', 'good', 'excellent'].map((level) => (
@@ -1148,11 +1175,16 @@ export default function GovernmentEmployeeQuestionnaireSkills({
                         className="w-full border-none focus:outline-none"
                         value={experience?.organization || ''}
                         onChange={(e) => {
+                          const value = e.target.value;
+                          if (!validateLettersAndPunctuation(value)) return;
+                          const capitalizedValue = capitalizeFirstLetter(value);
                           const newExperience = [...formData.workExperience];
                           if (!newExperience[index]) newExperience[index] = {};
-                          newExperience[index].organization = e.target.value;
+                          newExperience[index].organization = capitalizedValue;
                           updateField(['workExperience'], newExperience);
                         }}
+                        pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                        placeholder="Ажилласан байгууллага, газар, түүний хэлтэс, алба"
                       />
                     </td>
                     <td className="border border-gray-300 p-2">
@@ -1161,11 +1193,16 @@ export default function GovernmentEmployeeQuestionnaireSkills({
                         className="w-full border-none focus:outline-none"
                         value={experience?.position || ''}
                         onChange={(e) => {
+                          const value = e.target.value;
+                          if (!validateLettersAndPunctuation(value)) return;
+                          const capitalizedValue = capitalizeFirstLetter(value);
                           const newExperience = [...formData.workExperience];
                           if (!newExperience[index]) newExperience[index] = {};
-                          newExperience[index].position = e.target.value;
+                          newExperience[index].position = capitalizedValue;
                           updateField(['workExperience'], newExperience);
                         }}
+                        pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                        placeholder="Албан тушаал"
                       />
                     </td>
                     <td className="border border-gray-300 p-2">
@@ -1174,11 +1211,25 @@ export default function GovernmentEmployeeQuestionnaireSkills({
                         className="w-full border-none focus:outline-none"
                         value={experience?.startDate || ''}
                         onChange={(e) => {
+                          const value = e.target.value;
+                          if (!validateNumbersWithDots(value)) return;
+                          
+                          // Auto-format YYYY.MM
+                          let formattedValue = value;
+                          if (value.length === 4 && !value.includes('.')) {
+                            formattedValue = value + '.';
+                          } else if (value.length > 7) {
+                            return; // Max length reached
+                          }
+                          
                           const newExperience = [...formData.workExperience];
                           if (!newExperience[index]) newExperience[index] = {};
-                          newExperience[index].startDate = e.target.value;
+                          newExperience[index].startDate = formattedValue;
                           updateField(['workExperience'], newExperience);
                         }}
+                        pattern="[0-9.]+"
+                        maxLength={7}
+                        placeholder="YYYY.MM"
                       />
                     </td>
                     <td className="border border-gray-300 p-2">
@@ -1187,11 +1238,25 @@ export default function GovernmentEmployeeQuestionnaireSkills({
                         className="w-full border-none focus:outline-none"
                         value={experience?.endDate || ''}
                         onChange={(e) => {
+                          const value = e.target.value;
+                          if (!validateNumbersWithDots(value)) return;
+                          
+                          // Auto-format YYYY.MM
+                          let formattedValue = value;
+                          if (value.length === 4 && !value.includes('.')) {
+                            formattedValue = value + '.';
+                          } else if (value.length > 7) {
+                            return; // Max length reached
+                          }
+                          
                           const newExperience = [...formData.workExperience];
                           if (!newExperience[index]) newExperience[index] = {};
-                          newExperience[index].endDate = e.target.value;
+                          newExperience[index].endDate = formattedValue;
                           updateField(['workExperience'], newExperience);
                         }}
+                        pattern="[0-9.]+"
+                        maxLength={7}
+                        placeholder="YYYY.MM"
                       />
                     </td>
                     <td className="border border-gray-300 p-2 text-center">

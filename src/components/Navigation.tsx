@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import { useState } from "react";
-import NotificationBell from "./NotificationBell";
 
 
 export const Header = () => {
@@ -41,11 +40,7 @@ export const Header = () => {
             Talento
           </Link>
           {status === "authenticated" && canAccessHR && (
-          <div className="hidden lg:flex gap-8 items-center text-sm font-medium">
-            <Link href="/employer/hr/employees" className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A] ml-20">
-              <span className="group-hover:text-[#0C213A]/80 transition-colors font-poppins font-medium">Ажилтны мэдээллийн сан</span>
-              <div className={`absolute bottom-0 left-0 h-0.5 bg-[#0C213A] transition-all duration-300 transform translate-y-[6px] ${isActive('/employer/hr/employees') ? 'w-full' : 'w-0 group-hover:w-full'}`}></div>
-            </Link>
+          <div className="hidden lg:flex gap-8 items-center text-sm font-medium ml-20">
             <Link href="/employer/hr/recruitment" className="hover:text-[#0C213A]/80 cursor-pointer relative group text-[#0C213A]">
               <span className="group-hover:text-[#0C213A]/80 transition-colors font-poppins font-medium">Ажилд авах процесс</span>
               <div className={`absolute bottom-0 left-0 h-0.5 bg-[#0C213A] transition-all duration-300 transform translate-y-[6px] ${isActive('/employer/hr/recruitment') ? 'w-full' : 'w-0 group-hover:w-full'}`}></div>
@@ -107,9 +102,6 @@ export const Header = () => {
               <div className="py-2">
                 {status === "authenticated" && canAccessHR && (
                   <>
-                    <Link href="/employer/hr/employees" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setShowMobileMenu(false)}>
-                      Ажилтны мэдээллийн сан
-                    </Link>
                     <Link href="/employer/hr/recruitment" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setShowMobileMenu(false)}>
                       Ажилд авах процесс
                     </Link>
@@ -177,11 +169,7 @@ export const Header = () => {
               </Link>
             )}
 
-            {status === "authenticated" && session && (
-              <div className="hidden lg:block">
-                <NotificationBell />
-              </div>
-            )}
+            
             {status === "authenticated" && session ? (
               <div className="hidden lg:block relative">
                 <button

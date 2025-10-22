@@ -71,14 +71,14 @@ export default function DecisionsPage() {
         });
 
         if (response.ok) {
-          alert('Шидвэр амжилттай устгагдлаа');
+          alert('Шийдвэр амжилттай устгагдлаа');
           fetchDecisions();
         } else {
           const error = await response.json();
           alert(error.error || 'Алдаа гарлаа');
         }
       } catch (error) {
-        console.error('Шидвэр устгахад алдаа гарлаа:', error);
+        console.error('Шийдвэр устгахад алдаа гарлаа:', error);
         alert('Алдаа гарлаа');
       }
     }
@@ -157,7 +157,7 @@ export default function DecisionsPage() {
               </label>
               <input
                 type="text"
-                placeholder="Шидвэрийн дугаар, гарчиг, ажилтны нэр..."
+                placeholder="Шийдвэрийн дугаар, гарчиг, ажилтны нэр..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
@@ -180,7 +180,7 @@ export default function DecisionsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                Шидвэрийн төрөл
+                Шийдвэрийн төрөл
               </label>
               <select
                 value={typeFilter}
@@ -216,7 +216,7 @@ export default function DecisionsPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Шидвэрийн дугаар
+                  Шийдвэрийн дугаар
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Гарчиг
@@ -228,7 +228,7 @@ export default function DecisionsPage() {
                   Төрөл
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Шидвэр гарсан огноо
+                  Шийдвэр гарсан огноо
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Хэрэгжих огноо
@@ -316,7 +316,7 @@ export default function DecisionsPage() {
             <svg className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <h3 className="mt-2 text-sm sm:text-base font-medium text-gray-900">Шидвэр олдсонгүй</h3>
+            <h3 className="mt-2 text-sm sm:text-base font-medium text-gray-900">Шийдвэр олдсонгүй</h3>
             <p className="mt-1 text-xs sm:text-sm text-gray-500">
               {searchTerm || statusFilter || typeFilter 
                 ? 'Хайлтын нөхцөлд тохирох шийдвэр байхгүй байна.' 

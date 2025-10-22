@@ -8,9 +8,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const contractFilter = searchParams.get('contract');
     const approvalFilter = searchParams.get('approval');
+    const statusFilter = searchParams.get('status');
 
     const users = await prisma.user.findMany({
-      where: { role: 'USER' },
+      where: { 
+        role: 'USER',
+        ...(statusFilter === 'APPROVED' && { status: 'APPROVED' })
+      },
       select: {
         id: true,
         name: true,
@@ -19,6 +23,7 @@ export async function GET(request: NextRequest) {
         image: true,
         position: true,
         department: true,
+        status: true,
         createdAt: true,
         jobApplications: {
           select: { status: true },
@@ -52,6 +57,7 @@ export async function GET(request: NextRequest) {
         image: u.image ?? '',
         position: u.position ?? '',
         department: u.department ?? '',
+        status: u.status ?? 'PENDING',
         hasContract: u.email ? emailHasContractSet.has(u.email.toLowerCase()) : false,
         employerApproved,
         adminApproved,

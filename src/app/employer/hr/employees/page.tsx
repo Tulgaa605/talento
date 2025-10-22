@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -52,6 +53,7 @@ interface UserItem {
   phoneNumber?: string;
   image?: string;
   role?: 'ADMIN' | 'EMPLOYER';
+  status?: string;
   hasContract: boolean;
   employerApproved?: boolean;
   adminApproved?: boolean;
@@ -61,6 +63,7 @@ interface UserItem {
 }
 
 export default function EmployeesPage() {
+  const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -467,13 +470,17 @@ export default function EmployeesPage() {
                           Гэрээ
                         </th>
                         <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider w-56">
-                          Зөвшөөрөлт
+                          Статус
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredUsers.map((u) => (
-                        <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                        <tr 
+                          key={u.id} 
+                          className="hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => router.push(`/employer/hr/employees/new?userId=${u.id}`)}
+                        >
                           <td className="px-6 py-5">
                             <div className="space-y-3">
                               {/* Нэр */}
@@ -527,7 +534,17 @@ export default function EmployeesPage() {
                                   Бүрэн зөвшөөрсөн
                                 </span>
                               )}
-                              {!u.employerApproved && !u.adminApproved && !u.approved && (
+                              {(u.status || 'PENDING') === 'APPROVED' && (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                  Зөвшөөрөгдсөн
+                                </span>
+                              )}
+                              {(u.status || 'PENDING') === 'EMPLOYER' && (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                                  Ажил олгогч
+                                </span>
+                              )}
+                              {(u.status || 'PENDING') !== 'APPROVED' && (u.status || 'PENDING') !== 'EMPLOYER' && (
                                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
                                   Хүлээгдэж байна
                                 </span>

@@ -124,7 +124,7 @@ export default function NewDecisionPage() {
               {/* Шидвэрийн дугаар */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Шидвэрийн дугаар *
+                  Шийдвэрийн дугаар *
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -147,7 +147,7 @@ export default function NewDecisionPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Шидвэрийн төрөл *
+                  Шийдвэрийн төрөл *
                 </label>
                 <select
                   required
@@ -187,7 +187,7 @@ export default function NewDecisionPage() {
                   }}
                   pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-()]+"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Шидвэрийн гарчиг..."
+                  placeholder="Шийдвэрийн гарчиг..."
                 />
               </div>
 
@@ -212,7 +212,7 @@ export default function NewDecisionPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Шидвэр гарсан огноо *
+                  ШиЙдвэр гарсан огноо *
                 </label>
                 <input
                   type="date"
@@ -254,7 +254,7 @@ export default function NewDecisionPage() {
                   }}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Шидвэрийн дэлгэрэнгүй тайлбар..."
+                  placeholder="ШиЙдвэрийн дэлгэрэнгүй тайлбар..."
                 />
               </div>
               
@@ -278,7 +278,7 @@ export default function NewDecisionPage() {
                   }}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Шидвэр гаргасан шалтгаан..."
+                  placeholder="ШиЙдвэр гаргасан шалтгаан..."
                 />
               </div>
             </div>

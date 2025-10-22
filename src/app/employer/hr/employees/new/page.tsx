@@ -2,8 +2,8 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ArrowLeftIcon,
@@ -32,11 +32,17 @@ interface Employee {
 
 export default function NewEmployeePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [, setManagers] = useState<Employee[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [applicationInfo, setApplicationInfo] = useState<{
+    jobTitle?: string;
+    userName?: string;
+    userEmail?: string;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -56,10 +62,201 @@ export default function NewEmployeePage() {
     managerId: '',
   });
 
+  // CV analysis parsing function
+  const parseCVAnalysis = (analysis: string) => {
+    const parsedData: {
+      middleName?: string;
+      birthDate?: string;
+      gender?: string;
+      address?: string;
+      emergencyContact?: string;
+      emergencyPhone?: string;
+    } = {};
+    
+    try {
+      // Extract birth date
+      const birthDateMatch = analysis.match(/(?:төрсөн|birth|born).*?(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/i);
+      if (birthDateMatch) {
+        const dateStr = birthDateMatch[1];
+        // Convert to MM/DD/YYYY format
+        const parts = dateStr.split(/[-/]/);
+        if (parts.length === 3) {
+          if (parts[0].length === 4) { // YYYY-MM-DD format
+            parsedData.birthDate = `${parts[1]}/${parts[2]}/${parts[0]}`;
+          } else { // MM/DD/YYYY format
+            parsedData.birthDate = `${parts[0]}/${parts[1]}/${parts[2]}`;
+          }
+        }
+      }
+      
+      // Extract gender
+      const genderMatch = analysis.match(/(?:хүйс|gender|sex).*?(эр|эм|male|female|м|ж)/i);
+      if (genderMatch) {
+        const gender = genderMatch[1].toLowerCase();
+        if (gender.includes('эр') || gender.includes('male') || gender.includes('м')) {
+          parsedData.gender = 'male';
+        } else if (gender.includes('эм') || gender.includes('female') || gender.includes('ж')) {
+          parsedData.gender = 'female';
+        }
+      }
+      
+      // Extract address
+      const addressMatch = analysis.match(/(?:хаяг|address|location).*?([^.\n]{10,100})/i);
+      if (addressMatch) {
+        parsedData.address = addressMatch[1].trim();
+      }
+      
+      // Extract emergency contact
+      const emergencyMatch = analysis.match(/(?:яаралтай|emergency|urgent).*?(?:холбоо|contact).*?([^.\n]{5,50})/i);
+      if (emergencyMatch) {
+        parsedData.emergencyContact = emergencyMatch[1].trim();
+      }
+      
+      // Extract emergency phone
+      const emergencyPhoneMatch = analysis.match(/(?:яаралтай|emergency).*?(?:утас|phone).*?(\d{8,})/i);
+      if (emergencyPhoneMatch) {
+        parsedData.emergencyPhone = emergencyPhoneMatch[1];
+      }
+      
+      // Extract middle name (father's name)
+      const middleNameMatch = analysis.match(/(?:эцэг|эх|father|mother).*?(?:нэр|name).*?([А-Яа-яЁёӨөҮү\s]{2,20})/i);
+      if (middleNameMatch) {
+        parsedData.middleName = middleNameMatch[1].trim();
+      }
+      
+    } catch (error) {
+      console.error('Error parsing CV analysis:', error);
+    }
+    
+    return parsedData;
+  };
+
+  const fetchApplicationData = useCallback(async (applicationId: string) => {
+    try {
+      const response = await fetch(`/api/employer/applications/${applicationId}`);
+      if (response.ok) {
+        const application = await response.json();
+        
+        // Application мэдээллийг хадгалах
+        setApplicationInfo({
+          jobTitle: application.job?.title,
+          userName: application.user?.name,
+          userEmail: application.user?.email,
+        });
+
+        // Хэрэглэгчийн мэдээллийг form-д бөглөх
+        if (application.user) {
+          const user = application.user;
+          const nameParts = user.name?.split(' ') || [];
+          
+          // Parse CV analysis for additional details
+          let cvData: {
+            middleName?: string;
+            birthDate?: string;
+            gender?: string;
+            address?: string;
+            emergencyContact?: string;
+            emergencyPhone?: string;
+          } = {};
+          if (application.cv?.analysis) {
+            cvData = parseCVAnalysis(application.cv.analysis);
+            console.log('Parsed CV data:', cvData);
+          }
+          
+          setFormData(prev => ({
+            ...prev,
+            firstName: nameParts.length > 1 ? nameParts[1] : nameParts[0] || '', // Нэр
+            lastName: nameParts.length > 1 ? nameParts[0] : '', // Овог
+            middleName: cvData?.middleName || '', // Эцэг/эхийн нэр
+            email: user.email || '',
+            phoneNumber: user.phoneNumber || '',
+            birthDate: cvData?.birthDate || '', // Төрсөн огноо
+            gender: cvData?.gender || '', // Хүйс
+            address: cvData?.address || '', // Хаяг
+            emergencyContact: cvData?.emergencyContact || '', // Яаралтай холбоо барих
+            emergencyPhone: cvData?.emergencyPhone || '', // Яаралтай утасны дугаар
+            // Ажлын байрны мэдээлэл
+            hireDate: new Date().toISOString().split('T')[0], // Өнөөдөр
+          }));
+          
+          // Ажлын байрны мэдээлэл байвал хэлтэс сонгох
+          if (application.job) {
+            // Ажлын байрны хэлтэс олох
+            const jobDepartment = departments.find(dept => 
+              dept.name.toLowerCase().includes(application.job.title.toLowerCase()) ||
+              application.job.title.toLowerCase().includes(dept.name.toLowerCase())
+            );
+            
+            if (jobDepartment) {
+              setSelectedDepartment(jobDepartment.id);
+              setFormData(prev => ({
+                ...prev,
+                departmentId: jobDepartment.id,
+              }));
+            }
+          }
+        }
+      } else {
+        console.error('Application мэдээлэл авахад алдаа:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Application мэдээлэл авахад алдаа гарлаа:', error);
+    }
+  }, [departments]);
+
+  const fetchUserData = useCallback(async (userId: string) => {
+    try {
+      const response = await fetch(`/api/hr/users/${userId}`);
+      if (response.ok) {
+        const user = await response.json();
+        
+        // Хэрэглэгчийн мэдээллийг form-д бөглөх
+        if (user) {
+          const nameParts = user.name?.split(' ') || [];
+          
+          setFormData(prev => ({
+            ...prev,
+            middleName: nameParts.length > 1 ? nameParts[1] : nameParts[0] || '', // Нэр
+            firstName: nameParts.length > 1 ? nameParts[0] : '', // Овог
+            email: user.email || '',
+            phoneNumber: user.phoneNumber || '',
+            // Ажлын байрны мэдээлэл
+            hireDate: new Date().toISOString().split('T')[0], // Өнөөдөр
+          }));
+          
+          // Application мэдээллийг хадгалах
+          setApplicationInfo({
+            jobTitle: user.position || '',
+            userName: user.name,
+            userEmail: user.email,
+          });
+        }
+      } else {
+        console.error('User мэдээлэл авахад алдаа:', response.statusText);
+      }
+    } catch (error) {
+      console.error('User мэдээлэл авахад алдаа гарлаа:', error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchDepartments();
     fetchEmployees();
   }, []);
+
+  useEffect(() => {
+    // Application ID байвал тухайн хэрэглэгчийн мэдээллийг ачаалах
+    const applicationId = searchParams.get('applicationId');
+    if (applicationId) {
+      fetchApplicationData(applicationId);
+    }
+    
+    // User ID байвал тухайн хэрэглэгчийн мэдээллийг ачаалах
+    const userId = searchParams.get('userId');
+    if (userId) {
+      fetchUserData(userId);
+    }
+  }, [searchParams, fetchApplicationData, fetchUserData]);
 
   useEffect(() => {
     if (selectedDepartment) {
@@ -211,7 +408,63 @@ export default function NewEmployeePage() {
           </Link>
         </div>
         <h1 className="text-3xl font-bold text-gray-900">Шинэ ажилтны бүртгэл</h1>
-        <p className="mt-2 text-gray-600">Ажилтны үндсэн мэдээллийг оруулна уу</p>
+        <p className="mt-2 text-gray-600">
+          {searchParams.get('applicationId') 
+            ? 'CV-г зөвшөөрсөн хэрэглэгчийн мэдээллийг бөглөнө үү' 
+            : searchParams.get('userId')
+            ? 'Сонгосон хэрэглэгчийн мэдээллийг бөглөнө үү'
+            : 'Ажилтны үндсэн мэдээллийг оруулна уу'
+          }
+        </p>
+        {(searchParams.get('applicationId') || searchParams.get('userId')) && (
+          <div className="mt-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-blue-600 text-sm">💡</span>
+                </div>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-900">
+                  {searchParams.get('applicationId') 
+                    ? 'CV-г зөвшөөрсөн хэрэглэгчийн мэдээлэл'
+                    : 'Сонгосон хэрэглэгчийн мэдээлэл'
+                  }
+                </h3>
+                <p className="mt-1 text-sm text-blue-700">
+                  Хэрэглэгчийн үндсэн мэдээлэл автоматаар бөглөгдсөн байна. 
+                  Шаардлагатай талбаруудыг нэмж бөглөнө үү.
+                </p>
+                <div className="mt-2 text-xs text-blue-600">
+                  {searchParams.get('applicationId') 
+                    ? `Application ID: ${searchParams.get('applicationId')}`
+                    : `User ID: ${searchParams.get('userId')}`
+                  }
+                </div>
+                {applicationInfo && (
+                  <div className="mt-3 p-3 bg-white rounded border border-blue-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-700">Хэрэглэгч:</span>
+                        <span className="ml-2 text-gray-900">{applicationInfo.userName}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Имэйл:</span>
+                        <span className="ml-2 text-gray-900">{applicationInfo.userEmail}</span>
+                      </div>
+                      {applicationInfo.jobTitle && (
+                        <div className="md:col-span-2">
+                          <span className="font-medium text-gray-700">Ажлын байр:</span>
+                          <span className="ml-2 text-gray-900">{applicationInfo.jobTitle}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Форм */}

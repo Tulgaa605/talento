@@ -177,6 +177,64 @@ export default function GovernmentEmployeeQuestionnaire({
   onSubmit,
   onCancel,
 }: GovernmentEmployeeQuestionnaireProps) {
+  
+  // Validation functions
+  const validateLettersOnly = (value: string) => {
+    return /^[A-Za-zА-Яа-яЁёӨөҮү\s]*$/.test(value);
+  };
+
+  const validateNumbersOnly = (value: string) => {
+    return /^[0-9]*$/.test(value);
+  };
+
+  const validateNumbersWithDots = (value: string) => {
+    return /^[0-9.]*$/.test(value);
+  };
+
+  const validateLettersAndPunctuation = (value: string) => {
+    return /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/.test(value);
+  };
+
+  const validateRegistrationNumber = (value: string) => {
+    const upperValue = value.toUpperCase();
+    if (upperValue.length <= 2) {
+      return /^[A-ZА-ЯЁӨҮү]*$/.test(upperValue);
+    } else {
+      const letters = upperValue.slice(0, 2);
+      const numbers = upperValue.slice(2);
+      return /^[A-ZА-ЯЁӨҮү]{2}$/.test(letters) && /^[0-9]*$/.test(numbers);
+    }
+  };
+
+  const capitalizeFirstLetter = (value: string) => {
+    if (value.length > 0) {
+      return value.charAt(0).toUpperCase() + value.slice(1);
+    }
+    return value;
+  };
+
+  const handleInputChange = (field: string[], value: string, validationType?: 'letters' | 'numbers' | 'lettersAndPunctuation' | 'registration' | 'phone', maxLength?: number) => {
+    let processedValue = value;
+    
+    if (validationType === 'letters' && value) {
+      if (!validateLettersOnly(value)) return;
+      processedValue = capitalizeFirstLetter(value);
+    } else if (validationType === 'numbers' && value) {
+      if (!validateNumbersOnly(value)) return;
+    } else if (validationType === 'lettersAndPunctuation' && value) {
+      if (!validateLettersAndPunctuation(value)) return;
+      processedValue = capitalizeFirstLetter(value);
+    } else if (validationType === 'registration' && value) {
+      if (!validateRegistrationNumber(value)) return;
+      processedValue = value.toUpperCase();
+    } else if (validationType === 'phone' && value) {
+      if (!validateNumbersOnly(value)) return;
+    }
+    
+    if (maxLength && processedValue.length > maxLength) return;
+    
+    updateField(field, processedValue);
+  };
   const [formData, setFormData] = useState<GovernmentEmployeeForm>({
     identification: {
       registrationNumber: '',
@@ -406,82 +464,55 @@ export default function GovernmentEmployeeQuestionnaire({
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium mb-2">Регистрийн дугаар</label>
-              <div className="flex gap-1">
-                {Array.from({ length: 10 }, (_, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    maxLength={1}
-                    className="w-8 h-8 border border-gray-300 text-center rounded"
-                    value={formData.identification.registrationNumber[i] || ''}
-                    onChange={(e) => {
-                      const newValue = formData.identification.registrationNumber.split('');
-                      newValue[i] = e.target.value;
-                      updateField(['identification', 'registrationNumber'], newValue.join(''));
-                    }}
-                  />
-                ))}
-              </div>
+              <input
+                type="text"
+                className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
+                value={formData.identification.registrationNumber}
+                onChange={(e) => handleInputChange(['identification', 'registrationNumber'], e.target.value, 'registration', 10)}
+                pattern="[A-ZА-ЯЁӨҮү]{2}[0-9]{8}"
+                maxLength={10}
+                placeholder="AA12345678"
+                title="Эхний 2 үсэг, дараа нь 8 тоо (жишээ: AA12345678)"
+              />
         </div>
 
             <div>
               <label className="block text-sm font-medium mb-2">Иргэний үнэмлэхийн дугаар</label>
-              <div className="flex gap-1">
-                {Array.from({ length: 10 }, (_, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    maxLength={1}
-                    className="w-8 h-8 border border-gray-300 text-center rounded"
-                    value={formData.identification.citizenIdNumber[i] || ''}
-                    onChange={(e) => {
-                      const newValue = formData.identification.citizenIdNumber.split('');
-                      newValue[i] = e.target.value;
-                      updateField(['identification', 'citizenIdNumber'], newValue.join(''));
-                    }}
-                  />
-                ))}
-              </div>
+              <input
+                type="text"
+                className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
+                value={formData.identification.citizenIdNumber}
+                onChange={(e) => handleInputChange(['identification', 'citizenIdNumber'], e.target.value, 'numbers', 10)}
+                pattern="[0-9]+"
+                maxLength={10}
+                placeholder="1234567890"
+              />
             </div>
             
             <div>
               <label className="block text-sm font-medium mb-2">Нийгмийн даатгалын дэвтрийн дугаар</label>
-              <div className="flex gap-1">
-                {Array.from({ length: 10 }, (_, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    maxLength={1}
-                    className="w-8 h-8 border border-gray-300 text-center rounded"
-                    value={formData.identification.socialInsuranceNumber[i] || ''}
-                    onChange={(e) => {
-                      const newValue = formData.identification.socialInsuranceNumber.split('');
-                      newValue[i] = e.target.value;
-                      updateField(['identification', 'socialInsuranceNumber'], newValue.join(''));
-                    }}
-                  />
-                ))}
-              </div>
+              <input
+                type="text"
+                className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
+                value={formData.identification.socialInsuranceNumber}
+                onChange={(e) => handleInputChange(['identification', 'socialInsuranceNumber'], e.target.value, 'numbers', 10)}
+                pattern="[0-9]+"
+                maxLength={10}
+                placeholder="1234567890"
+              />
             </div>
             
             <div>
               <label className="block text-sm font-medium mb-2">Эрүүл мэндийн даатгалын гэрчилгээний дугаар</label>
-              <div className="flex gap-1">
-                {Array.from({ length: 10 }, (_, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    maxLength={1}
-                    className="w-8 h-8 border border-gray-300 text-center rounded"
-                    value={formData.identification.healthInsuranceNumber[i] || ''}
-                    onChange={(e) => {
-                      const newValue = formData.identification.healthInsuranceNumber.split('');
-                      newValue[i] = e.target.value;
-                      updateField(['identification', 'healthInsuranceNumber'], newValue.join(''));
-                    }}
-                  />
-                ))}
-              </div>
+              <input
+                type="text"
+                className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
+                value={formData.identification.healthInsuranceNumber}
+                onChange={(e) => handleInputChange(['identification', 'healthInsuranceNumber'], e.target.value, 'numbers', 10)}
+                pattern="[0-9]+"
+                maxLength={10}
+                placeholder="1234567890"
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-6 mb-6">
@@ -491,7 +522,9 @@ export default function GovernmentEmployeeQuestionnaire({
                 type="text"
                 className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
                 value={formData.personalInfo.fatherName}
-                onChange={(e) => updateField(['personalInfo', 'fatherName'], e.target.value)}
+                onChange={(e) => handleInputChange(['personalInfo', 'fatherName'], e.target.value, 'letters')}
+                pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
+                placeholder="Эцэг/эхийн нэр"
               />
             </div>
             
@@ -501,7 +534,9 @@ export default function GovernmentEmployeeQuestionnaire({
                 type="text"
                 className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
                 value={formData.personalInfo.name}
-                onChange={(e) => updateField(['personalInfo', 'name'], e.target.value)}
+                onChange={(e) => handleInputChange(['personalInfo', 'name'], e.target.value, 'letters')}
+                pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
+                placeholder="Нэр"
               />
             </div>
             
@@ -523,21 +558,27 @@ export default function GovernmentEmployeeQuestionnaire({
                   placeholder="он"
                   className="w-16 border-b border-gray-300 py-2 text-center focus:outline-none focus:border-blue-500"
                   value={formData.personalInfo.birthYear}
-                  onChange={(e) => updateField(['personalInfo', 'birthYear'], e.target.value)}
+                  onChange={(e) => handleInputChange(['personalInfo', 'birthYear'], e.target.value, 'numbers', 4)}
+                  pattern="[0-9]+"
+                  maxLength={4}
                 />
                 <input
                   type="text"
                   placeholder="сар"
                   className="w-16 border-b border-gray-300 py-2 text-center focus:outline-none focus:border-blue-500"
                   value={formData.personalInfo.birthMonth}
-                  onChange={(e) => updateField(['personalInfo', 'birthMonth'], e.target.value)}
+                  onChange={(e) => handleInputChange(['personalInfo', 'birthMonth'], e.target.value, 'numbers', 2)}
+                  pattern="[0-9]+"
+                  maxLength={2}
                 />
                 <input
                   type="text"
                   placeholder="өдөр"
                   className="w-16 border-b border-gray-300 py-2 text-center focus:outline-none focus:border-blue-500"
                   value={formData.personalInfo.birthDay}
-                  onChange={(e) => updateField(['personalInfo', 'birthDay'], e.target.value)}
+                  onChange={(e) => handleInputChange(['personalInfo', 'birthDay'], e.target.value, 'numbers', 2)}
+                  pattern="[0-9]+"
+                  maxLength={2}
                 />
               </div>
             </div>
@@ -615,11 +656,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={member?.relationship || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newMembers = [...formData.personalInfo.familyMembers];
                             if (!newMembers[index]) newMembers[index] = {};
-                            newMembers[index].relationship = e.target.value;
+                            newMembers[index].relationship = capitalizedValue;
                             updateField(['personalInfo', 'familyMembers'], newMembers);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Таны юу болох"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -628,11 +674,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={member?.name || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersOnly(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newMembers = [...formData.personalInfo.familyMembers];
                             if (!newMembers[index]) newMembers[index] = {};
-                            newMembers[index].name = e.target.value;
+                            newMembers[index].name = capitalizedValue;
                             updateField(['personalInfo', 'familyMembers'], newMembers);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
+                          placeholder="Нэр"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -641,11 +692,17 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={member?.birthYear || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateNumbersOnly(value)) return;
+                            if (value.length > 4) return;
                             const newMembers = [...formData.personalInfo.familyMembers];
                             if (!newMembers[index]) newMembers[index] = {};
-                            newMembers[index].birthYear = e.target.value;
+                            newMembers[index].birthYear = value;
                             updateField(['personalInfo', 'familyMembers'], newMembers);
                           }}
+                          pattern="[0-9]+"
+                          maxLength={4}
+                          placeholder="Он"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -654,11 +711,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={member?.birthPlace || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newMembers = [...formData.personalInfo.familyMembers];
                             if (!newMembers[index]) newMembers[index] = {};
-                            newMembers[index].birthPlace = e.target.value;
+                            newMembers[index].birthPlace = capitalizedValue;
                             updateField(['personalInfo', 'familyMembers'], newMembers);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Төрсөн аймаг, хот, сум, дүүрэг"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -667,11 +729,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={member?.occupation || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newMembers = [...formData.personalInfo.familyMembers];
                             if (!newMembers[index]) newMembers[index] = {};
-                            newMembers[index].occupation = e.target.value;
+                            newMembers[index].occupation = capitalizedValue;
                             updateField(['personalInfo', 'familyMembers'], newMembers);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Одоо эрхэлж буй ажил"
                         />
                       </td>
                       <td className="border border-gray-300 p-2 text-center">
@@ -721,11 +788,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={relative?.relationship || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newRelatives = [...formData.personalInfo.relatives];
                             if (!newRelatives[index]) newRelatives[index] = {};
-                            newRelatives[index].relationship = e.target.value;
+                            newRelatives[index].relationship = capitalizedValue;
                             updateField(['personalInfo', 'relatives'], newRelatives);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Таны юу болох"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -734,11 +806,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={relative?.name || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersOnly(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newRelatives = [...formData.personalInfo.relatives];
                             if (!newRelatives[index]) newRelatives[index] = {};
-                            newRelatives[index].name = e.target.value;
+                            newRelatives[index].name = capitalizedValue;
                             updateField(['personalInfo', 'relatives'], newRelatives);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
+                          placeholder="Нэр"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -747,11 +824,17 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={relative?.birthYear || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateNumbersOnly(value)) return;
+                            if (value.length > 4) return;
                             const newRelatives = [...formData.personalInfo.relatives];
                             if (!newRelatives[index]) newRelatives[index] = {};
-                            newRelatives[index].birthYear = e.target.value;
+                            newRelatives[index].birthYear = value;
                             updateField(['personalInfo', 'relatives'], newRelatives);
                           }}
+                          pattern="[0-9]+"
+                          maxLength={4}
+                          placeholder="Он"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -760,11 +843,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={relative?.birthPlace || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newRelatives = [...formData.personalInfo.relatives];
                             if (!newRelatives[index]) newRelatives[index] = {};
-                            newRelatives[index].birthPlace = e.target.value;
+                            newRelatives[index].birthPlace = capitalizedValue;
                             updateField(['personalInfo', 'relatives'], newRelatives);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Төрсөн аймаг, хот, сум, дүүрэг"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -773,11 +861,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={relative?.occupation || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newRelatives = [...formData.personalInfo.relatives];
                             if (!newRelatives[index]) newRelatives[index] = {};
-                            newRelatives[index].occupation = e.target.value;
+                            newRelatives[index].occupation = capitalizedValue;
                             updateField(['personalInfo', 'relatives'], newRelatives);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Одоо эрхэлж буй ажил"
                         />
                       </td>
                       <td className="border border-gray-300 p-2 text-center">
@@ -827,7 +920,9 @@ export default function GovernmentEmployeeQuestionnaire({
                   placeholder="Утас, үүрэн утас"
                   className="border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
                   value={formData.personalInfo.currentAddress.phone}
-                  onChange={(e) => updateField(['personalInfo', 'currentAddress', 'phone'], e.target.value)}
+                  onChange={(e) => handleInputChange(['personalInfo', 'currentAddress', 'phone'], e.target.value, 'phone', 8)}
+                  pattern="[0-9]+"
+                  maxLength={8}
                 />
                 <input
                   type="text"
@@ -872,14 +967,18 @@ export default function GovernmentEmployeeQuestionnaire({
                   type="text"
                   className="flex-1 border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
                   value={formData.personalInfo.emergencyContact}
-                  onChange={(e) => updateField(['personalInfo', 'emergencyContact'], e.target.value)}
+                  onChange={(e) => handleInputChange(['personalInfo', 'emergencyContact'], e.target.value, 'letters')}
+                  pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
+                  placeholder="Яаралтай холбоо барих хүний нэр"
                 />
                 <input
                   type="text"
                   placeholder="түүний утас"
                   className="w-32 border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
                   value={formData.personalInfo.emergencyPhone}
-                  onChange={(e) => updateField(['personalInfo', 'emergencyPhone'], e.target.value)}
+                  onChange={(e) => handleInputChange(['personalInfo', 'emergencyPhone'], e.target.value, 'phone', 8)}
+                  pattern="[0-9]+"
+                  maxLength={8}
                 />
               </div>
             </div>
@@ -918,11 +1017,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={education?.schoolName || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newEducation = [...formData.education.generalEducation];
                             if (!newEducation[index]) newEducation[index] = {};
-                            newEducation[index].schoolName = e.target.value;
+                            newEducation[index].schoolName = capitalizedValue;
                             updateField(['education', 'generalEducation'], newEducation);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Сургуулийн нэр"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -931,11 +1035,26 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={education?.startDate || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateNumbersWithDots(value)) return;
+                            
+                            let formattedValue = value;
+                            
+                            // Эхний 4 орон бичигдсэн бол автоматаар цэг тавих
+                            if (value.length === 4 && !value.includes('.')) {
+                              formattedValue = value + '.';
+                            }
+                            // 7 тэмдэгтээс хэтэрвэл зогсоох
+                            if (formattedValue.length > 7) return;
+                            
                             const newEducation = [...formData.education.generalEducation];
                             if (!newEducation[index]) newEducation[index] = {};
-                            newEducation[index].startDate = e.target.value;
+                            newEducation[index].startDate = formattedValue;
                             updateField(['education', 'generalEducation'], newEducation);
                           }}
+                          pattern="[0-9.]+"
+                          maxLength={7}
+                          placeholder="YYYY.MM"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -944,11 +1063,26 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={education?.endDate || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateNumbersWithDots(value)) return;
+                            
+                            let formattedValue = value;
+                            
+                            // Эхний 4 орон бичигдсэн бол автоматаар цэг тавих
+                            if (value.length === 4 && !value.includes('.')) {
+                              formattedValue = value + '.';
+                            }
+                            // 7 тэмдэгтээс хэтэрвэл зогсоох
+                            if (formattedValue.length > 7) return;
+                            
                             const newEducation = [...formData.education.generalEducation];
                             if (!newEducation[index]) newEducation[index] = {};
-                            newEducation[index].endDate = e.target.value;
+                            newEducation[index].endDate = formattedValue;
                             updateField(['education', 'generalEducation'], newEducation);
                           }}
+                          pattern="[0-9.]+"
+                          maxLength={7}
+                          placeholder="YYYY.MM"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -957,11 +1091,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={education?.degree || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newEducation = [...formData.education.generalEducation];
                             if (!newEducation[index]) newEducation[index] = {};
-                            newEducation[index].degree = e.target.value;
+                            newEducation[index].degree = capitalizedValue;
                             updateField(['education', 'generalEducation'], newEducation);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Эзэмшсэн боловсрол, мэргэжил"
                         />
                       </td>
                       <td className="border border-gray-300 p-2 text-center">
@@ -1010,11 +1149,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={degree?.degree || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newDegrees = [...formData.education.doctoralDegrees];
                             if (!newDegrees[index]) newDegrees[index] = {};
-                            newDegrees[index].degree = e.target.value;
+                            newDegrees[index].degree = capitalizedValue;
                             updateField(['education', 'doctoralDegrees'], newDegrees);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Зэрэг"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1023,11 +1167,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={degree?.defendedAt || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newDegrees = [...formData.education.doctoralDegrees];
                             if (!newDegrees[index]) newDegrees[index] = {};
-                            newDegrees[index].defendedAt = e.target.value;
+                            newDegrees[index].defendedAt = capitalizedValue;
                             updateField(['education', 'doctoralDegrees'], newDegrees);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Хамгаалсан газар"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1036,11 +1185,26 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={degree?.year || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateNumbersWithDots(value)) return;
+                            
+                            let formattedValue = value;
+                            
+                            // Эхний 4 орон бичигдсэн бол автоматаар цэг тавих
+                            if (value.length === 4 && !value.includes('.')) {
+                              formattedValue = value + '.';
+                            }
+                            // 7 тэмдэгтээс хэтэрвэл зогсоох
+                            if (formattedValue.length > 7) return;
+                            
                             const newDegrees = [...formData.education.doctoralDegrees];
                             if (!newDegrees[index]) newDegrees[index] = {};
-                            newDegrees[index].year = e.target.value;
+                            newDegrees[index].year = formattedValue;
                             updateField(['education', 'doctoralDegrees'], newDegrees);
                           }}
+                          pattern="[0-9.]+"
+                          maxLength={7}
+                          placeholder="YYYY.MM"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1049,11 +1213,17 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={degree?.certificateNumber || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateNumbersOnly(value)) return;
+                            if (value.length > 20) return;
                             const newDegrees = [...formData.education.doctoralDegrees];
                             if (!newDegrees[index]) newDegrees[index] = {};
-                            newDegrees[index].certificateNumber = e.target.value;
+                            newDegrees[index].certificateNumber = value;
                             updateField(['education', 'doctoralDegrees'], newDegrees);
                           }}
+                          pattern="[0-9]+"
+                          maxLength={20}
+                          placeholder="Гэрчилгээ, дипломын дугаар"
                         />
                       </td>
                       <td className="border border-gray-300 p-2 text-center">
@@ -1078,7 +1248,14 @@ export default function GovernmentEmployeeQuestionnaire({
                 type="text"
                 className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
                 value={formData.education.educationDoctorateTopic}
-                onChange={(e) => updateField(['education', 'educationDoctorateTopic'], e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (!validateLettersAndPunctuation(value)) return;
+                  const capitalizedValue = capitalizeFirstLetter(value);
+                  updateField(['education', 'educationDoctorateTopic'], capitalizedValue);
+                }}
+                pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                placeholder="Боловсролын докторын зэрэг хамгаалсан сэдэв"
               />
             </div>
             <div>
@@ -1087,7 +1264,14 @@ export default function GovernmentEmployeeQuestionnaire({
                 type="text"
                 className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
                 value={formData.education.scienceDoctorateTopic}
-                onChange={(e) => updateField(['education', 'scienceDoctorateTopic'], e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (!validateLettersAndPunctuation(value)) return;
+                  const capitalizedValue = capitalizeFirstLetter(value);
+                  updateField(['education', 'scienceDoctorateTopic'], capitalizedValue);
+                }}
+                pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                placeholder="Шинжлэх ухааны доктор хамгаалсан сэдэв"
               />
             </div>
           </div>
@@ -1126,11 +1310,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={training?.organization || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newTraining = [...formData.professionalTraining.training];
                             if (!newTraining[index]) newTraining[index] = {};
-                            newTraining[index].organization = e.target.value;
+                            newTraining[index].organization = capitalizedValue;
                             updateField(['professionalTraining', 'training'], newTraining);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Хаана, ямар байгууллагад"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1139,11 +1328,30 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={training?.startDate || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateNumbersWithDots(value)) return;
+                            
+                            let formattedValue = value;
+                            
+                            // Эхний 4 орон бичигдсэн бол автоматаар цэг тавих
+                            if (value.length === 4 && !value.includes('.')) {
+                              formattedValue = value + '.';
+                            }
+                            // 7 орон бичигдсэн бол (YYYY.MM) дахин цэг тавих
+                            else if (value.length === 7 && value.split('.').length === 2) {
+                              formattedValue = value + '.';
+                            }
+                            // 10 тэмдэгтээс хэтэрвэл зогсоох
+                            if (formattedValue.length > 10) return;
+                            
                             const newTraining = [...formData.professionalTraining.training];
                             if (!newTraining[index]) newTraining[index] = {};
-                            newTraining[index].startDate = e.target.value;
+                            newTraining[index].startDate = formattedValue;
                             updateField(['professionalTraining', 'training'], newTraining);
                           }}
+                          pattern="[0-9.]+"
+                          maxLength={10}
+                          placeholder="YYYY.MM.DD"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1152,11 +1360,17 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={training?.duration || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateNumbersOnly(value)) return;
+                            if (value.length > 5) return; // Max 99999 days
                             const newTraining = [...formData.professionalTraining.training];
                             if (!newTraining[index]) newTraining[index] = {};
-                            newTraining[index].duration = e.target.value;
+                            newTraining[index].duration = value;
                             updateField(['professionalTraining', 'training'], newTraining);
                           }}
+                          pattern="[0-9]+"
+                          maxLength={5}
+                          placeholder="Хугацаа (хоногоор)"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1165,11 +1379,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={training?.field || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newTraining = [...formData.professionalTraining.training];
                             if (!newTraining[index]) newTraining[index] = {};
-                            newTraining[index].field = e.target.value;
+                            newTraining[index].field = capitalizedValue;
                             updateField(['professionalTraining', 'training'], newTraining);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Ямар чиглэлээр"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1178,11 +1397,17 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={training?.certificateNumber || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateNumbersOnly(value)) return;
+                            if (value.length > 20) return;
                             const newTraining = [...formData.professionalTraining.training];
                             if (!newTraining[index]) newTraining[index] = {};
-                            newTraining[index].certificateNumber = e.target.value;
+                            newTraining[index].certificateNumber = value;
                             updateField(['professionalTraining', 'training'], newTraining);
                           }}
+                          pattern="[0-9]+"
+                          maxLength={20}
+                          placeholder="Үнэмлэх, гэрчилгээний дугаар"
                         />
                       </td>
                       <td className="border border-gray-300 p-2 text-center">
@@ -1231,11 +1456,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={rank?.category || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newRanks = [...formData.professionalTraining.officialRanks];
                             if (!newRanks[index]) newRanks[index] = {};
-                            newRanks[index].category = e.target.value;
+                            newRanks[index].category = capitalizedValue;
                             updateField(['professionalTraining', 'officialRanks'], newRanks);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Албан тушаалын ангилал, зэрэглэл"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1244,11 +1474,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={rank?.rank || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newRanks = [...formData.professionalTraining.officialRanks];
                             if (!newRanks[index]) newRanks[index] = {};
-                            newRanks[index].rank = e.target.value;
+                            newRanks[index].rank = capitalizedValue;
                             updateField(['professionalTraining', 'officialRanks'], newRanks);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Зэрэг дэв, цолны нэр"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1257,11 +1492,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={rank?.decree || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newRanks = [...formData.professionalTraining.officialRanks];
                             if (!newRanks[index]) newRanks[index] = {};
-                            newRanks[index].decree = e.target.value;
+                            newRanks[index].decree = capitalizedValue;
                             updateField(['professionalTraining', 'officialRanks'], newRanks);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Зарлиг, захирамж, тушаалын нэр"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1270,11 +1510,17 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={rank?.certificateNumber || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateNumbersOnly(value)) return;
+                            if (value.length > 20) return;
                             const newRanks = [...formData.professionalTraining.officialRanks];
                             if (!newRanks[index]) newRanks[index] = {};
-                            newRanks[index].certificateNumber = e.target.value;
+                            newRanks[index].certificateNumber = value;
                             updateField(['professionalTraining', 'officialRanks'], newRanks);
                           }}
+                          pattern="[0-9]+"
+                          maxLength={20}
+                          placeholder="Үнэмлэхний дугаар"
                         />
                       </td>
                       <td className="border border-gray-300 p-2 text-center">
@@ -1323,11 +1569,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={title?.title || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newTitles = [...formData.professionalTraining.academicTitles];
                             if (!newTitles[index]) newTitles[index] = {};
-                            newTitles[index].title = e.target.value;
+                            newTitles[index].title = capitalizedValue;
                             updateField(['professionalTraining', 'academicTitles'], newTitles);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Цол"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1336,11 +1587,16 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={title?.issuingOrganization || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateLettersAndPunctuation(value)) return;
+                            const capitalizedValue = capitalizeFirstLetter(value);
                             const newTitles = [...formData.professionalTraining.academicTitles];
                             if (!newTitles[index]) newTitles[index] = {};
-                            newTitles[index].issuingOrganization = e.target.value;
+                            newTitles[index].issuingOrganization = capitalizedValue;
                             updateField(['professionalTraining', 'academicTitles'], newTitles);
                           }}
+                          pattern="[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]+"
+                          placeholder="Цол олгосон байгууллага"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1349,11 +1605,26 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={title?.year || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateNumbersWithDots(value)) return;
+                            
+                            let formattedValue = value;
+                            
+                            // Эхний 4 орон бичигдсэн бол автоматаар цэг тавих
+                            if (value.length === 4 && !value.includes('.')) {
+                              formattedValue = value + '.';
+                            }
+                            // 7 тэмдэгтээс хэтэрвэл зогсоох
+                            if (formattedValue.length > 7) return;
+                            
                             const newTitles = [...formData.professionalTraining.academicTitles];
                             if (!newTitles[index]) newTitles[index] = {};
-                            newTitles[index].year = e.target.value;
+                            newTitles[index].year = formattedValue;
                             updateField(['professionalTraining', 'academicTitles'], newTitles);
                           }}
+                          pattern="[0-9.]+"
+                          maxLength={7}
+                          placeholder="YYYY.MM"
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -1362,11 +1633,17 @@ export default function GovernmentEmployeeQuestionnaire({
                           className="w-full border-none focus:outline-none"
                           value={title?.certificateNumber || ''}
                           onChange={(e) => {
+                            const value = e.target.value;
+                            if (!validateNumbersOnly(value)) return;
+                            if (value.length > 20) return;
                             const newTitles = [...formData.professionalTraining.academicTitles];
                             if (!newTitles[index]) newTitles[index] = {};
-                            newTitles[index].certificateNumber = e.target.value;
+                            newTitles[index].certificateNumber = value;
                             updateField(['professionalTraining', 'academicTitles'], newTitles);
                           }}
+                          pattern="[0-9]+"
+                          maxLength={20}
+                          placeholder="Гэрчилгээ, дипломын дугаар"
                         />
                       </td>
                       <td className="border border-gray-300 p-2 text-center">

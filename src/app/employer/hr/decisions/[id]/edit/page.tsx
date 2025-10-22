@@ -90,7 +90,7 @@ export default function EditDecisionPage() {
         router.push('/employer/hr/decisions');
       } else {
         const errorData = await response.json();
-        alert(errorData.error || 'Шидвэрийн мэдээлэл шинэчлэхэд алдаа гарлаа');
+        alert(errorData.error || 'Шийдвэрийн мэдээлэл шинэчлэхэд алдаа гарлаа');
       }
     } catch (error) {
       console.error('Мэдээлэл шинэчлэхэд алдаа гарлаа:', error);
@@ -176,7 +176,7 @@ export default function EditDecisionPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Шидвэрийн дугаар *
+                  Шийдвэрийн дугаар *
                 </label>
                 <input
                   type="text"
@@ -197,13 +197,13 @@ export default function EditDecisionPage() {
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Шидвэрийн гарчиг"
+                  placeholder="Шийдвэрийн гарчиг"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Шидвэрийн төрөл *
+                  Шийдвэрийн төрөл *
                 </label>
                 <select
                   name="type"
@@ -224,7 +224,7 @@ export default function EditDecisionPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Шидвэр гарсан огноо *
+                  Шийдвэр гарсан огноо *
                 </label>
                 <input
                   type="date"
@@ -271,7 +271,7 @@ export default function EditDecisionPage() {
                 rows={4}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Шидвэрийн тайлбар..."
+                placeholder="Шийдвэрийн тайлбар..."
               />
             </div>
 
