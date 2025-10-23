@@ -320,6 +320,7 @@ export default function RewardsPenaltiesPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дүн</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Олгосон</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Огноо</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Төлөв</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Үйлдэл</th>
                 </tr>
               </thead>
@@ -371,6 +372,7 @@ export default function RewardsPenaltiesPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Хэмжээ</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Шийдвэрлэсэн</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Огноо</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Төлөв</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Үйлдэл</th>
                 </tr>
               </thead>
@@ -412,8 +414,8 @@ export default function RewardsPenaltiesPage() {
             <div className="p-6">
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-600 mb-3">Шагналын төрлөөр</h4>
-                  <div className="space-y-2">
+                  <h4 className="text-xl font-medium text-gray-600 mb-3">Шагналын төрлөөр</h4>
+                  <div className="space-y-2 text-gray-700">
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Шилдэг ажилтан</span>
                       <span className="text-sm font-medium">15</span>
@@ -433,8 +435,8 @@ export default function RewardsPenaltiesPage() {
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-gray-600 mb-3">Шийтгэлийн төрлөөр</h4>
-                  <div className="space-y-2">
+                  <h4 className="text-xl font-medium text-gray-600 mb-3">Шийтгэлийн төрлөөр</h4>
+                  <div className="space-y-2 text-gray-700">
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Анхааруулга</span>
                       <span className="text-sm font-medium">6</span>
@@ -476,7 +478,6 @@ export default function RewardsPenaltiesPage() {
         </div>
       )}
 
-      {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
@@ -517,7 +518,7 @@ export default function RewardsPenaltiesPage() {
                   </div>
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Огноо</label>
-                    <input name="date" type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                    <input name="date" type="date" className="w-full bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               order border-gray-300 rounded-lg px-3 py-2" />
                   </div>
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Олгосон</label>
@@ -528,6 +529,7 @@ export default function RewardsPenaltiesPage() {
                     <textarea name="reason" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C213A]" rows={3} placeholder="Шагналын шалтгаан..."></textarea>
                   </div>
                 </div>
+                <div className="flex direction flex-end justify-end content is dsjkfnknfsd my bad i think i wanna to out in work i cant do this its so hard i "></div>
                 <div className="pt-4 flex justify-end gap-3 border-t border-gray-200 mt-4">
                   <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">Цуцлах</button>
                   <button type="submit" className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90">Хадгалах</button>

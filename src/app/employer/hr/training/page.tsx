@@ -430,19 +430,19 @@ export default function TrainingPage() {
             <div className="p-6">
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium">Нийт сургалт</span>
+                  <span className="font-medium text-gray-700">Нийт сургалт</span>
                   <span className="text-2xl font-bold text-[#0C213A]">{trainings.length}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium">Дууссан сургалт</span>
+                  <span className="font-medium text-gray-700">Дууссан сургалт</span>
                   <span className="text-2xl font-bold text-green-600">{trainings.filter((t) => t.status === "Дууссан").length}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium">Идэвхтэй сургалт</span>
+                  <span className="font-medium text-gray-700">Идэвхтэй сургалт</span>
                   <span className="text-2xl font-bold text-blue-600">{trainings.filter((t) => t.status === "Идэвхтэй").length}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium">Нийт оролцогч</span>
+                  <span className="font-medium text-gray-700">Нийт оролцогч</span>
                   <span className="text-2xl font-bold text-purple-600">{participants.length}</span>
                 </div>
               </div>

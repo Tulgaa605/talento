@@ -3,6 +3,7 @@ import { AuthProvider } from "@/providers/AuthProvider";
 import { ChatProvider } from "@/providers/ChatProvider";
 import { NotificationProvider } from "@/providers/NotificationProvider";
 import { Header } from "@/components/Navigation";
+import GlobalSidebar from "@/components/GlobalSidebar";
 import "./globals.css";
 
 const inter = Inter({
@@ -36,8 +37,11 @@ export default function RootLayout({
         <AuthProvider>
           <ChatProvider>
             <NotificationProvider>
+              <GlobalSidebar />
               <Header />
-              {children}
+              <div className="lg:pl-0 transition-all duration-300">
+                {children}
+              </div>
             </NotificationProvider>
           </ChatProvider>
         </AuthProvider>

@@ -62,7 +62,6 @@ export default function NewEmployeePage() {
     managerId: '',
   });
 
-  // CV analysis parsing function
   const parseCVAnalysis = (analysis: string) => {
     const parsedData: {
       middleName?: string;

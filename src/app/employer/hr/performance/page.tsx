@@ -498,19 +498,19 @@ export default function PerformancePage() {
             <div className="p-6">
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium">Дундаж үнэлгээ</span>
+                  <span className="font-medium text-gray-700">Дундаж үнэлгээ</span>
                   <span className="text-2xl font-bold text-[#0C213A]">4.2</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium">Хамгийн өндөр</span>
+                  <span className="font-medium text-gray-700">Хамгийн өндөр</span>
                   <span className="text-2xl font-bold text-green-600">4.8</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium">Хамгийн бага</span>
+                  <span className="font-medium text-gray-700">Хамгийн бага</span>
                   <span className="text-2xl font-bold text-red-600">3.1</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="font-medium">Нийт үнэлгээ</span>
+                  <span className="font-medium text-gray-700">Нийт үнэлгээ</span>
                   <span className="text-2xl font-bold text-purple-600">156</span>
                 </div>
               </div>

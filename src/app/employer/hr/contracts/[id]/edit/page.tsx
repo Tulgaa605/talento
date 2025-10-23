@@ -1,7 +1,6 @@
 import EditContractClient from './EditContractClient';
 
 export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
 
 // Next.js 15 — params нь Promise байх тул өргөн төрөлтэй авна
 type PageProps = {

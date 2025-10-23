@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Building2 } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
 
 export default function NewDepartmentPage() {
   const router = useRouter();

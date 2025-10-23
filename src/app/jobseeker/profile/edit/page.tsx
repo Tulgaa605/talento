@@ -5,7 +5,6 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import EditProfileForm from '@/components/EditProfileForm';
 
-export const dynamic = 'force-dynamic';
 
 async function getUserData(userId: string) {
   const user = await prisma.user.findUnique({

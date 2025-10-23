@@ -6,7 +6,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Header } from "@/components/Navigation";
 
-export const dynamic = 'force-dynamic';
 
 export default async function CompanyProfilePage({
   params,
