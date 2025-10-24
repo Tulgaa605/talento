@@ -62,7 +62,7 @@ export default function EditDepartmentPage() {
       });
 
       if (res.ok) {
-        router.push('/hr/departments');
+        router.push('employer/hr/departments');
       } else {
         const errorData = await res.json();
         alert(errorData.error || 'Хэлтсийн мэдээлэл шинэчлэхэд алдаа гарлаа');
@@ -81,7 +81,6 @@ export default function EditDepartmentPage() {
     const { name, value } = e.target;
     let processedValue = value;
     
-    // Нэр - эхний үсэг том, зөвхөн үсэг
     if (name === 'name' && value) {
       const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-()]*$/;
       if (!lettersAndPunctuation.test(value)) {

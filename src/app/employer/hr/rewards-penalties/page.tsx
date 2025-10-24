@@ -522,7 +522,7 @@ export default function RewardsPenaltiesPage() {
                   </div>
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Олгосон</label>
-                    <input name="issuedBy" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                    <input name="issuedBy" className="w-full border border-gray-300 rounded-lg px-3 py-2"/>
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm text-gray-600 mb-1">Тайлбар</label>
@@ -539,8 +539,6 @@ export default function RewardsPenaltiesPage() {
           </div>
         </div>
       )}
-
-      {/* Add Penalty Modal */}
       {showAddPenaltyModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
