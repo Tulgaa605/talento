@@ -54,19 +54,21 @@ export async function PATCH(
     });
 
     if (status === 'APPROVED' || status === 'ADMIN_APPROVED') {
-      await prisma.notification.create({
-        data: {
-          userId: updatedApplication.userId,
-          title: status === 'APPROVED' ? 'Өргөдөл зөвшөөрөгдлөө!' : 'Админ зөвшөөрлөө',
-          message:
-            status === 'APPROVED'
-              ? `Таны ${updatedApplication.job.title} ажлын байрны өргөдөл бүрэн зөвшөөрөгдлөө.`
-              : `Таны ${updatedApplication.job.title} ажлын байрны өргөдөл админд зөвшөөрөгдлөө.`,
-          type: 'SUCCESS',
-        },
-      });
+      if (updatedApplication.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: updatedApplication.userId,
+            title: status === 'APPROVED' ? 'Өргөдөл зөвшөөрөгдлөө!' : 'Админ зөвшөөрлөө',
+            message:
+              status === 'APPROVED'
+                ? `Таны ${updatedApplication.job.title} ажлын байрны өргөдөл бүрэн зөвшөөрөгдлөө.`
+                : `Таны ${updatedApplication.job.title} ажлын байрны өргөдөл админд зөвшөөрөгдлөө.`,
+            type: 'SUCCESS',
+          },
+        });
+      }
 
-      const userEmail = updatedApplication.user.email ?? '';
+      const userEmail = updatedApplication.user?.email ?? '';
       if (userEmail) {
         const existingEmployee = await prisma.employee.findUnique({ where: { email: userEmail } }).catch(() => null);
 
@@ -88,7 +90,7 @@ export async function PATCH(
             },
           });
 
-          const fullName = updatedApplication.user.name ?? '';
+          const fullName = updatedApplication.user?.name ?? '';
           const [firstName = 'Нэргүй', ...rest] = fullName.trim().split(/\s+/).filter(Boolean);
           const lastName = rest.join(' ') || 'Овоггүй';
 
@@ -98,7 +100,7 @@ export async function PATCH(
               firstName,
               lastName,
               email: userEmail,
-              phoneNumber: updatedApplication.user.phoneNumber ?? '00000000',
+              phoneNumber: updatedApplication.user?.phoneNumber ?? '00000000',
               dateOfBirth: new Date('1990-01-01T00:00:00Z'),
               gender: 'UNKNOWN',
               address: 'Тодорхойлоогүй',
@@ -111,14 +113,16 @@ export async function PATCH(
         }
       }
     } else if (status === 'REJECTED') {
-      await prisma.notification.create({
-        data: {
-          userId: updatedApplication.userId,
-          title: 'Өргөдөл татгалзгагдлаа',
-          message: `Уучлаарай, таны ${updatedApplication.job.title} ажлын байрны өргөдөл татгалзгагдлаа.`,
-          type: 'ERROR',
-        },
-      });
+      if (updatedApplication.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: updatedApplication.userId,
+            title: 'Өргөдөл татгалзгагдлаа',
+            message: `Уучлаарай, таны ${updatedApplication.job.title} ажлын байрны өргөдөл татгалзгагдлаа.`,
+            type: 'ERROR',
+          },
+        });
+      }
     }
 
     return NextResponse.json({ message: 'Статус амжилттай шинэчлэгдлээ', application: updatedApplication });

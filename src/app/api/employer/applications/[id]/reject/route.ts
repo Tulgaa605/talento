@@ -58,15 +58,17 @@ export async function POST(
       },
     });
 
-    await prisma.notification.create({
-      data: {
-        userId: application.userId,
-        title: "Таны CV татгалзлаа",
-        message: `${application.job.title} ажлын байрны CV татгалзлаа`,
-        type: "CV_REJECTED",
-        link: `/jobs/${application.jobId}`,
-      },
-    });
+    if (application.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: application.userId,
+          title: "Таны CV татгалзлаа",
+          message: `${application.job.title} ажлын байрны CV татгалзлаа`,
+          type: "CV_REJECTED",
+          link: `/jobs/${application.jobId}`,
+        },
+      });
+    }
 
     return NextResponse.json(updatedApplication);
   } catch (error) {

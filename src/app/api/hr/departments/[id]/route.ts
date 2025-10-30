@@ -16,7 +16,19 @@ export async function GET(
       where: { id },
       include: {
         positions: { select: { id: true, title: true, code: true } },
-        employees: { select: { id: true, firstName: true, lastName: true, employeeId: true } },
+        employees: { 
+          select: { 
+            id: true, 
+            firstName: true, 
+            lastName: true, 
+            employeeId: true,
+            position: {
+              select: {
+                title: true
+              }
+            }
+          } 
+        },
       },
     });
 

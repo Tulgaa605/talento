@@ -4,19 +4,42 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNotification } from "@/providers/NotificationProvider";
 
 
 export const Header = () => {
   const { data: session, status } = useSession();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const pathname = usePathname();
   const isActive = (href: string) => pathname?.startsWith(href);
   
   const isEmployer = session?.user?.role === 'EMPLOYER';
   const isAdmin = session?.user?.role === 'ADMIN';
   const canAccessHR = !!session && (isEmployer || isAdmin);
+  
+  const { databaseNotifications, fetchNotifications, markNotificationAsRead } = useNotification();
+  
+  useEffect(() => {
+    if (session) {
+      fetchNotifications();
+    }
+  }, [session, fetchNotifications]);
+  
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showNotifications && !target.closest('.notification-dropdown') && !target.closest('.notification-button')) {
+        setShowNotifications(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showNotifications]);
   
 
   const handleSignOut = async () => {
@@ -159,7 +182,83 @@ export const Header = () => {
             </div>
           )}
 
-          <div className="flex gap-4 text-sm">
+          <div className="flex gap-4 text-sm items-center">
+            {/* Notification Bell */}
+            {status === "authenticated" && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none notification-button"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  {databaseNotifications.length > 0 && (
+                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                      {databaseNotifications.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification Dropdown */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 notification-dropdown">
+                    <div className="p-4 border-b border-gray-200">
+                      <h3 className="text-lg font-semibold text-gray-900">Мэдэгдэл</h3>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {databaseNotifications.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">
+                          Шинэ мэдэгдэл байхгүй
+                        </div>
+                      ) : (
+                        databaseNotifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                            onClick={() => {
+                              if (notification.link) {
+                                window.location.href = notification.link;
+                              }
+                              markNotificationAsRead(notification.id);
+                              setShowNotifications(false);
+                            }}
+                          >
+                            <div className="flex items-start">
+                              <div className="flex-shrink-0">
+                                {notification.type === 'GOVERNMENT_QUESTIONNAIRE' ? (
+                                  <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                )}
+                              </div>
+                              <div className="ml-3 flex-1">
+                                <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                                <p className="text-sm text-gray-500 mt-1">{notification.message}</p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {new Date(notification.createdAt).toLocaleDateString('mn-MN', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {!isEmployer && status !== "authenticated" && (
               <Link
                 href="/employer/login"

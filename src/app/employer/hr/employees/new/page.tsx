@@ -2,13 +2,15 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ArrowLeftIcon,
-  UserIcon
+  UserIcon,
+  PrinterIcon
 } from '@heroicons/react/24/outline';
+import { useReactToPrint } from 'react-to-print';
 
 interface Department {
   id: string;
@@ -34,6 +36,7 @@ export default function NewEmployeePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [currentDate, setCurrentDate] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [, setManagers] = useState<Employee[]>([]);
@@ -43,6 +46,12 @@ export default function NewEmployeePage() {
     userName?: string;
     userEmail?: string;
   } | null>(null);
+  const componentRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: componentRef,
+    documentTitle: `Шинэ_ажилтан_${new Date().getTime()}`,
+  });
 
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -61,6 +70,16 @@ export default function NewEmployeePage() {
     departmentId: '',
     managerId: '',
   });
+
+  useEffect(() => {
+    setCurrentDate(new Date().toLocaleString('mn-MN', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }));
+  }, []);
 
   const parseCVAnalysis = (analysis: string) => {
     const parsedData: {
@@ -394,27 +413,99 @@ export default function NewEmployeePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Гарчиг */}
-      <div className="mb-8">
-        <div className="flex items-center mb-4">
-          <Link
-            href="/employer/hr/employees"
-            className="flex items-center text-gray-600 hover:text-gray-900 mr-4"
-          >
-            <ArrowLeftIcon className="h-5 w-5 mr-2" />
-            Буцах
-          </Link>
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900">Шинэ ажилтны бүртгэл</h1>
-        <p className="mt-2 text-gray-600">
-          {searchParams.get('applicationId') 
-            ? 'CV-г зөвшөөрсөн хэрэглэгчийн мэдээллийг бөглөнө үү' 
-            : searchParams.get('userId')
-            ? 'Сонгосон хэрэглэгчийн мэдээллийг бөглөнө үү'
-            : 'Ажилтны үндсэн мэдээллийг оруулна уу'
+    <>
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 1cm;
           }
-        </p>
+          body {
+            background: white !important;
+          }
+          nav,
+          aside,
+          header,
+          [role="navigation"],
+          [role="banner"],
+          .sidebar,
+          .nav-sidebar,
+          header nav,
+          .fixed.inset-y-0,
+          [class*="fixed"][class*="inset-y-0"],
+          [class*="fixed"][class*="left-0"],
+          body > div > div > aside,
+          body > div > aside,
+          [class*="sidebar"],
+          [class*="Sidebar"],
+          [class*="navigation"],
+          [class*="Navigation"],
+          .print\\:hidden {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }
+          .hidden-on-screen {
+            display: block !important;
+          }
+          a, button {
+            text-decoration: none !important;
+            color: inherit !important;
+          }
+          * {
+            background: white !important;
+            background-color: white !important;
+            box-shadow: none !important;
+            border-color: #e5e7eb !important;
+          }
+          main {
+            margin-left: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+        }
+        @media screen {
+          .hidden-on-screen {
+            display: none;
+          }
+        }
+      `}</style>
+      <div ref={componentRef} className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Гарчиг */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <Link
+              href="/employer/hr/employees"
+              className="flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeftIcon className="h-5 w-5 mr-2" />
+              Буцах
+            </Link>
+            <button
+              onClick={handlePrint}
+              className="print:hidden flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            >
+              <PrinterIcon className="w-5 h-5 mr-2" />
+              PDF Хэвлэх
+            </button>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Шинэ ажилтны бүртгэл</h1>
+          <p className="mt-2 text-gray-600">
+            {searchParams.get('applicationId') 
+              ? 'CV-г зөвшөөрсөн хэрэглэгчийн мэдээллийг бөглөнө үү' 
+              : searchParams.get('userId')
+              ? 'Сонгосон хэрэглэгчийн мэдээллийг бөглөнө үү'
+              : 'Ажилтны үндсэн мэдээллийг оруулна уу'
+            }
+          </p>
+          {currentDate && (
+            <div className="hidden-on-screen mt-2 text-sm text-gray-500">
+              Хэвлэсэн огноо: {currentDate}
+            </div>
+          )}
         {(searchParams.get('applicationId') || searchParams.get('userId')) && (
           <div className="mt-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
             <div className="flex items-start">
@@ -698,6 +789,7 @@ export default function NewEmployeePage() {
           </div>
         </form>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

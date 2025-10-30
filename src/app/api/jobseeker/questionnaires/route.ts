@@ -65,8 +65,40 @@ export async function GET() {
       },
     });
 
+    // Fetch government questionnaires sent to this user via job applications
+    const sentQuestionnaires = await prisma.jobApplication.findMany({
+      where: {
+        userId: session.user.id,
+        questionnaireId: {
+          not: null,
+        },
+      },
+      include: {
+        questionnaire: {
+          include: {
+            company: {
+              select: {
+                name: true,
+                logoUrl: true,
+              },
+            },
+            questions: true,
+          },
+        },
+        job: {
+          select: {
+            title: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
     console.log(`Found ${responses.length} questionnaire responses for user ${session.user.id}`);
     console.log(`Found ${createdQuestionnaires.length} created questionnaires`);
+    console.log(`Found ${sentQuestionnaires.length} sent questionnaires`);
 
     const formattedResponses = responses.map((response) => ({
       id: response.id,
@@ -81,6 +113,7 @@ export async function GET() {
       attachmentUrl: response.attachmentUrl,
       formData: response.formData,
       type: 'response',
+      status: 'submitted',
       answers: response.answers.map((answer) => ({
         questionId: answer.questionId,
         questionText: answer.question.text,
@@ -102,11 +135,38 @@ export async function GET() {
       attachmentUrl: questionnaire.attachmentUrl,
       formData: null,
       type: 'created',
+      status: 'created',
       responseCount: questionnaire.responses.length,
       questions: questionnaire.questions,
     }));
 
-    const allQuestionnaires = [...formattedResponses, ...formattedCreated].sort(
+    // Format sent (pending) questionnaires
+    const formattedSent = sentQuestionnaires
+      .filter(app => app.questionnaire) // Only include if questionnaire exists
+      .filter(app => {
+        // Check if user has already responded to this questionnaire
+        const alreadyResponded = responses.some(r => r.questionnaireId === app.questionnaireId);
+        return !alreadyResponded;
+      })
+      .map((application) => ({
+        id: `sent-${application.id}`,
+        questionnaireId: application.questionnaireId!,
+        questionnaireTitle: application.questionnaire!.title,
+        questionnaireDescription: application.questionnaire!.description,
+        questionnaireType: application.questionnaire!.type,
+        companyName: application.questionnaire!.company?.name || 'Компани',
+        companyLogoUrl: application.questionnaire!.company?.logoUrl || null,
+        submittedAt: application.createdAt,
+        jobTitle: application.job?.title || '',
+        attachmentFile: null,
+        attachmentUrl: null,
+        formData: null,
+        type: 'sent',
+        status: 'pending',
+        answers: [],
+      }));
+
+    const allQuestionnaires = [...formattedResponses, ...formattedCreated, ...formattedSent].sort(
       (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
     );
 

@@ -430,7 +430,7 @@ export default function GovernmentEmployeeQuestionnaire({
         throw new Error(errorData.error || 'Анкет илгээхэд алдаа гарлаа');
       }
 
-      alert('Анкет амжилттай илгээгдлээ!');
+      // Success - call parent callback (parent will show success message)
       onSubmit(formData);
     } catch (error) {
       console.error('Error submitting questionnaire:', error);

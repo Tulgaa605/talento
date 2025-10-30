@@ -69,23 +69,27 @@ export async function PATCH(
     });
 
     if (status === 'EMPLOYER_APPROVED') {
-      await prisma.notification.create({
-        data: {
-          userId: updatedApplication.userId,
-          title: 'Өргөдөл эхний шатны зөвшөөрөл авлаа!',
-          message: `Таны ${updatedApplication.job.title} ажлын байрны өргөдөл ажил олгогчоос зөвшөөрөгдлөө. Одоо админ зөвшөөрөл хүлээгдэж байна.`,
-          type: 'INFO',
-        },
-      });
+      if (updatedApplication.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: updatedApplication.userId,
+            title: 'Өргөдөл эхний шатны зөвшөөрөл авлаа!',
+            message: `Таны ${updatedApplication.job.title} ажлын байрны өргөдөл ажил олгогчоос зөвшөөрөгдлөө. Одоо админ зөвшөөрөл хүлээгдэж байна.`,
+            type: 'INFO',
+          },
+        });
+      }
     } else if (status === 'REJECTED') {
-      await prisma.notification.create({
-        data: {
-          userId: updatedApplication.userId,
-          title: 'Өргөдөл татгалзгагдлаа',
-          message: `Уучлаарай, таны ${updatedApplication.job.title} ажлын байрны өргөдөл татгалзгагдлаа.`,
-          type: 'ERROR',
-        },
-      });
+      if (updatedApplication.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: updatedApplication.userId,
+            title: 'Өргөдөл татгалзгагдлаа',
+            message: `Уучлаарай, таны ${updatedApplication.job.title} ажлын байрны өргөдөл татгалзгагдлаа.`,
+            type: 'ERROR',
+          },
+        });
+      }
     }
 
     return NextResponse.json({

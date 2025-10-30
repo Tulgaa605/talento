@@ -14,6 +14,10 @@ export async function GET(
     }
 
     const { id: questionnaireId } = await params;
+    
+    // Get applicationId from query params if provided
+    const { searchParams } = new URL(request.url);
+    const applicationId = searchParams.get("applicationId");
 
     const questionnaire = await prisma.questionnaire.findUnique({
       where: {
@@ -44,15 +48,31 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Build the where clause based on whether applicationId is provided
+    const whereClause: { questionnaireId: string; userId?: string } = {
+      questionnaireId,
+    };
+
+    // If applicationId is provided, get the userId from that application
+    if (applicationId) {
+      const application = await prisma.jobApplication.findUnique({
+        where: { id: applicationId },
+        select: { userId: true },
+      });
+
+      if (application?.userId) {
+        whereClause.userId = application.userId;
+      }
+    }
+
     const responses = await prisma.questionnaireResponse.findMany({
-      where: {
-        questionnaireId,
-      },
+      where: whereClause,
       select: {
         id: true,
         createdAt: true,
         attachmentFile: true,
         attachmentUrl: true,
+        formData: true,
         user: {
           select: {
             name: true,

@@ -6,6 +6,7 @@ import QuestionnaireResponseView from "./QuestionnaireResponseView";
 interface QuestionnaireResponse {
   id: string;
   createdAt: string;
+  formData?: string;
   user: {
     name: string;
     email: string;
@@ -28,7 +29,8 @@ interface QuestionnaireResponseButtonProps {
 }
 
 export default function QuestionnaireResponseButton({
-  questionnaireId
+  questionnaireId,
+  applicationId
 }: QuestionnaireResponseButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<QuestionnaireResponse | null>(null);
@@ -37,7 +39,13 @@ export default function QuestionnaireResponseButton({
   const handleViewResponse = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/employer/questionnaires/${questionnaireId}/responses`);
+      
+      // Include applicationId as query param if provided
+      const url = applicationId 
+        ? `/api/employer/questionnaires/${questionnaireId}/responses?applicationId=${applicationId}`
+        : `/api/employer/questionnaires/${questionnaireId}/responses`;
+      
+      const res = await fetch(url);
       
       if (!res.ok) {
         throw new Error("Failed to fetch responses");
@@ -46,10 +54,15 @@ export default function QuestionnaireResponseButton({
       const responses = await res.json();
       
       if (responses.length > 0) {
-        setResponse(responses[0]);
+        // Convert null formData to undefined for type compatibility
+        const response = {
+          ...responses[0],
+          formData: responses[0].formData || undefined,
+        };
+        setResponse(response);
         setShowModal(true);
       } else {
-        alert("Энэ өргөдөлд асуулгын хариу олдсонгүй");
+        alert("Энэ өргөдөлд асуулгын хариу олдсонгүй. Хэрэглэгч анкет бөглөөгүй байж магадгүй.");
       }
     } catch (error) {
       console.error("Error fetching questionnaire response:", error);
@@ -80,7 +93,7 @@ export default function QuestionnaireResponseButton({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            Асуулгын хариу харах
+            Анкет харах
           </>
         )}
       </button>

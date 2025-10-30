@@ -47,11 +47,23 @@ export async function GET() {
         take: 10,
         include: {
           job: {
-            include: {
-              company: true
+            select: {
+              id: true,
+              title: true,
+              company: {
+                select: {
+                  name: true
+                }
+              }
             }
           },
-          user: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
           cv: {
             select: {
               id: true,
@@ -96,7 +108,7 @@ export async function GET() {
           questionnaire: { type: 'GOVERNMENT_EMPLOYEE' }
         },
         include: {
-          user: { select: { name: true, email: true } },
+          user: { select: { id: true, name: true, email: true } },
           questionnaire: { select: { title: true, type: true } }
         },
         orderBy: { createdAt: 'desc' }
@@ -110,16 +122,19 @@ export async function GET() {
       successfulApplications
     };
 
-    const processedApplications = applications.map((app) => ({
-      id: app.id,
-      cvId: app.cv?.id || null,
-      name: app.user?.name || 'Unknown',
-      position: app.job?.title || 'N/A',
-      department: app.job?.company?.name || 'N/A',
-      status: app.status,
-      date: app.createdAt.toISOString().slice(0, 10),
-      score: app.cv?.matchScore ? Math.round(app.cv.matchScore * 100) : Math.floor(Math.random() * 40) + 60
-    }));
+    const processedApplications = applications
+      .filter(app => app.user) // Filter out applications without users
+      .map((app) => ({
+        id: app.id,
+        jobId: app.jobId,
+        cvId: app.cv?.id || null,
+        name: app.user?.name || 'Unknown',
+        position: app.job?.title || 'N/A',
+        department: app.job?.company?.name || 'N/A',
+        status: app.status,
+        date: app.createdAt.toISOString().slice(0, 10),
+        score: app.cv?.matchScore ? Math.round(app.cv.matchScore * 100) : Math.floor(Math.random() * 40) + 60
+      }));
 
     const processedJobs = jobs.map((job) => ({
       id: job.id,
@@ -142,32 +157,41 @@ export async function GET() {
       });
     });
 
-    const processedGovernmentResponses = governmentResponses.map((response) => {
-      let formData = null;
-      try {
-        formData = response.formData ? JSON.parse(response.formData as string) : null;
-      } catch (error) {
-        console.error('Error parsing formData:', error);
-      }
+    const processedGovernmentResponses = governmentResponses
+      .filter(response => response.user) // Filter out responses without users
+      .map((response) => {
+        let formData = null;
+        try {
+          formData = response.formData ? JSON.parse(response.formData as string) : null;
+        } catch (error) {
+          console.error('Error parsing formData:', error);
+        }
 
-      // Get name from formData if available, otherwise use user name
-      const displayName = formData?.personalInfo?.name || response.user?.name || 'Unknown';
+        // Get name from formData if available, otherwise use user name
+        const displayName = formData?.personalInfo?.name || response.user?.name || 'Unknown';
 
-      return {
-        id: response.id,
-        cvId: null, // Government questionnaires don't have CV
-        name: displayName,
-        position: 'Төрийн албан хаагч',
-        department: 'Төрийн байгууллага',
-        status: 'GOVERNMENT_QUESTIONNAIRE',
-        date: response.createdAt.toISOString().slice(0, 10),
-        score: 95, // Default high score for government employees
-        type: 'government',
-        responseId: response.id,
-        questionnaireId: response.questionnaireId, // Add questionnaire ID
-        formData: formData
-      };
-    });
+        console.log('Processing government response:', {
+          responseId: response.id,
+          questionnaireId: response.questionnaireId,
+          userId: response.user?.id,
+          userName: response.user?.name
+        });
+
+        return {
+          id: response.id,
+          cvId: null, // Government questionnaires don't have CV
+          name: displayName,
+          position: 'Төрийн албан хаагч',
+          department: 'Төрийн байгууллага',
+          status: 'GOVERNMENT_QUESTIONNAIRE',
+          date: response.createdAt.toISOString().slice(0, 10),
+          score: 95, // Default high score for government employees
+          type: 'government',
+          responseId: response.id,
+          questionnaireId: response.questionnaireId, // Add questionnaire ID
+          formData: formData
+        };
+      });
 
     // Combine regular applications with government questionnaire responses
     const allApplications = [...processedApplications, ...processedGovernmentResponses];

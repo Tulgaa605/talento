@@ -39,7 +39,7 @@ export default function RootLayout({
             <NotificationProvider>
               <GlobalSidebar />
               <Header />
-              <div className="lg:pl-0 transition-all duration-300">
+              <div className="transition-all duration-300">
                 {children}
               </div>
             </NotificationProvider>

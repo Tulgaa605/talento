@@ -56,16 +56,18 @@ export async function POST(
       },
     });
 
-    await prisma.notification.create({
-      data: {
-        userId: application.userId,
-        title: "Таны CV зөвшөөрөгдлөө",
-        message: `${application.job.title} ажлын байрны CV таны хүсэлтийн дагуу зөвшөөрөгдлөө.`,
-        type: "CV_APPROVED",
-        link: `/jobs/${application.jobId}`,
-      },
-    });
-    const userEmail = updatedApplication.user?.email ?? application.user.email ?? "";
+    if (application.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: application.userId,
+          title: "Таны CV зөвшөөрөгдлөө",
+          message: `${application.job.title} ажлын байрны CV таны хүсэлтийн дагуу зөвшөөрөгдлөө.`,
+          type: "CV_APPROVED",
+          link: `/jobs/${application.jobId}`,
+        },
+      });
+    }
+    const userEmail = updatedApplication.user?.email ?? application.user?.email ?? "";
     if (userEmail) {
       const existingEmployee = await prisma.employee.findUnique({ where: { email: userEmail }, select: { id: true } });
       if (!existingEmployee) {
@@ -80,7 +82,7 @@ export async function POST(
           create: { title: 'Тодорхойгүй', description: 'Анхны автоматаар үүсгэсэн албан тушаал', code: 'UNASSIGNED', departmentId: department.id },
         });
 
-        const fullName = application.user.name ?? '';
+        const fullName = application.user?.name ?? '';
         const parts = fullName.trim().split(/\s+/).filter(Boolean);
         const firstName = parts[0] || 'Нэргүй';
         const lastName = parts.length > 1 ? parts.slice(1).join(' ') : 'Овоггүй';
@@ -91,7 +93,7 @@ export async function POST(
             firstName,
             lastName,
             email: userEmail,
-            phoneNumber: application.user.phoneNumber ?? '00000000',
+            phoneNumber: application.user?.phoneNumber ?? '00000000',
             dateOfBirth: new Date('1990-01-01T00:00:00Z'),
             gender: 'UNKNOWN',
             address: 'Тодорхойлоогүй',

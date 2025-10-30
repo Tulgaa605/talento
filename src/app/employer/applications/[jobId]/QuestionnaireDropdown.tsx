@@ -61,6 +61,33 @@ export default function QuestionnaireDropdown({
     }
   };
 
+  const handleSendGovernmentQuestionnaire = async () => {
+    try {
+      setIsSubmitting(true);
+
+      const response = await fetch(
+        `/api/employer/applications/${applicationId}/send-government-questionnaire`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to send government questionnaire");
+      }
+
+      setSentQuestionnaire("Төрийн албан хаагчийн анкет");
+      setIsOpen(false);
+      alert("Төрийн албан хаагчийн анкет амжилттай илгээгдлээ");
+      router.refresh();
+    } catch (error) {
+      console.error("Error sending government questionnaire:", error);
+      alert("Анкет илгээхэд алдаа гарлаа. Дараа дахин оролдоно уу.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="relative">
       <button
@@ -86,12 +113,22 @@ export default function QuestionnaireDropdown({
           ? "Илгээж байна..."
           : sentQuestionnaire
           ? `Илгээсэн: ${sentQuestionnaire}`
-          : "Асуулга Илгээх"}
+          : "Анкет илгээх"}
       </button>
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-4 z-10">
-          <h4 className="font-medium mb-2">Асуулга сонгох</h4>
+        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-4 z-10 border border-gray-200">
+          <h4 className="font-medium mb-3 text-gray-800">Анкет сонгох</h4>
           <div className="space-y-2">
+            <button
+              onClick={handleSendGovernmentQuestionnaire}
+              disabled={isSubmitting}
+              className="w-full text-left px-3 py-2 text-sm bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium border border-blue-200"
+            >
+              📋 Төрийн албан хаагчийн анкет
+            </button> 
+            {questionnaires.length > 0 && (
+              <div className="border-t border-gray-200 my-2"></div>
+            )}
             {questionnaires.map((q) => (
               <button
                 key={q.id}
@@ -102,6 +139,12 @@ export default function QuestionnaireDropdown({
                 {q.title}
               </button>
             ))}
+            
+            {questionnaires.length === 0 && (
+              <p className="text-xs text-gray-500 px-3 py-2">
+                Бусад асуулга байхгүй байна
+              </p>
+            )}
           </div>
         </div>
       )}

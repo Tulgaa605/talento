@@ -30,7 +30,7 @@ interface Job {
 
 export default function JobsPage() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [, setJobs] = useState<Job[]>([]); // keep setter only to avoid unused var
+  const [, setJobs] = useState<Job[]>([]);
 
   useEffect(() => {
     const fetchJobs = async () => {

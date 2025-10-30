@@ -96,7 +96,7 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
             title: "Төрийн албан хаагчийн анкет ирлээ",
             message: `${session.user.name} төрийн албан хаагчийн анкет бөглөж илгээсэн байна`,
             type: "QUESTIONNAIRE_RESPONSE",
-            link: `/employer/questionnaires/${questionnaireId}/responses`,
+            link: `/employer/questionnaires/responses`,
           },
         })
       )

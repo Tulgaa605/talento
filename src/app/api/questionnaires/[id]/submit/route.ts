@@ -136,7 +136,7 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
         title: "Асуулгын хариу ирлээ",
         message: `${session.user.name} ${questionnaire.title} асуулганд хариулсан байна`,
         type: "QUESTIONNAIRE_RESPONSE",
-        link: `/employer/questionnaires/${questionnaireId}/responses`,
+        link: `/employer/questionnaires/responses`,
       },
     });
 

@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { TrashIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, PrinterIcon } from '@heroicons/react/24/outline';
 
 interface Position {
   id: string;
@@ -33,6 +33,10 @@ export default function PositionsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   useEffect(() => {
     fetchPositions();
@@ -110,25 +114,71 @@ export default function PositionsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-      <div className="flex justify-between items-center sm:mt-10">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Албан тушаалууд</h1>
-          <p className="mt-1 text-sm sm:text-base text-gray-600">Бүх албан тушаалуудын жагсаалт</p>
+    <>
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 1cm;
+          }
+          body {
+            background: white !important;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+          .hidden-on-screen {
+            display: block !important;
+          }
+          a {
+            text-decoration: none !important;
+            color: inherit !important;
+          }
+          * {
+            box-shadow: none !important;
+          }
+        }
+        @media screen {
+          .hidden-on-screen {
+            display: none;
+          }
+        }
+      `}</style>
+      <div className="max-w-7xl px-1 mx-auto sm:py-6 lg:py-8">
+        <div className="flex justify-between items-center sm:mt-10">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Албан тушаалууд</h1>
+            <p className="mt-1 text-sm sm:text-base text-gray-600">Бүх албан тушаалуудын жагсаалт</p>
+            <div className="hidden-on-screen mt-2 text-sm text-gray-500">
+              Хэвлэсэн огноо: {new Date().toLocaleString('mn-MN', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </div>
+          </div>
+          <div className="flex gap-2 print:hidden">
+            <button
+              onClick={handlePrint}
+              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            >
+              <PrinterIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">PDF Хэвлэх</span>
+            </button>
+            <Link
+              href="/employer/hr/positions/new"
+              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="hidden sm:inline">Шинэ тушаал үүсгэх</span>
+              <span className="sm:hidden">Шинэ тушаал</span>
+            </Link>
+          </div>
         </div>
-        <div className="sm:flex-row gap-4">
-          <Link
-            href="/employer/hr/positions/new"
-            className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span className="hidden sm:inline">Шинэ тушаал үүсгэх</span>
-            <span className="sm:hidden">Шинэ тушаал</span>
-          </Link>
-        </div>
-      </div>
 
       <div className="bg-white rounded-lg shadow mt-5">
         <div className="p-4 sm:p-6 border-b border-gray-200">
@@ -289,5 +339,6 @@ export default function PositionsPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

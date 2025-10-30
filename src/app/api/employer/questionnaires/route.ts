@@ -244,7 +244,7 @@ export async function DELETE(request: Request) {
     await prisma.questionnaireResponse.deleteMany({
       where: { questionnaireId: id },
     });
-
+    
     for (const question of questionnaire.questions) {
       await prisma.answer.deleteMany({ where: { questionId: question.id } });
     }

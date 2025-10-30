@@ -201,8 +201,7 @@ export default function QuestionnaireResponsesPage() {
                     {questionnaire.responses.slice(0, 3).map((response) => (
                       <div 
                         key={response.id} 
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
-                        onClick={() => handleViewResponse(response)}
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100"
                       >
                         <div className="flex items-center space-x-2">
                           <div className="w-8 h-8 bg-[#0C213A] text-white rounded-full flex items-center justify-center text-sm font-bold">
@@ -217,7 +216,10 @@ export default function QuestionnaireResponsesPage() {
                           <p className="text-xs text-gray-500">
                             {new Date(response.createdAt).toLocaleDateString("mn-MN")}
                           </p>
-                          <button className="text-xs text-[#0C213A] hover:text-[#0C213A]/80 mt-1">
+                          <button 
+                            onClick={() => handleViewResponse(response)}
+                            className="text-xs text-[#0C213A] hover:text-[#0C213A]/80 mt-1"
+                          >
                             Үзэх
                           </button>
                         </div>

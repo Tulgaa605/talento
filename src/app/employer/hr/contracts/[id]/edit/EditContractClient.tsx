@@ -33,7 +33,6 @@ export default function EditContractClient({ id }: { id: string }) {
   const router = useRouter();
 
   const [contract, setContract] = useState<Contract | null>(null);
-  // зөвхөн setter-ийг ашиглаж, unused lint-ээс сэргийлье
   const setEmployees = useState<Employee[]>([])[1];
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

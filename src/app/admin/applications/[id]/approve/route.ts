@@ -54,15 +54,18 @@ export async function POST(
         status: "ADMIN_APPROVED",
       },
     });
-    await prisma.notification.create({
-      data: {
-        userId: application.userId,
-        title: "Таны CV зөвшөөрөгдлөө",
-        message: `${application.job.title} ажлын байрны CV таны хүсэлтийн дагуу зөвшөөрөгдлөө.`,
-        type: "CV_APPROVED",
-        link: `/jobs/${application.jobId}`,
-      },
-    });
+    
+    if (application.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: application.userId,
+          title: "Таны CV зөвшөөрөгдлөө",
+          message: `${application.job.title} ажлын байрны CV таны хүсэлтийн дагуу зөвшөөрөгдлөө.`,
+          type: "CV_APPROVED",
+          link: `/jobs/${application.jobId}`,
+        },
+      });
+    }
 
     return NextResponse.json(updatedApplication);
   } catch (error) {

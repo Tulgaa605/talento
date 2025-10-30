@@ -25,3 +25,88 @@ body {
   color: var(--foreground);
   font-family: 'Poppins', Arial, Helvetica, sans-serif;
 }
+
+/* Print Styles - Hide Navigation and Sidebar */
+@media print {
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Hide all navigation, sidebars, headers, and interactive elements */
+  nav,
+  aside,
+  header,
+  [role="navigation"],
+  [role="banner"],
+  .sidebar,
+  .nav-sidebar,
+  button:not(.print-visible),
+  /* Hide specific components */
+  [class*="GlobalSidebar"],
+  [class*="Navigation"],
+  [class*="Header"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Hide fixed/sticky elements except printable modals */
+  .fixed:not(.printable-modal),
+  .sticky {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Show elements marked for print */
+  .hidden-on-screen {
+    display: block !important;
+  }
+
+  /* Remove all shadows and backgrounds */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Remove padding/margin from main content wrapper */
+  main,
+  [class*="pl-"],
+  [class*="lg:pl-"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Remove button/link styles for cleaner print */
+  a,
+  button {
+    text-decoration: none !important;
+    color: inherit !important;
+    background: transparent !important;
+    border: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  table, figure {
+    page-break-inside: avoid;
+  }
+}

@@ -8,6 +8,7 @@ import GovernmentEmployeeQuestionnaire from "@/components/GovernmentEmployeeQues
 import QuestionnaireResponseView from "@/components/QuestionnaireResponseView";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { PrinterIcon } from "@heroicons/react/24/outline";
 
 interface RecruitmentData {
   stats: {
@@ -18,6 +19,7 @@ interface RecruitmentData {
   };
   applications: {
     id: string;
+    jobId?: string;
     cvId: string | null;
     name: string;
     position: string;
@@ -66,6 +68,10 @@ export default function RecruitmentPage() {
     formData?: string;
   } | null>(null);
   const [showResponseModal, setShowResponseModal] = useState(false);
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   useEffect(() => {
     if (status === "loading") return;
@@ -236,20 +242,66 @@ export default function RecruitmentPage() {
   ];
 
   return (
-    <main className="max-w-7xl mt-10 mx-auto px-4 py-8">
-      <div className="mb-8">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Ажилд авах процесс</h1>
-            <p className="text-gray-600">Ажлын байрны зарлал, анкет, ярилцлага, сонголтын процессыг удирдах</p>
+    <>
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 1cm;
+          }
+          body {
+            background: white !important;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+          .hidden-on-screen {
+            display: block !important;
+          }
+          a {
+            text-decoration: none !important;
+            color: inherit !important;
+          }
+          * {
+            box-shadow: none !important;
+          }
+        }
+        @media screen {
+          .hidden-on-screen {
+            display: none;
+          }
+        }
+      `}</style>
+      <main className="max-w-7xl mt-10 mx-auto px-4 py-8">
+        <div className="mb-8">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Ажилд авах процесс</h1>
+              <p className="text-gray-600">Ажлын байрны зарлал, анкет, ярилцлага, сонголтын процессыг удирдах</p>
+              <div className="hidden-on-screen mt-2 text-sm text-gray-500">
+                Хэвлэсэн огноо: {new Date().toLocaleString('mn-MN', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
+            </div>
+            <button
+              onClick={handlePrint}
+              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors print:hidden"
+            >
+              <PrinterIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">PDF Хэвлэх</span>
+            </button>
           </div>
         </div>
-      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {recruitmentStats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">s
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-1">{stat.label}</p>
                 <p className="text-2xl font-bold text-[#0C213A]">{stat.value}</p>
@@ -270,8 +322,8 @@ export default function RecruitmentPage() {
           <nav className="-mb-px flex space-x-8">
             {[
               { id: "overview", name: "Хянах самбар" },
-              { id: "applications", name: "Анкетууд" },
               { id: "questionnaire", name: "Төрийн албан хаагчийн анкет" },
+              { id: "applications", name: "Анкетууд" },
               { id: "positions", name: "Ажлын байр" }
             ].map((tab) => (
               <button
@@ -312,12 +364,9 @@ export default function RecruitmentPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg font-bold text-[#0C213A]">{application.score}%</span>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(application.status)}`}>
-                          {getStatusDisplayName(application.status)}
-                        </span>
-                      </div>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(application.status)}`}>
+                        {getStatusDisplayName(application.status)}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -420,7 +469,6 @@ export default function RecruitmentPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Нэр</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Албан тушаал</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Хэлтэс</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Оноо</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Төлөв</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Огноо</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Үйлдэл</th>
@@ -434,17 +482,6 @@ export default function RecruitmentPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{application.position}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{application.department}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span className="text-lg font-bold text-[#0C213A] mr-2">{application.score}%</span>
-                          <div className="w-16 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-[#0C213A] h-2 rounded-full" 
-                              style={{ width: `${application.score}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(application.status)}`}>
                           {getStatusDisplayName(application.status)}
                         </span>
@@ -453,14 +490,47 @@ export default function RecruitmentPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         {application.type === 'government' ? (
                           <>
-                            <Link 
-                              href={`/government-questionnaire/${application.questionnaireId}`}
+                            <button 
+                              onClick={async () => {
+                                try {
+                                  if (!application.responseId) {
+                                    alert('Анкетын хариулт олдсонгүй.');
+                                    return;
+                                  }
+                                  
+                                  console.log('Fetching response with ID:', application.responseId);
+                                  
+                                  // Fetch the questionnaire response directly by ID
+                                  const response = await fetch(`/api/employer/questionnaires/responses/${application.responseId}`);
+                                  
+                                  if (!response.ok) {
+                                    const errorText = await response.text();
+                                    console.error('API Error:', response.status, errorText);
+                                    throw new Error(`Failed to fetch response: ${response.status}`);
+                                  }
+                                  
+                                  const responseData = await response.json();
+                                  console.log('Received response:', responseData);
+                                  
+                                  setSelectedResponse({
+                                    id: responseData.id,
+                                    createdAt: responseData.createdAt,
+                                    user: responseData.user,
+                                    answers: responseData.answers || [],
+                                    formData: responseData.formData
+                                  });
+                                  setShowResponseModal(true);
+                                } catch (error) {
+                                  console.error('Error fetching questionnaire response:', error);
+                                  alert('Анкетын хариулт татахад алдаа гарлаа: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                                }
+                              }}
                               className="text-[#0C213A] hover:text-[#0C213A]/80"
                             >
                               Үзэх
-                            </Link>
+                            </button>
                             <Link 
-                              href={`/government-questionnaire/${application.questionnaireId}`}
+                              href={`/government-questionnaire/${application.questionnaireId || ''}`}
                               className="text-green-600 hover:text-green-800 hover:underline"
                             >
                               Засах
@@ -468,7 +538,11 @@ export default function RecruitmentPage() {
                           </>
                         ) : (
                           <>
-                            <Link href={`/employer/applications/${application.id}`} className="text-[#0C213A] hover:text-[#0C213A]/80">Үзэх</Link>
+                            {application.jobId ? (
+                              <Link href={`/employer/applications/${application.jobId}`} className="text-[#0C213A] hover:text-[#0C213A]/80">Үзэх</Link>
+                            ) : (
+                              <span className="text-gray-400">Үзэх</span>
+                            )}
                             {application.cvId && (
                               <button 
                                 onClick={async () => {
@@ -502,7 +576,18 @@ export default function RecruitmentPage() {
                                 CV Татах
                               </button>
                             )}
-                            <button className="text-gray-500 hover:text-gray-700">Засах</button>
+                            <button
+                              onClick={() => {
+                                if (application.jobId) {
+                                  router.push(`/employer/applications/${application.jobId}`);
+                                } else {
+                                  alert('Ажлын байрны мэдээлэл олдсонгүй.');
+                                }
+                              }}
+                              className="text-gray-500 hover:text-gray-700"
+                            >
+                              Засах
+                            </button>
                           </>
                         )}
                       </td>
@@ -510,7 +595,7 @@ export default function RecruitmentPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                       Хайлтын нөхцөлд тохирох анкет олдсонгүй
                     </td>
                   </tr>
@@ -545,9 +630,12 @@ export default function RecruitmentPage() {
                 >
                   Анкет үзэх
                 </Link>
-                <button className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors">
+                <Link
+                  href={`/employer/jobs/edit/${position.id}`}
+                  className="px-3 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 transition-colors"
+                >
                   Засах
-                </button>
+                </Link>
               </div>
             </div>
           ))}
@@ -618,5 +706,6 @@ export default function RecruitmentPage() {
         />
       )}
     </main>
+    </>
   );
 }

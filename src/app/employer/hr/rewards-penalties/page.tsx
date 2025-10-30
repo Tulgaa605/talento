@@ -3,7 +3,9 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { PrinterIcon } from '@heroicons/react/24/outline';
+import { useReactToPrint } from 'react-to-print';
 
 type Reward = {
   id: number;
@@ -33,6 +35,7 @@ type Penalty = {
 
 export default function RewardsPenaltiesPage() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [currentDate, setCurrentDate] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddPenaltyModal, setShowAddPenaltyModal] = useState(false);
   const [rewards, setRewards] = useState<Reward[]>([]);
@@ -41,6 +44,22 @@ export default function RewardsPenaltiesPage() {
   const [rewardMode, setRewardMode] = useState<"view" | "edit" | null>(null);
   const [selectedPenalty, setSelectedPenalty] = useState<Penalty | null>(null);
   const [penaltyMode, setPenaltyMode] = useState<"view" | "edit" | null>(null);
+  const componentRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: componentRef,
+    documentTitle: `Шагнал_шийтгэл_${new Date().getTime()}`,
+  });
+
+  useEffect(() => {
+    setCurrentDate(new Date().toLocaleString('mn-MN', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }));
+  }, []);
 
   // Dynamic stats
   const now = new Date();
@@ -173,13 +192,89 @@ export default function RewardsPenaltiesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-7xl mt-10 mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Шагнал, шийтгэлийн бүртгэл</h1>
-        <p className="text-gray-600">Ажилтнуудын шагнал, шийтгэлийн мэдээллийг удирдах</p>
-      </div>
+    <>
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 1cm;
+          }
+          body {
+            background: white !important;
+          }
+          nav,
+          aside,
+          header,
+          [role="navigation"],
+          [role="banner"],
+          .sidebar,
+          .nav-sidebar,
+          header nav,
+          .fixed.inset-y-0,
+          [class*="fixed"][class*="inset-y-0"],
+          [class*="fixed"][class*="left-0"],
+          body > div > div > aside,
+          body > div > aside,
+          [class*="sidebar"],
+          [class*="Sidebar"],
+          [class*="navigation"],
+          [class*="Navigation"],
+          .print\\:hidden {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }
+          .hidden-on-screen {
+            display: block !important;
+          }
+          a, button {
+            text-decoration: none !important;
+            color: inherit !important;
+          }
+          * {
+            background: white !important;
+            background-color: white !important;
+            box-shadow: none !important;
+            border-color: #e5e7eb !important;
+          }
+          main {
+            margin-left: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+        }
+        @media screen {
+          .hidden-on-screen {
+            display: none;
+          }
+        }
+      `}</style>
+      <div ref={componentRef} className="min-h-screen bg-gray-50">
+        <main className="max-w-7xl mt-10 mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Шагнал, шийтгэлийн бүртгэл</h1>
+              <p className="text-gray-600">Ажилтнуудын шагнал, шийтгэлийн мэдээллийг удирдах</p>
+              {currentDate && (
+                <div className="hidden-on-screen mt-2 text-sm text-gray-500">
+                  Хэвлэсэн огноо: {currentDate}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handlePrint}
+              className="print:hidden flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            >
+              <PrinterIcon className="w-5 h-5 mr-2" />
+              PDF Хэвлэх
+            </button>
+          </div>
+        </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
@@ -680,8 +775,9 @@ export default function RewardsPenaltiesPage() {
           </div>
         </div>
       )}
-      </main>
-    </div>
+        </main>
+      </div>
+    </>
   );
 }
 

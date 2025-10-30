@@ -1,9 +1,11 @@
 'use client';
 
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PrinterIcon } from '@heroicons/react/24/outline';
+import { useReactToPrint } from 'react-to-print';
 
 interface Employee {
   id: string;
@@ -37,6 +39,7 @@ export default function NewContractPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [currentDate, setCurrentDate] = useState('');
   const [formData, setFormData] = useState({
     contractNumber: '',
     employeeId: '',
@@ -51,10 +54,24 @@ export default function NewContractPage() {
     terms: '',
     status: 'ACTIVE'
   });
+  const componentRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: componentRef,
+    documentTitle: `Шинэ_гэрээ_${new Date().getTime()}`,
+  });
 
   useEffect(() => {
     fetchEmployees();
     fetchUsers();
+    // Client-д л огноо үүсгэх (hydration алдаа засах)
+    setCurrentDate(new Date().toLocaleString('mn-MN', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }));
   }, []);
 
   const fetchEmployees = async () => {
@@ -169,24 +186,103 @@ export default function NewContractPage() {
   }
 
   return (
-    <div>
-      <div className="mb-">
-        <div className="flex items-center justify-between ml-5">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mt-7">Шинэ хөдөлмөрийн гэрээ</h1>
-            <p className="text-gray-600">Ажилтны хөдөлмөрийн гэрээ үүсгэх</p>
+    <>
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 1cm;
+          }
+          body {
+            background: white !important;
+          }
+          /* Sidebar болон navigation бүгдийг нуух */
+          nav,
+          aside,
+          header,
+          [role="navigation"],
+          [role="banner"],
+          .sidebar,
+          .nav-sidebar,
+          header nav,
+          /* Fixed position sidebar нуух */
+          .fixed.inset-y-0,
+          [class*="fixed"][class*="inset-y-0"],
+          [class*="fixed"][class*="left-0"],
+          /* Talento sidebar specific */
+          body > div > div > aside,
+          body > div > aside,
+          [class*="sidebar"],
+          [class*="Sidebar"],
+          [class*="navigation"],
+          [class*="Navigation"],
+          .print\\:hidden {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }
+          .hidden-on-screen {
+            display: block !important;
+          }
+          a, button[type="submit"], button[type="button"] {
+            text-decoration: none !important;
+            color: inherit !important;
+          }
+          /* Background өнгийг бүгдийг нь арилгах */
+          * {
+            background: white !important;
+            background-color: white !important;
+            box-shadow: none !important;
+            border-color: #e5e7eb !important;
+          }
+          /* Main content-ыг бүтэн өргөнөөр харуулах */
+          main {
+            margin-left: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+        }
+        @media screen {
+          .hidden-on-screen {
+            display: none;
+          }
+        }
+      `}</style>
+      <div ref={componentRef}>
+        <div className="mt-10">
+          <div className="flex items-center justify-between ml-5">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mt-7">Шинэ хөдөлмөрийн гэрээ</h1>
+              <p className="text-gray-600">Ажилтны хөдөлмөрийн гэрээ үүсгэх</p>
+              {currentDate && (
+                <div className="hidden-on-screen mt-2 text-sm text-gray-500">
+                  Хэвлэсэн огноо: {currentDate}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 print:hidden">
+              <button
+                onClick={handlePrint}
+                className="inline-flex items-center px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
+              >
+                <PrinterIcon className="w-5 h-5 mr-2" />
+                PDF Хэвлэх
+              </button>
+              <Link
+                href="/employer/hr/contracts"
+                className="inline-flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Буцах
+              </Link>
+            </div>
           </div>
-          <Link
-            href="/employer/hr/contracts"
-            className="inline-flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Буцах
-          </Link>
         </div>
-      </div>
 
       <div className="bg-white rounded-lg shadow">
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -400,5 +496,6 @@ export default function NewContractPage() {
         </form>
       </div>
     </div>
+    </>
   );
 }

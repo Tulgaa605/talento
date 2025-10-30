@@ -10,12 +10,6 @@ interface QuestionnaireType {
   type: string;
 }
 
-interface ApplicationType {
-  type: string;
-  questionnaireId: string;
-  formData?: unknown;
-}
-
 export default function GovernmentQuestionnairePage() {
   const params = useParams();
   const [questionnaire, setQuestionnaire] = useState<QuestionnaireType | null>(null);
@@ -33,16 +27,33 @@ export default function GovernmentQuestionnairePage() {
         const questionnaireData = await questionnaireResponse.json();
         setQuestionnaire(questionnaireData);
 
-        // Fetch existing response for current user
-        const responseResponse = await fetch('/api/hr/recruitment');
-        if (responseResponse.ok) {
-          const recruitmentData = await responseResponse.json();
-          const userResponse = recruitmentData.applications.find(
-            (app: ApplicationType) => app.type === 'government' && app.questionnaireId === params.id
-          );
-          if (userResponse && userResponse.formData) {
-            setExistingResponse(userResponse.formData);
+        // Fetch existing response for current user (jobseeker)
+        try {
+          const responsesResponse = await fetch('/api/jobseeker/questionnaires');
+          if (responsesResponse.ok) {
+            const allResponses = await responsesResponse.json();
+            console.log('All questionnaire responses:', allResponses);
+            
+            // Find the response for this specific questionnaire
+            const userResponse = allResponses.find(
+              (resp: { questionnaireId: string; formData?: unknown; type?: string }) => 
+                resp.questionnaireId === params.id && resp.formData
+            );
+            
+            console.log('Found existing response:', userResponse);
+            
+            if (userResponse?.formData) {
+              // Parse formData if it's a string
+              const parsedData = typeof userResponse.formData === 'string' 
+                ? JSON.parse(userResponse.formData) 
+                : userResponse.formData;
+              console.log('Setting existing response:', parsedData);
+              setExistingResponse(parsedData);
+            }
           }
+        } catch (responseErr) {
+          console.error('Error fetching existing response:', responseErr);
+          // Don't fail the whole page if we can't fetch existing response
         }
       } catch (err) {
         console.error('Error fetching data:', err);

@@ -47,7 +47,7 @@ export async function POST(
         data: {
           userId: admin.id,
           title: "Шинэ CV зөвшөөрөх хүсэлт",
-          message: `${application.job.title} ажлын байрны ${application.user.name} нэртэй хүний CV-г ажил олгогч зөвшөөрлөө.`,
+          message: `${application.job.title} ажлын байрны ${application.user?.name || 'Нэр байхгүй'} нэртэй хүний CV-г ажил олгогч зөвшөөрлөө.`,
           type: "ADMIN_APPROVAL_REQUEST",
           link: `/admin/applications/${applicationId}`,
           createdAt: new Date(),

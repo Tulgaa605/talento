@@ -14,6 +14,7 @@ import {
   TrophyIcon,
   DocumentChartBarIcon,
   UserGroupIcon,
+  PrinterIcon,
 } from '@heroicons/react/24/outline';
 import { useEffect, useState } from 'react';
 
@@ -57,6 +58,10 @@ export default function HRDashboardPage() {
     pendingDecisions: 0,
   });
   const [loading, setLoading] = useState(true);
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   useEffect(() => {
     const fetchJSON = async (url: string): Promise<unknown> => {
@@ -172,12 +177,60 @@ export default function HRDashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 sm:mt-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">HR Систем</h1>
-          <p className="mt-2 text-sm sm:text-base text-gray-600">Хүний нөөцийн удирдлагын систем</p>
-        </div>
+    <>
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 1cm;
+          }
+          body {
+            background: white !important;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+          .hidden-on-screen {
+            display: block !important;
+          }
+          a {
+            text-decoration: none !important;
+            color: inherit !important;
+          }
+          * {
+            box-shadow: none !important;
+          }
+        }
+        @media screen {
+          .hidden-on-screen {
+            display: none;
+          }
+        }
+      `}</style>
+      <div className="min-h-screen bg-gray-50 sm:mt-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+          <div className="mb-6 sm:mb-8 flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">HR Систем</h1>
+              <p className="mt-2 text-sm sm:text-base text-gray-600">Хүний нөөцийн удирдлагын систем</p>
+              <div className="hidden-on-screen mt-2 text-sm text-gray-500">
+                Хэвлэсэн огноо: {new Date().toLocaleString('mn-MN', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
+            </div>
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow transition-colors duration-200 print:hidden"
+            >
+              <PrinterIcon className="h-5 w-5" />
+              <span className="hidden sm:inline">PDF Хэвлэх</span>
+            </button>
+          </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
@@ -279,5 +332,6 @@ export default function HRDashboardPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

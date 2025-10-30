@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PrinterIcon } from "@heroicons/react/24/outline";
 
 type EvalStatus = "Дууссан" | "Хүлээгдэж буй" | "Эхлээгүй" | string;
 type EvalType =
@@ -49,6 +50,10 @@ export default function PerformancePage() {
   const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const openDetailModal = (evaluation: Evaluation) => {
     setSelectedEvaluation(evaluation);
@@ -192,12 +197,60 @@ export default function PerformancePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-7xl mx-auto mt-10 px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Ажлын гүйцэтгэл үнэлгээ</h1>
-        <p className="text-gray-600">Ажилтнуудын ажлын гүйцэтгэлийг үнэлж, хөгжүүлэх</p>
-      </div>
+    <>
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 1cm;
+          }
+          body {
+            background: white !important;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+          .hidden-on-screen {
+            display: block !important;
+          }
+          a {
+            text-decoration: none !important;
+            color: inherit !important;
+          }
+          * {
+            box-shadow: none !important;
+          }
+        }
+        @media screen {
+          .hidden-on-screen {
+            display: none;
+          }
+        }
+      `}</style>
+      <div className="min-h-screen bg-gray-50">
+        <main className="max-w-7xl mx-auto mt-10 px-4 py-8">
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Ажлын гүйцэтгэл үнэлгээ</h1>
+            <p className="text-gray-600">Ажилтнуудын ажлын гүйцэтгэлийг үнэлж, хөгжүүлэх</p>
+            <div className="hidden-on-screen mt-2 text-sm text-gray-500">
+              Хэвлэсэн огноо: {new Date().toLocaleString('mn-MN', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </div>
+          </div>
+          <button
+            onClick={handlePrint}
+            className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors print:hidden"
+          >
+            <PrinterIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">PDF Хэвлэх</span>
+          </button>
+        </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         {performanceStats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -858,5 +911,6 @@ export default function PerformancePage() {
       )}
       </main>
     </div>
+    </>
   );
 }

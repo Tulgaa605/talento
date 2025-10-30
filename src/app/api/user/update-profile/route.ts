@@ -11,6 +11,14 @@ const updateProfileSchema = z.object({
 });
 
 export async function PATCH(request: NextRequest) {
+  return handleProfileUpdate(request);
+}
+
+export async function PUT(request: NextRequest) {
+  return handleProfileUpdate(request);
+}
+
+async function handleProfileUpdate(request: NextRequest) {
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user) {

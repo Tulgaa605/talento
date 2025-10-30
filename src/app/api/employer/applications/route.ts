@@ -71,7 +71,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(applications);
+    // Filter out applications with null users
+    const validApplications = applications.filter(app => app.user !== null);
+
+    return NextResponse.json(validApplications);
   } catch (error) {
     console.error('Өргөдлүүд авах үед алдаа гарлаа:', error);
     return NextResponse.json(

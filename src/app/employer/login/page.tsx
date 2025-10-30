@@ -201,12 +201,13 @@ export default function EmployerLoginPage() {
                       Google-ээр нэвтрэх
                     </span>
                   </button>
-                  <a
-                    href="#"
-                    className="text-[#0C213A] text-[12px] sm:text-[14px] font-light font-poppins"
+                  <button
+                    type="button"
+                    onClick={() => router.push("/forgot-password")}
+                    className="text-[#0C213A] text-[12px] sm:text-[14px] font-light font-poppins hover:underline"
                   >
                     Нууц үг мартсан уу?
-                  </a>
+                  </button>
                 </div>
                 <div className="flex flex-col gap-4 w-full mt-10 sm:mt-20">
                   <div className="flex items-center justify-end gap-2">

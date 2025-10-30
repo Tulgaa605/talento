@@ -11,6 +11,7 @@ import {
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  PrinterIcon,
 } from '@heroicons/react/24/outline';
 
 interface Employee {
@@ -70,6 +71,10 @@ export default function EmployeesPage() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'EMPLOYEES' | 'USERS'>('EMPLOYEES');
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   // --- Fetchers wrapped in useCallback to satisfy exhaustive-deps ---
   const fetchEmployees = useCallback(async () => {
@@ -213,57 +218,103 @@ export default function EmployeesPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-      <div>
-        {/* Гарчиг */}
-        <div className="mb-6 sm:mb-8 sm:mt-10">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                Ажилтны бүртгэл
-              </h1>
-              <p className="mt-2 text-sm sm:text-base text-gray-600">
-                Компанийн ажилтнуудын бүртгэл, мэдээлэл
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
-              <div className="inline-flex rounded-md shadow-sm" role="group">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('EMPLOYEES')}
-                  className={`px-3 sm:px-4 py-2 text-sm font-medium border ${
-                    viewMode === 'EMPLOYEES'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  } rounded-l-md`}
-                >
-                  Ажилтан
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('USERS')}
-                  className={`px-3 sm:px-4 py-2 text-sm font-medium border -ml-px ${
-                    viewMode === 'USERS'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  } rounded-r-md`}
-                >
-                  Хэрэглэгч
-                </button>
+    <>
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 1cm;
+          }
+          body {
+            background: white !important;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+          .hidden-on-screen {
+            display: block !important;
+          }
+          a {
+            text-decoration: none !important;
+            color: inherit !important;
+          }
+          * {
+            box-shadow: none !important;
+          }
+        }
+        @media screen {
+          .hidden-on-screen {
+            display: none;
+          }
+        }
+      `}</style>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div>
+          {/* Гарчиг */}
+          <div className="mb-6 sm:mb-8 sm:mt-10">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  Ажилтны бүртгэл
+                </h1>
+                <p className="mt-2 text-sm sm:text-base text-gray-600">
+                  Компанийн ажилтнуудын бүртгэл, мэдээлэл
+                </p>
+                <div className="hidden-on-screen mt-2 text-sm text-gray-500">
+                  Хэвлэсэн огноо: {new Date().toLocaleString('mn-MN', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
               </div>
-              {viewMode === 'EMPLOYEES' && (
-                <Link
-                  href="/employer/hr/employees/new"
-                  className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3 print:hidden">
+                <button
+                  onClick={handlePrint}
+                  className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors duration-200"
                 >
-                  <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Шинэ ажилтны бүртгэл</span>
-                  <span className="sm:hidden">Шинэ</span>
-                </Link>
-              )}
+                  <PrinterIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">PDF Хэвлэх</span>
+                </button>
+                <div className="inline-flex rounded-md shadow-sm" role="group">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('EMPLOYEES')}
+                    className={`px-3 sm:px-4 py-2 text-sm font-medium border ${
+                      viewMode === 'EMPLOYEES'
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    } rounded-l-md`}
+                  >
+                    Ажилтан
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('USERS')}
+                    className={`px-3 sm:px-4 py-2 text-sm font-medium border -ml-px ${
+                      viewMode === 'USERS'
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    } rounded-r-md`}
+                  >
+                    Хэрэглэгч
+                  </button>
+                </div>
+                {viewMode === 'EMPLOYEES' && (
+                  <Link
+                    href="/employer/hr/employees/new"
+                    className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Шинэ ажилтны бүртгэл</span>
+                    <span className="sm:hidden">Шинэ</span>
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Хайлт */}
         <div className="bg-white rounded-lg shadow mb-6 p-4 sm:p-6">
@@ -575,5 +626,6 @@ export default function EmployeesPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

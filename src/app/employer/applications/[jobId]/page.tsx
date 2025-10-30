@@ -88,15 +88,17 @@ export default async function JobApplicationsPage({ params }: PageProps) {
       data: { status: "REJECTED" },
     });
 
-    await prisma.notification.create({
-      data: {
-        userId: application.userId,
-        title: "Таны CV татгалзлаа",
-        message: `${application.job.title} ажлын байрт таны CV татгалзлаа`,
-        type: "APPLICATION",
-        link: `/jobs/${application.jobId}`,
-      },
-    });
+    if (application.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: application.userId,
+          title: "Таны CV татгалзлаа",
+          message: `${application.job.title} ажлын байрт таны CV татгалзлаа`,
+          type: "APPLICATION",
+          link: `/jobs/${application.jobId}`,
+        },
+      });
+    }
 
     revalidatePath(`/employer/applications/${jobId}`);
   }
