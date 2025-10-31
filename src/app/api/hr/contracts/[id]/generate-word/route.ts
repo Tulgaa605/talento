@@ -139,6 +139,7 @@ export async function GET(
     const pythonScriptPath = join(scriptsDir, 'generate_contract_word_api.py');
     
     // Python API script үүсгэх (бичсэн contract data унших)
+    const projectRoot = process.cwd().replace(/\\/g, '/'); // Normalize path separators
     const pythonApiScript = `
 import sys
 import json
@@ -147,11 +148,16 @@ from pathlib import Path
 import traceback
 
 try:
+    # Set project root explicitly
+    project_root = r"${projectRoot}"
+    if not os.path.exists(project_root):
+        print(f"ERROR: Project root not found: {project_root}", file=sys.stderr)
+        sys.exit(1)
+    
     # Add project root to path
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(script_dir)
     sys.path.insert(0, project_root)
     
+    # Import the function
     from scripts.generate_contract_word import generate_contract_word
     
     if __name__ == "__main__":
@@ -229,7 +235,23 @@ except Exception as e:
           scriptExists: existsSync(pythonScriptPath),
         };
         console.error('Python execution failed:', JSON.stringify(errorDetails, null, 2));
-        throw new Error(`Word файл үүсээгүй байна. Python алдаа: ${stderr || stdout || 'Unknown error'}`);
+        
+        // Clean up temp files
+        try {
+          await unlink(tempJsonPath);
+          await unlink(pythonScriptPath);
+        } catch {
+          // Ignore
+        }
+        
+        const errorMsg = stderr || stdout || 'Unknown error';
+        return NextResponse.json(
+          { 
+            error: `Word файл үүсээгүй байна. Python алдаа: ${errorMsg}`, 
+            details: errorDetails 
+          },
+          { status: 500 }
+        );
       }
 
       const fileBuffer = await readFile(outputPath);
@@ -273,15 +295,28 @@ except Exception as e:
       
       const error = execError as { message?: string };
       console.error('Python script execution error:', execError);
-      throw new Error(`Word файл үүсгэхэд алдаа гарлаа: ${error.message || 'Unknown error'}`);
+      const errorMessage = error.message || 'Unknown error';
+      return NextResponse.json(
+        { error: `Word файл үүсгэхэд алдаа гарлаа: ${errorMessage}`, details: error },
+        { status: 500 }
+      );
     }
   } catch (error: unknown) {
-    const err = error as { message?: string };
+    const err = error as { message?: string; stdout?: string; stderr?: string };
     console.error('Word гэрээ үүсгэхэд алдаа гарлаа:', error);
+    
+    // Include detailed error information if available
+    const errorDetails: any = { message: err.message || 'Word гэрээ үүсгэхэд алдаа гарлаа' };
+    if (err.stdout) errorDetails.stdout = err.stdout;
+    if (err.stderr) errorDetails.stderr = err.stderr;
+    
     return NextResponse.json(
-      { error: err.message || 'Word гэрээ үүсгэхэд алдаа гарлаа' },
+      { error: errorDetails.message, details: errorDetails },
       { status: 500 }
     );
+  } finally {
+    // Ensure Prisma client is disconnected
+    await prisma.$disconnect().catch(() => {});
   }
 }
 
