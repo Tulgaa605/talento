@@ -11,7 +11,6 @@ import {
   EyeIcon,
   PencilIcon,
   TrashIcon,
-  PrinterIcon,
 } from '@heroicons/react/24/outline';
 
 interface Employee {
@@ -71,10 +70,6 @@ export default function EmployeesPage() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'EMPLOYEES' | 'USERS'>('EMPLOYEES');
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   // --- Fetchers wrapped in useCallback to satisfy exhaustive-deps ---
   const fetchEmployees = useCallback(async () => {
@@ -219,35 +214,6 @@ export default function EmployeesPage() {
 
   return (
     <>
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 1cm;
-          }
-          body {
-            background: white !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-          .hidden-on-screen {
-            display: block !important;
-          }
-          a {
-            text-decoration: none !important;
-            color: inherit !important;
-          }
-          * {
-            box-shadow: none !important;
-          }
-        }
-        @media screen {
-          .hidden-on-screen {
-            display: none;
-          }
-        }
-      `}</style>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div>
           {/* Гарчиг */}
@@ -271,13 +237,6 @@ export default function EmployeesPage() {
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3 print:hidden">
-                <button
-                  onClick={handlePrint}
-                  className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors duration-200"
-                >
-                  <PrinterIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">PDF Хэвлэх</span>
-                </button>
                 <div className="inline-flex rounded-md shadow-sm" role="group">
                   <button
                     type="button"

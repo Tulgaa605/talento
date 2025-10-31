@@ -4,7 +4,6 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { PrinterIcon } from "@heroicons/react/24/outline";
 
 type EvalStatus = "Дууссан" | "Хүлээгдэж буй" | "Эхлээгүй" | string;
 type EvalType =
@@ -50,10 +49,6 @@ export default function PerformancePage() {
   const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   const openDetailModal = (evaluation: Evaluation) => {
     setSelectedEvaluation(evaluation);
@@ -198,35 +193,6 @@ export default function PerformancePage() {
 
   return (
     <>
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 1cm;
-          }
-          body {
-            background: white !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-          .hidden-on-screen {
-            display: block !important;
-          }
-          a {
-            text-decoration: none !important;
-            color: inherit !important;
-          }
-          * {
-            box-shadow: none !important;
-          }
-        }
-        @media screen {
-          .hidden-on-screen {
-            display: none;
-          }
-        }
-      `}</style>
       <div className="min-h-screen bg-gray-50">
         <main className="max-w-7xl mx-auto mt-10 px-4 py-8">
         <div className="mb-8 flex justify-between items-start">
@@ -243,13 +209,6 @@ export default function PerformancePage() {
               })}
             </div>
           </div>
-          <button
-            onClick={handlePrint}
-            className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors print:hidden"
-          >
-            <PrinterIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">PDF Хэвлэх</span>
-          </button>
         </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         {performanceStats.map((stat, index) => (

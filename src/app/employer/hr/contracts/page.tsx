@@ -2,10 +2,9 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { TrashIcon, PrinterIcon } from '@heroicons/react/24/outline';
-import { useReactToPrint } from 'react-to-print';
+import { TrashIcon } from '@heroicons/react/24/outline';
 
 interface Contract {
   id: string;
@@ -32,12 +31,6 @@ export default function ContractsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [contractTypeFilter, setContractTypeFilter] = useState('');
   const [currentDate, setCurrentDate] = useState('');
-  const componentRef = useRef<HTMLDivElement>(null);
-
-  const handlePrint = useReactToPrint({
-    contentRef: componentRef,
-    documentTitle: `Хөдөлмөрийн_гэрээ_${new Date().getTime()}`,
-  });
 
   useEffect(() => {
     fetchContracts();
@@ -103,18 +96,6 @@ export default function ContractsPage() {
     return new Date(dateString).toLocaleDateString('mn-MN');
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
-        return 'bg-green-100 text-green-800';
-      case 'EXPIRED':
-        return 'bg-red-100 text-red-800';
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const getContractTypeLabel = (type: string) => {
     switch (type) {
@@ -143,71 +124,8 @@ export default function ContractsPage() {
 
   return (
     <>
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 1cm;
-          }
-          body {
-            background: white !important;
-          }
-          /* Sidebar болон navigation бүгдийг нуух */
-          nav,
-          aside,
-          header,
-          [role="navigation"],
-          [role="banner"],
-          .sidebar,
-          .nav-sidebar,
-          header nav,
-          /* Fixed position sidebar нуух */
-          .fixed.inset-y-0,
-          [class*="fixed"][class*="inset-y-0"],
-          [class*="fixed"][class*="left-0"],
-          /* Talento sidebar specific */
-          body > div > div > aside,
-          body > div > aside,
-          [class*="sidebar"],
-          [class*="Sidebar"],
-          [class*="navigation"],
-          [class*="Navigation"],
-          .print\\:hidden {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            width: 0 !important;
-            height: 0 !important;
-            overflow: hidden !important;
-          }
-          .hidden-on-screen {
-            display: block !important;
-          }
-          a {
-            text-decoration: none !important;
-            color: inherit !important;
-          }
-          /* Background өнгийг бүгдийг нь арилгах */
-          * {
-            background: white !important;
-            background-color: white !important;
-            box-shadow: none !important;
-            border-color: #e5e7eb !important;
-          }
-          /* Main content-ыг бүтэн өргөнөөр харуулах */
-          main {
-            margin-left: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-        }
-        @media screen {
-          .hidden-on-screen {
-            display: none;
-          }
-        }
-      `}</style>
-      <div ref={componentRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="flex justify-between items-center sm:mb-7 sm:mt-10">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Хөдөлмөрийн гэрээнүүд</h1>
@@ -219,13 +137,7 @@ export default function ContractsPage() {
             )}
           </div>
           <div className="flex gap-2 print:hidden">
-            <button
-              onClick={handlePrint}
-              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            >
-              <PrinterIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">PDF Хэвлэх</span>
-            </button>
+            
             <Link
               href="/employer/hr/contracts/new"
               className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
@@ -253,21 +165,7 @@ export default function ContractsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                Төлөв
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option value="">Бүгд</option>
-                <option value="ACTIVE">Идэвхтэй</option>
-                <option value="EXPIRED">Дууссан</option>
-                <option value="PENDING">Хүлээгдэж буй</option>
-              </select>
-            </div>
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 Гэрээний төрөл
@@ -322,9 +220,6 @@ export default function ContractsPage() {
                   Цалин
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Төлөв
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Үйлдэл
                 </th>
               </tr>
@@ -357,13 +252,6 @@ export default function ContractsPage() {
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                     {contract.salary.toLocaleString()} {contract.currency}
                   </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(contract.status)}`}>
-                      {contract.status === 'ACTIVE' ? 'Идэвхтэй' : 
-                       contract.status === 'EXPIRED' ? 'Дууссан' : 
-                       contract.status === 'PENDING' ? 'Хүлээгдэж буй' : contract.status}
-                    </span>
-                  </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
                     <div className="flex space-x-1 sm:space-x-2">
                       <Link
@@ -380,6 +268,34 @@ export default function ContractsPage() {
                         <span className="hidden sm:inline">Засах</span>
                         <span className="sm:hidden">✏️</span>
                       </Link>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(`/api/hr/contracts/${contract.id}/generate-word`);
+                            if (!response.ok) {
+                              throw new Error('Word файл үүсгэхэд алдаа гарлаа');
+                            }
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${contract.contractNumber}_Хөдөлмөрийн_гэрээ.docx`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                          } catch (error) {
+                            console.error('Word хэвлэхэд алдаа:', error);
+                            alert('Word хэвлэхэд алдаа гарлаа');
+                          }
+                        }}
+                        className="text-purple-600 hover:text-purple-900 p-1"
+                        title="Word хэвлэх"
+                      >
+                        <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </button>
                       <button
                         onClick={() => handleDelete(contract.id)}
                         className="text-red-600 hover:text-red-900 p-1"

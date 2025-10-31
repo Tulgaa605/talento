@@ -10,8 +10,7 @@ import {
   BuildingOfficeIcon,
   PencilIcon,
   TrashIcon,
-  UsersIcon,
-  PrinterIcon
+  UsersIcon
 } from '@heroicons/react/24/outline';
 
 interface Department {
@@ -38,9 +37,6 @@ export default function DepartmentsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const handlePrint = () => {
-    window.print();
-  };
 
   useEffect(() => {
     fetchDepartments();
@@ -96,36 +92,7 @@ export default function DepartmentsPage() {
   }
 
   return (
-    <>
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 1cm;
-          }
-          body {
-            background: white !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-          .hidden-on-screen {
-            display: block !important;
-          }
-          a {
-            text-decoration: none !important;
-            color: inherit !important;
-          }
-          * {
-            box-shadow: none !important;
-          }
-        }
-        @media screen {
-          .hidden-on-screen {
-            display: none;
-          }
-        }
-      `}</style>
+   <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           <div className="mb-6 sm:mb-8 sm:mt-10">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
@@ -145,13 +112,6 @@ export default function DepartmentsPage() {
                 </div>
               </div>
               <div className="flex gap-2 print:hidden">
-                <button
-                  onClick={handlePrint}
-                  className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors duration-200"
-                >
-                  <PrinterIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">PDF Хэвлэх</span>
-                </button>
                 <Link
                   href="/employer/hr/departments/new"
                   className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"

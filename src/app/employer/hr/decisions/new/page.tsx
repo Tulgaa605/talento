@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, FileText, Printer } from 'lucide-react';
+import { ArrowLeft, Save, FileText } from 'lucide-react';
 
 interface Employee {
   id: string;
@@ -97,40 +97,8 @@ export default function NewDecisionPage() {
     { value: 'OTHER', label: 'Бусад' },
   ];
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <>
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 1cm;
-          }
-          body {
-            background: white !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-          .hidden-on-screen {
-            display: block !important;
-          }
-          a, button {
-            text-decoration: none !important;
-          }
-          * {
-            box-shadow: none !important;
-          }
-        }
-        @media screen {
-          .hidden-on-screen {
-            display: none;
-          }
-        }
-      `}</style>
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto py-8 px-4">
           <div className="mb-8">
@@ -141,13 +109,6 @@ export default function NewDecisionPage() {
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Буцах
-              </button>
-              <button
-                onClick={handlePrint}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors print:hidden"
-              >
-                <Printer className="w-4 h-4" />
-                PDF Хэвлэх
               </button>
             </div>
             <div className="flex items-center">

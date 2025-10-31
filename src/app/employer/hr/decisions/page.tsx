@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { TrashIcon, PrinterIcon } from '@heroicons/react/24/outline';
+import { TrashIcon } from '@heroicons/react/24/outline';
 
 interface Decision {
   id: string;
@@ -30,10 +30,6 @@ export default function DecisionsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   useEffect(() => {
     fetchDecisions();
@@ -134,35 +130,6 @@ export default function DecisionsPage() {
 
   return (
     <>
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 1cm;
-          }
-          body {
-            background: white !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-          .hidden-on-screen {
-            display: block !important;
-          }
-          a {
-            text-decoration: none !important;
-            color: inherit !important;
-          }
-          * {
-            box-shadow: none !important;
-          }
-        }
-        @media screen {
-          .hidden-on-screen {
-            display: none;
-          }
-        }
-      `}</style>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="flex justify-between items-center sm:mb-7 sm:mt-10">
           <div>
@@ -179,13 +146,6 @@ export default function DecisionsPage() {
             </div>
           </div>
           <div className="flex gap-2 print:hidden">
-            <button
-              onClick={handlePrint}
-              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            >
-              <PrinterIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">PDF Хэвлэх</span>
-            </button>
             <Link
               href="/employer/hr/decisions/new"
               className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"

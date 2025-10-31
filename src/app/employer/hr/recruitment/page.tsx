@@ -8,7 +8,6 @@ import GovernmentEmployeeQuestionnaire from "@/components/GovernmentEmployeeQues
 import QuestionnaireResponseView from "@/components/QuestionnaireResponseView";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { PrinterIcon } from "@heroicons/react/24/outline";
 
 interface RecruitmentData {
   stats: {
@@ -68,10 +67,6 @@ export default function RecruitmentPage() {
     formData?: string;
   } | null>(null);
   const [showResponseModal, setShowResponseModal] = useState(false);
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   useEffect(() => {
     if (status === "loading") return;
@@ -243,35 +238,6 @@ export default function RecruitmentPage() {
 
   return (
     <>
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 1cm;
-          }
-          body {
-            background: white !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-          .hidden-on-screen {
-            display: block !important;
-          }
-          a {
-            text-decoration: none !important;
-            color: inherit !important;
-          }
-          * {
-            box-shadow: none !important;
-          }
-        }
-        @media screen {
-          .hidden-on-screen {
-            display: none;
-          }
-        }
-      `}</style>
       <main className="max-w-7xl mt-10 mx-auto px-4 py-8">
         <div className="mb-8">
           <div className="flex justify-between items-start">
@@ -288,13 +254,6 @@ export default function RecruitmentPage() {
                 })}
               </div>
             </div>
-            <button
-              onClick={handlePrint}
-              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors print:hidden"
-            >
-              <PrinterIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">PDF Хэвлэх</span>
-            </button>
           </div>
         </div>
 

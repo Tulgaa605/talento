@@ -488,32 +488,6 @@ export default function GovernmentEmployeeQuestionnaire({
                 placeholder="1234567890"
               />
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">Нийгмийн даатгалын дэвтрийн дугаар</label>
-              <input
-                type="text"
-                className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
-                value={formData.identification.socialInsuranceNumber}
-                onChange={(e) => handleInputChange(['identification', 'socialInsuranceNumber'], e.target.value, 'numbers', 10)}
-                pattern="[0-9]+"
-                maxLength={10}
-                placeholder="1234567890"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">Эрүүл мэндийн даатгалын гэрчилгээний дугаар</label>
-              <input
-                type="text"
-                className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
-                value={formData.identification.healthInsuranceNumber}
-                onChange={(e) => handleInputChange(['identification', 'healthInsuranceNumber'], e.target.value, 'numbers', 10)}
-                pattern="[0-9]+"
-                maxLength={10}
-                placeholder="1234567890"
-              />
-            </div>
           </div>
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div>
@@ -595,7 +569,7 @@ export default function GovernmentEmployeeQuestionnaire({
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2">төрсөн газар, овог</label>
+              <label className="block text-sm font-medium mb-2">Төрсөн газар, овог</label>
               <input
                 type="text"
                 className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"

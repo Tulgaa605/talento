@@ -2,15 +2,13 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ArrowLeftIcon,
   UserIcon,
-  PrinterIcon
 } from '@heroicons/react/24/outline';
-import { useReactToPrint } from 'react-to-print';
 
 interface Department {
   id: string;
@@ -46,13 +44,6 @@ export default function NewEmployeePage() {
     userName?: string;
     userEmail?: string;
   } | null>(null);
-  const componentRef = useRef<HTMLDivElement>(null);
-
-  const handlePrint = useReactToPrint({
-    contentRef: componentRef,
-    documentTitle: `Шинэ_ажилтан_${new Date().getTime()}`,
-  });
-
   const [formData, setFormData] = useState({
     employeeId: '',
     firstName: '',
@@ -69,6 +60,8 @@ export default function NewEmployeePage() {
     positionId: '',
     departmentId: '',
     managerId: '',
+    bankName: '',
+    bankAccountNumber: '',
   });
 
   useEffect(() => {
@@ -363,7 +356,7 @@ export default function NewEmployeePage() {
       }
     }
     
-    if ((name === 'phoneNumber' || name === 'emergencyPhone') && value) {
+    if ((name === 'phoneNumber' || name === 'emergencyPhone' || name === 'bankAccountNumber') && value) {
       const numbersOnly = /^[0-9]*$/;
       if (!numbersOnly.test(value)) {
         return;
@@ -379,7 +372,7 @@ export default function NewEmployeePage() {
       setSelectedDepartment(value);
       setFormData(prev => ({
         ...prev,
-        positionId: '' // Хэлтэс солигдоход албан тушаалыг цэвэрлэнэ
+        positionId: ''
       }));
     }
   };
@@ -414,67 +407,7 @@ export default function NewEmployeePage() {
 
   return (
     <>
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 1cm;
-          }
-          body {
-            background: white !important;
-          }
-          nav,
-          aside,
-          header,
-          [role="navigation"],
-          [role="banner"],
-          .sidebar,
-          .nav-sidebar,
-          header nav,
-          .fixed.inset-y-0,
-          [class*="fixed"][class*="inset-y-0"],
-          [class*="fixed"][class*="left-0"],
-          body > div > div > aside,
-          body > div > aside,
-          [class*="sidebar"],
-          [class*="Sidebar"],
-          [class*="navigation"],
-          [class*="Navigation"],
-          .print\\:hidden {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            width: 0 !important;
-            height: 0 !important;
-            overflow: hidden !important;
-          }
-          .hidden-on-screen {
-            display: block !important;
-          }
-          a, button {
-            text-decoration: none !important;
-            color: inherit !important;
-          }
-          * {
-            background: white !important;
-            background-color: white !important;
-            box-shadow: none !important;
-            border-color: #e5e7eb !important;
-          }
-          main {
-            margin-left: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-        }
-        @media screen {
-          .hidden-on-screen {
-            display: none;
-          }
-        }
-      `}</style>
-      <div ref={componentRef} className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Гарчиг */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <Link
@@ -484,14 +417,7 @@ export default function NewEmployeePage() {
               <ArrowLeftIcon className="h-5 w-5 mr-2" />
               Буцах
             </Link>
-            <button
-              onClick={handlePrint}
-              className="print:hidden flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            >
-              <PrinterIcon className="w-5 h-5 mr-2" />
-              PDF Хэвлэх
-            </button>
-          </div>
+          </div> 
           <h1 className="text-3xl font-bold text-gray-900">Шинэ ажилтны бүртгэл</h1>
           <p className="mt-2 text-gray-600">
             {searchParams.get('applicationId') 
@@ -557,7 +483,6 @@ export default function NewEmployeePage() {
         )}
       </div>
 
-      {/* Форм */}
       <div className="bg-white rounded-lg shadow">
         <form onSubmit={handleSubmit} className="p-6 space-y-8">
           <div>
@@ -566,7 +491,7 @@ export default function NewEmployeePage() {
               <h2 className="text-xl font-semibold text-gray-900">Үндсэн мэдээлэл</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Регистерийн дугаар *</label>
                 <input
@@ -673,7 +598,7 @@ export default function NewEmployeePage() {
               </div>
             </div>
 
-            <div className="mt-6">
+            <div className="mt-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">Хаяг *</label>
               <textarea
                 name="address"
@@ -685,11 +610,9 @@ export default function NewEmployeePage() {
               />
             </div>
           </div>
-
-          {/* Яаралтай холбоо барих */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Яаралтай холбоо барих</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-1">Яаралтай холбоо барих</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Таны хэн болох</label>
                 <input
@@ -715,11 +638,9 @@ export default function NewEmployeePage() {
               </div>
             </div>
           </div>
-
-          {/* Ажлын мэдээлэл */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Ажлын мэдээлэл</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-1">Ажлын мэдээлэл</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Ажилд орсон огноо *</label>
                 <input
@@ -767,6 +688,47 @@ export default function NewEmployeePage() {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-1">Санхүүгийн мэдээлэл</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Банк *</label>
+                <select
+                  name="bankName"
+                  value={formData.bankName}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                >
+                  <option value="">Сонгоно уу</option>
+                  <option value="Хаан банк">Хаан банк</option>
+                  <option value="Голомт банк">Голомт банк</option>
+                  <option value="Худалдаа хөгжлийн банк">Худалдаа хөгжлийн банк</option>
+                  <option value="Хас банк">Хас банк</option>
+                  <option value="Төрийн банк">Төрийн банк</option>
+                  <option value="Капитрон банк">Капитрон банк</option>
+                  <option value="Арилжааны банк бусад">Бусад</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Дансны дугаар *</label>
+                <input
+                  type="text"
+                  name="bankAccountNumber"
+                  value={formData.bankAccountNumber}
+                  onChange={handleInputChange}
+                  required
+                  inputMode="numeric"
+                  pattern="[0-9]{6,20}"
+                  maxLength={20}
+                  placeholder="Дугаар"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                />
               </div>
             </div>
           </div>

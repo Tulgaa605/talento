@@ -318,23 +318,8 @@ export default function QuestionnaireResponseView({
                         {editedFormData.identification?.citizenIdNumber || '-'}
                       </div>
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Нийгмийн даатгалын дэвтрийн дугаар</label>
-                      <div className="w-full border-b border-gray-300 py-2">
-                        {editedFormData.identification?.socialInsuranceNumber || '-'}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Эрүүл мэндийн даатгалын гэрчилгээний дугаар</label>
-                      <div className="w-full border-b border-gray-300 py-2">
-                        {editedFormData.identification?.healthInsuranceNumber || '-'}
-                      </div>
-                    </div>
                   </div>
 
-                  {/* Personal details - grid layout */}
                   <div className="grid grid-cols-2 gap-6 mb-6">
                     <div>
                       <label className="block text-sm font-medium mb-2">1.1. Эцэг /эх/-ийн нэр</label>
@@ -377,7 +362,7 @@ export default function QuestionnaireResponseView({
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium mb-2">төрсөн газар, овог</label>
+                      <label className="block text-sm font-medium mb-2">Төрсөн газар, овог</label>
                       <div className="w-full border-b border-gray-300 py-2">
                         {editedFormData.personalInfo.birthPlace || '-'}
                       </div>

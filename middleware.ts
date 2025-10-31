@@ -8,11 +8,11 @@ export async function middleware(request: NextRequest) {
   // HR routes access control - restrict to EMPLOYER and ADMIN only
   if (pathname.startsWith('/employer/hr')) {
     if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/employer/login', request.url));
     }
 
     if (token.role !== 'EMPLOYER' && token.role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/unauthorized', request.url));
+      return NextResponse.redirect(new URL('/employer/login', request.url));
     }
   }
 
