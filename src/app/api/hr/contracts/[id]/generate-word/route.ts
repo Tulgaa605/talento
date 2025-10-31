@@ -306,7 +306,9 @@ except Exception as e:
     console.error('Word гэрээ үүсгэхэд алдаа гарлаа:', error);
     
     // Include detailed error information if available
-    const errorDetails: any = { message: err.message || 'Word гэрээ үүсгэхэд алдаа гарлаа' };
+    const errorDetails: { message: string; stdout?: string; stderr?: string } = { 
+      message: err.message || 'Word гэрээ үүсгэхэд алдаа гарлаа' 
+    };
     if (err.stdout) errorDetails.stdout = err.stdout;
     if (err.stderr) errorDetails.stderr = err.stderr;
     
