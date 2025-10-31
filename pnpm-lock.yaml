@@ -44,6 +44,9 @@ importers:
       gsap:
         specifier: ^3.13.0
         version: 3.13.0
+      jszip:
+        specifier: ^3.10.1
+        version: 3.10.1
       lucide-react:
         specifier: ^0.539.0
         version: 0.539.0(react@19.2.0)
