@@ -127,12 +127,23 @@ export async function GET(
     // Output directory үүсгэх
     const outputDir = join(process.cwd(), 'public', 'uploads', 'contracts');
     if (!existsSync(outputDir)) {
-      await execAsync(`mkdir -p "${outputDir}"`);
+      const { mkdir } = await import('fs/promises');
+      await mkdir(outputDir, { recursive: true });
     }
 
     // Temporary JSON file үүсгэх (contract data дамжуулах)
     const tempJsonPath = join(process.cwd(), `temp_contract_${id}_${Date.now()}.json`);
     const pythonScriptPath = join(process.cwd(), 'scripts', 'generate_contract_word_api.py');
+    
+    // Template file path шалгах
+    const templatePath = join(process.cwd(), 'public', 'templates', 'contracts', 'template.docx');
+    if (!existsSync(templatePath)) {
+      console.error(`Template файл олдсонгүй: ${templatePath}`);
+      return NextResponse.json(
+        { error: `Template файл олдсонгүй: ${templatePath}` },
+        { status: 500 }
+      );
+    }
     
     // Python API script үүсгэх (бичсэн contract data унших)
     const pythonApiScript = `
@@ -165,29 +176,70 @@ if __name__ == "__main__":
     const outputPath = join(outputDir, outputFileName);
 
     try {
+      // Python command шалгах (python3 эсвэл python)
+      let pythonCmd = 'python3';
+      try {
+        await execAsync('python3 --version', { timeout: 2000 });
+      } catch {
+        try {
+          await execAsync('python --version', { timeout: 2000 });
+          pythonCmd = 'python';
+        } catch {
+          return NextResponse.json(
+            { error: 'Python суугаагүй байна. Server дээр Python суугааж байгаа эсэхийг шалгана уу.' },
+            { status: 500 }
+          );
+        }
+      }
+
       // Python script ажиллуулах
       let stdout = '';
       let stderr = '';
       
       try {
         const result = await execAsync(
-          `python "${pythonScriptPath}" "${tempJsonPath}" "${outputPath}"`,
-          { maxBuffer: 10 * 1024 * 1024, encoding: 'utf-8' }
+          `${pythonCmd} "${pythonScriptPath}" "${tempJsonPath}" "${outputPath}"`,
+          { maxBuffer: 10 * 1024 * 1024, encoding: 'utf-8', timeout: 30000 }
         );
         stdout = result.stdout || '';
         stderr = result.stderr || '';
       } catch (execError: unknown) {
-        const error = execError as { stdout?: string; stderr?: string };
+        const error = execError as { stdout?: string; stderr?: string; message?: string; code?: string };
         stdout = error.stdout || '';
         stderr = error.stderr || '';
-        // Continue to check if file was created despite error
+        
+        // Python script execution алдаа - файл үүссэн эсэхийг шалгах
+        if (existsSync(outputPath)) {
+          // Файл үүссэн бол stderr-ийг үл тоомсорлож болно
+          console.warn('Python script warning:', stderr);
+        } else {
+          // Файл үүсээгүй бол алдааны мэдээлэл буцаах
+          const errorMsg = error.message || stderr || stdout || 'Unknown error';
+          console.error('Python execution failed:', {
+            command: `${pythonCmd} "${pythonScriptPath}" "${tempJsonPath}" "${outputPath}"`,
+            error: errorMsg,
+            code: error.code,
+            stdout,
+            stderr,
+            templateExists: existsSync(templatePath),
+            scriptExists: existsSync(pythonScriptPath),
+            jsonExists: existsSync(tempJsonPath),
+          });
+          throw new Error(`Python script ажиллахгүй байна: ${errorMsg}`);
+        }
       }
 
       // Check if output file exists
       if (!existsSync(outputPath)) {
-        console.error('Python stdout:', stdout);
-        console.error('Python stderr:', stderr);
-        throw new Error(`Word файл үүсээгүй байна. Python алдаа: ${stderr || stdout}`);
+        console.error('Python execution details:', {
+          stdout,
+          stderr,
+          templatePath,
+          scriptPath: pythonScriptPath,
+          jsonPath: tempJsonPath,
+          outputPath,
+        });
+        throw new Error(`Word файл үүсээгүй байна. Python stdout: ${stdout}, stderr: ${stderr}`);
       }
 
       const fileBuffer = await readFile(outputPath);
@@ -234,10 +286,17 @@ if __name__ == "__main__":
       throw new Error(`Word файл үүсгэхэд алдаа гарлаа: ${error.message || 'Unknown error'}`);
     }
   } catch (error: unknown) {
-    const err = error as { message?: string };
-    console.error('Word гэрээ үүсгэхэд алдаа гарлаа:', error);
+    const err = error as { message?: string; stack?: string };
+    console.error('Word гэрээ үүсгэхэд алдаа гарлаа:', {
+      error: err.message,
+      stack: err.stack,
+      cwd: process.cwd(),
+    });
     return NextResponse.json(
-      { error: err.message || 'Word гэрээ үүсгэхэд алдаа гарлаа' },
+      { 
+        error: err.message || 'Word гэрээ үүсгэхэд алдаа гарлаа',
+        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      },
       { status: 500 }
     );
   }
