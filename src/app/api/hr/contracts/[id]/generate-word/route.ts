@@ -5,6 +5,7 @@ import { promisify } from 'util';
 import { readFile, unlink, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { tmpdir } from 'os';
 
 const execAsync = promisify(exec);
 const prisma = new PrismaClient();
@@ -124,19 +125,17 @@ export async function GET(
       city: 'Улаанбаатар хот',
     };
 
-    // Output directory үүсгэх
-    const outputDir = join(process.cwd(), 'public', 'uploads', 'contracts');
-    if (!existsSync(outputDir)) {
-      await mkdir(outputDir, { recursive: true });
-    }
-
+    // Use temporary directory for all temporary files (works in serverless environments)
+    const tempDir = tmpdir();
+    const tempPrefix = `contract_${id}_${Date.now()}`;
+    
     // Temporary JSON file үүсгэх (contract data дамжуулах)
-    const tempJsonPath = join(process.cwd(), `temp_contract_${id}_${Date.now()}.json`);
-    const scriptsDir = join(process.cwd(), 'scripts');
-    if (!existsSync(scriptsDir)) {
-      await mkdir(scriptsDir, { recursive: true });
-    }
-    const pythonScriptPath = join(scriptsDir, 'generate_contract_word_api.py');
+    const tempJsonPath = join(tempDir, `${tempPrefix}.json`);
+    const pythonScriptPath = join(tempDir, `${tempPrefix}_script.py`);
+    
+    // Output file in temp directory
+    const outputFileName = `contract_${contract.contractNumber}_${Date.now()}.docx`;
+    const outputPath = join(tempDir, outputFileName);
     
     // Python API script үүсгэх (бичсэн contract data унших)
     const projectRoot = process.cwd().replace(/\\/g, '/'); // Normalize path separators
@@ -181,9 +180,6 @@ except Exception as e:
 
     await writeFile(pythonScriptPath, pythonApiScript, 'utf-8');
     await writeFile(tempJsonPath, JSON.stringify(contractData, null, 2), 'utf-8');
-
-    const outputFileName = `contract_${contract.contractNumber}_${Date.now()}.docx`;
-    const outputPath = join(outputDir, outputFileName);
 
     try {
       // Python script ажиллуулах
