@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { readFile, unlink, writeFile } from 'fs/promises';
+import { readFile, unlink, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 
@@ -127,12 +127,16 @@ export async function GET(
     // Output directory үүсгэх
     const outputDir = join(process.cwd(), 'public', 'uploads', 'contracts');
     if (!existsSync(outputDir)) {
-      await execAsync(`mkdir -p "${outputDir}"`);
+      await mkdir(outputDir, { recursive: true });
     }
 
     // Temporary JSON file үүсгэх (contract data дамжуулах)
     const tempJsonPath = join(process.cwd(), `temp_contract_${id}_${Date.now()}.json`);
-    const pythonScriptPath = join(process.cwd(), 'scripts', 'generate_contract_word_api.py');
+    const scriptsDir = join(process.cwd(), 'scripts');
+    if (!existsSync(scriptsDir)) {
+      await mkdir(scriptsDir, { recursive: true });
+    }
+    const pythonScriptPath = join(scriptsDir, 'generate_contract_word_api.py');
     
     // Python API script үүсгэх (бичсэн contract data унших)
     const pythonApiScript = `
@@ -140,22 +144,33 @@ import sys
 import json
 import os
 from pathlib import Path
+import traceback
 
-# Add project root to path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, project_root)
-
-from scripts.generate_contract_word import generate_contract_word
-
-if __name__ == "__main__":
-    json_path = sys.argv[1]
-    output_path = sys.argv[2]
+try:
+    # Add project root to path
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+    sys.path.insert(0, project_root)
     
-    with open(json_path, 'r', encoding='utf-8') as f:
-        contract_data = json.load(f)
+    from scripts.generate_contract_word import generate_contract_word
     
-    result_path = generate_contract_word(contract_data, output_path)
-    print(result_path)
+    if __name__ == "__main__":
+        json_path = sys.argv[1]
+        output_path = sys.argv[2]
+        
+        if not os.path.exists(json_path):
+            print(f"ERROR: JSON file not found: {json_path}", file=sys.stderr)
+            sys.exit(1)
+        
+        with open(json_path, 'r', encoding='utf-8') as f:
+            contract_data = json.load(f)
+        
+        result_path = generate_contract_word(contract_data, output_path)
+        print(result_path)
+except Exception as e:
+    print(f"ERROR: {str(e)}", file=sys.stderr)
+    print(traceback.format_exc(), file=sys.stderr)
+    sys.exit(1)
 `;
 
     await writeFile(pythonScriptPath, pythonApiScript, 'utf-8');
@@ -168,26 +183,53 @@ if __name__ == "__main__":
       // Python script ажиллуулах
       let stdout = '';
       let stderr = '';
+      let pythonCommand = 'python';
       
       try {
         const result = await execAsync(
-          `python "${pythonScriptPath}" "${tempJsonPath}" "${outputPath}"`,
+          `"${pythonCommand}" "${pythonScriptPath}" "${tempJsonPath}" "${outputPath}"`,
           { maxBuffer: 10 * 1024 * 1024, encoding: 'utf-8' }
         );
         stdout = result.stdout || '';
         stderr = result.stderr || '';
       } catch (execError: unknown) {
-        const error = execError as { stdout?: string; stderr?: string };
-        stdout = error.stdout || '';
-        stderr = error.stderr || '';
-        // Continue to check if file was created despite error
+        // Try python3 as fallback on Windows/Linux
+        const error = execError as { stdout?: string; stderr?: string; code?: number; message?: string };
+        if (error.code === 1 || error.message?.includes('python')) {
+          try {
+            pythonCommand = 'python3';
+            const result = await execAsync(
+              `"${pythonCommand}" "${pythonScriptPath}" "${tempJsonPath}" "${outputPath}"`,
+              { maxBuffer: 10 * 1024 * 1024, encoding: 'utf-8' }
+            );
+            stdout = result.stdout || '';
+            stderr = result.stderr || '';
+          } catch (execError2: unknown) {
+            const error2 = execError2 as { stdout?: string; stderr?: string };
+            stdout = error2.stdout || error.stdout || '';
+            stderr = error2.stderr || error.stderr || '';
+            // Continue to check if file was created despite error
+          }
+        } else {
+          stdout = error.stdout || '';
+          stderr = error.stderr || '';
+        }
       }
 
       // Check if output file exists
       if (!existsSync(outputPath)) {
-        console.error('Python stdout:', stdout);
-        console.error('Python stderr:', stderr);
-        throw new Error(`Word файл үүсээгүй байна. Python алдаа: ${stderr || stdout}`);
+        const errorDetails = {
+          stdout,
+          stderr,
+          pythonCommand,
+          pythonScriptPath,
+          tempJsonPath,
+          outputPath,
+          jsonExists: existsSync(tempJsonPath),
+          scriptExists: existsSync(pythonScriptPath),
+        };
+        console.error('Python execution failed:', JSON.stringify(errorDetails, null, 2));
+        throw new Error(`Word файл үүсээгүй байна. Python алдаа: ${stderr || stdout || 'Unknown error'}`);
       }
 
       const fileBuffer = await readFile(outputPath);
