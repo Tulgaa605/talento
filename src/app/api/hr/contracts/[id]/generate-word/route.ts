@@ -5,6 +5,7 @@ import { promisify } from 'util';
 import { readFile, unlink, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { tmpdir } from 'os';
 
 const execAsync = promisify(exec);
 const prisma = new PrismaClient();
@@ -124,39 +125,175 @@ export async function GET(
       city: 'Улаанбаатар хот',
     };
 
+    // Production server дээр /tmp directory ашиглах (serverless environments)
+    const isProduction = process.env.NODE_ENV === 'production';
+    const useTempDir = isProduction || !existsSync(join(process.cwd(), 'public', 'uploads'));
+    
     // Output directory үүсгэх
-    const outputDir = join(process.cwd(), 'public', 'uploads', 'contracts');
-    if (!existsSync(outputDir)) {
-      const { mkdir } = await import('fs/promises');
+    let outputDir: string;
+    if (useTempDir) {
+      // Serverless/Lambda environment - /tmp ашиглах
+      outputDir = join(tmpdir(), 'contracts');
+    } else {
+      outputDir = join(process.cwd(), 'public', 'uploads', 'contracts');
+    }
+    
+    // Directory үүсгэх
+    const { mkdir } = await import('fs/promises');
+    try {
       await mkdir(outputDir, { recursive: true });
+    } catch (mkdirError) {
+      console.error('Failed to create output directory:', mkdirError);
+      // /tmp directory үүсгэхгүй байхгүй, гэхдээ шалгах
+      if (useTempDir && !existsSync(outputDir)) {
+        return NextResponse.json(
+          { error: `Output directory үүсгэх боломжгүй: ${outputDir}` },
+          { status: 500 }
+        );
+      }
     }
 
     // Temporary JSON file үүсгэх (contract data дамжуулах)
-    const tempJsonPath = join(process.cwd(), `temp_contract_${id}_${Date.now()}.json`);
-    const pythonScriptPath = join(process.cwd(), 'scripts', 'generate_contract_word_api.py');
+    const tempJsonPath = useTempDir 
+      ? join(tmpdir(), `temp_contract_${id}_${Date.now()}.json`)
+      : join(process.cwd(), `temp_contract_${id}_${Date.now()}.json`);
+    
+    const pythonScriptPath = useTempDir
+      ? join(tmpdir(), `generate_contract_word_api_${Date.now()}.py`)
+      : join(process.cwd(), 'scripts', 'generate_contract_word_api.py');
     
     // Template file path шалгах
     const templatePath = join(process.cwd(), 'public', 'templates', 'contracts', 'template.docx');
     if (!existsSync(templatePath)) {
+      // Build time дээр template-ийг copy хийх хэрэгтэй байж магадгүй
+      // Alternative: template-ийг /tmp руу copy хийх (build time дээр embed хийх нь илүү сайн)
       console.error(`Template файл олдсонгүй: ${templatePath}`);
       return NextResponse.json(
-        { error: `Template файл олдсонгүй: ${templatePath}` },
+        { error: `Template файл олдсонгүй. Production build дээр template файлыг шалгана уу.` },
         { status: 500 }
       );
     }
     
+    // Template file-ийг /tmp руу copy хийх (production дээр)
+    let actualTemplatePath = templatePath;
+    if (useTempDir) {
+      try {
+        const templateBuffer = await readFile(templatePath);
+        actualTemplatePath = join(tmpdir(), 'contract_template.docx');
+        await writeFile(actualTemplatePath, templateBuffer);
+      } catch (copyError) {
+        console.error('Failed to copy template to /tmp:', copyError);
+        return NextResponse.json(
+          { error: 'Template файл copy хийхэд алдаа гарлаа' },
+          { status: 500 }
+        );
+      }
+    }
+
     // Python API script үүсгэх (бичсэн contract data унших)
+    // Template path-ийг script дээр дамжуулах
+    const escapedTemplatePath = actualTemplatePath.replace(/\\/g, '/').replace(/'/g, "\\'");
     const pythonApiScript = `
 import sys
 import json
 import os
+import re
 from pathlib import Path
+from datetime import datetime
 
-# Add project root to path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, project_root)
+# Template path (script-ээс дамжуулсан)
+template_path = r'${escapedTemplatePath}'
 
-from scripts.generate_contract_word import generate_contract_word
+try:
+    from docx import Document
+except ImportError:
+    print("ERROR: python-docx module not installed", file=sys.stderr)
+    sys.exit(1)
+
+def format_date_mongolian(date_str):
+    try:
+        if isinstance(date_str, str):
+            date = datetime.strptime(date_str, "%Y-%m-%d")
+        else:
+            date = date_str
+        return f"{date.year} оны {date.month} дугаар сарын {date.day}-ны өдөр"
+    except Exception as e:
+        return str(date_str)
+
+def generate_contract_word(contract_data, output_path):
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(f"Template файл олдсонгүй: {template_path}")
+    
+    doc = Document(template_path)
+    
+    replacements = [
+        ("2025 оны. . . . дугаар сарын ….-ны өдөр", format_date_mongolian(contract_data.get('startDate', datetime.now().strftime("%Y-%m-%d")))),
+        ("№ .........", f"№ {contract_data.get('contractNumber', '')}"),
+        ("Эрдэнэс-Тавантолгой ХК", contract_data.get('companyName', 'Эрдэнэс-Тавантолгой ХК')),
+        (". . . . . . . . . . . . . . . овогтой. . . ............", f"{contract_data.get('employeeLastName', '')} овогтой {contract_data.get('employeeName', '')}"),
+        (". . . . . . . . . . . . . . овогтой. . ............", f"{contract_data.get('employeeLastName', '')} овогтой {contract_data.get('employeeName', '')}"),
+        ("Регистрийн дугаар: ................./", f"Регистрийн дугаар: {contract_data.get('registrationNumber', contract_data.get('employeeId', ''))}"),
+        ("Регистрийн дугаар: .................", f"Регистрийн дугаар: {contract_data.get('registrationNumber', contract_data.get('employeeId', ''))}"),
+        ("Албан тушаал: ...............", f"Албан тушаал: {contract_data.get('position', '')}"),
+        ("Харьяалагдах нэгж: ..............", f"Харьяалагдах нэгж: {contract_data.get('department', '')}"),
+        ("Үндсэн цалин: ................ /............................../-н төгрөг", f"Үндсэн цалин: {contract_data.get('salary', 0):,.0f} /{contract_data.get('salaryText', str(contract_data.get('salary', 0)))}/-н төгрөг"),
+    ]
+    
+    def replace_in_text(text):
+        result = text
+        for old_text, new_text in replacements:
+            if old_text in result:
+                result = result.replace(old_text, new_text, 1)
+        
+        # Гүйцэтгэх захирал
+        if 'Гүйцэтгэх захирал' in result and re.search(r'Гүйцэтгэх захирал\\s+\\.{3,}', result):
+            director_name = contract_data.get('directorName', '')
+            if director_name and director_name.strip():
+                result = re.sub(r'Гүйцэтгэх захирал\\s+\\.{3,}', 
+                               f"Гүйцэтгэх захирал {director_name}", 
+                               result, count=1)
+        
+        # Ажлын цаг
+        if 'Ажлын цаг:' in result and re.search(r'Ажлын цаг:\\s+\\.{3,}', result):
+            result = re.sub(r'Ажлын цаг:\\s+\\.{3,}', 
+                           f"Ажлын цаг: {contract_data.get('workSchedule', 'Бүтэн цагийн (08:00-17:00)')}", 
+                           result, count=1)
+        
+        # Гэрээний хугацаа
+        if 'Гэрээний хугацаа:' in result and re.search(r'Гэрээний хугацаа:\\s+\\.{3,}', result):
+            result = re.sub(r'Гэрээний хугацаа:\\s+\\.{3,}', 
+                           f"Гэрээний хугацаа: {contract_data.get('contractDuration', 'Тодорхой хугацаагүй')}", 
+                           result, count=1)
+        
+        return result
+    
+    for para in doc.paragraphs:
+        original_text = para.text
+        new_text = replace_in_text(original_text)
+        if original_text != new_text:
+            para.text = new_text
+    
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    original_text = para.text
+                    new_text = replace_in_text(original_text)
+                    if original_text != new_text:
+                        para.text = new_text
+    
+    # Доод хэсэгт байгаа ажилтны овог нэр
+    for para in doc.paragraphs:
+        para_text = para.text.strip()
+        if len(para_text) > 0 and len(para_text) < 50:
+            if para_text.startswith('. . .') and not any(char.isalpha() or char.isdigit() for char in para_text if char not in '. '):
+                employee_full_name = f"{contract_data.get('employeeLastName', '')} {contract_data.get('employeeName', '')}".strip()
+                if employee_full_name:
+                    para.text = employee_full_name
+    
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    doc.save(output_path)
+    return output_path
 
 if __name__ == "__main__":
     json_path = sys.argv[1]
@@ -248,18 +385,23 @@ if __name__ == "__main__":
       try {
         await unlink(tempJsonPath);
         await unlink(pythonScriptPath);
+        if (useTempDir && actualTemplatePath !== templatePath) {
+          await unlink(actualTemplatePath).catch(() => {}); // Ignore errors
+        }
       } catch {
         // Ignore delete errors
       }
 
-      // Үүссэн файлыг устгах (download дараа)
-      setTimeout(async () => {
-        try {
-          await unlink(outputPath);
-        } catch {
-          // Ignore
-        }
-      }, 60000); // 1 минутын дараа устгах
+      // Үүссэн файлыг устгах (download дараа) - зөвхөн /tmp дээр байвал
+      if (useTempDir) {
+        setTimeout(async () => {
+          try {
+            await unlink(outputPath);
+          } catch {
+            // Ignore
+          }
+        }, 60000); // 1 минутын дараа устгах
+      }
 
       // Response буцаах
       // Filename encoding for non-ASCII characters
@@ -275,8 +417,11 @@ if __name__ == "__main__":
     } catch (execError: unknown) {
       // Temporary файлуудыг устгах
       try {
-        await unlink(tempJsonPath);
-        await unlink(pythonScriptPath);
+        await unlink(tempJsonPath).catch(() => {});
+        await unlink(pythonScriptPath).catch(() => {});
+        if (useTempDir && actualTemplatePath !== templatePath) {
+          await unlink(actualTemplatePath).catch(() => {});
+        }
       } catch {
         // Ignore
       }
