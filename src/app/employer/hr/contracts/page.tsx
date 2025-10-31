@@ -273,9 +273,7 @@ export default function ContractsPage() {
                           try {
                             const response = await fetch(`/api/hr/contracts/${contract.id}/generate-word`);
                             if (!response.ok) {
-                              const errorData = await response.json().catch(() => ({}));
-                              const errorMessage = errorData.error || errorData.message || 'Word файл үүсгэхэд алдаа гарлаа';
-                              throw new Error(errorMessage);
+                              throw new Error('Word файл үүсгэхэд алдаа гарлаа');
                             }
                             const blob = await response.blob();
                             const url = window.URL.createObjectURL(blob);
@@ -288,8 +286,7 @@ export default function ContractsPage() {
                             document.body.removeChild(a);
                           } catch (error) {
                             console.error('Word хэвлэхэд алдаа:', error);
-                            const errorMessage = error instanceof Error ? error.message : 'Word хэвлэхэд алдаа гарлаа';
-                            alert(`Word хэвлэхэд алдаа: ${errorMessage}`);
+                            alert('Word хэвлэхэд алдаа гарлаа');
                           }
                         }}
                         className="text-purple-600 hover:text-purple-900 p-1"
