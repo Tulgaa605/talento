@@ -34,7 +34,6 @@ export default function ContractsPage() {
 
   useEffect(() => {
     fetchContracts();
-    // Client-д л огноо үүсгэх (hydration алдаа засах)
     setCurrentDate(new Date().toLocaleString('mn-MN', { 
       year: 'numeric', 
       month: 'long', 
