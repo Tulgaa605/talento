@@ -214,7 +214,7 @@ if __name__ == "__main__":
       const safeFilename = `${contract.contractNumber}_Хөдөлмөрийн_гэрээ.docx`;
       const encodedFilename = encodeURIComponent(safeFilename);
       
-      return new NextResponse(fileBuffer, {
+      return new NextResponse(new Uint8Array(fileBuffer), {
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}`,
