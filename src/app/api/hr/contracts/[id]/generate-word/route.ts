@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { readFile, unlink, writeFile } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { existsSync } from 'fs';
-import { tmpdir } from 'os';
-
-const execAsync = promisify(exec);
+import Docxtemplater from 'docxtemplater';
+import PizZip from 'pizzip';
 const prisma = new PrismaClient();
 
 type Params = { id: string };
@@ -40,6 +36,19 @@ function numberToMongolianWords(num: number): string {
     return numberToMongolianWords(million) + ' сая' + (rest > 0 ? ' ' + numberToMongolianWords(rest) : '');
   }
   return num.toString();
+}
+
+// Огноог монгол хэлээр форматлах
+function formatDateMongolian(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${year} оны ${month} дугаар сарын ${day}-ны өдөр`;
+  } catch {
+    return dateStr;
+  }
 }
 
 export async function GET(
@@ -104,196 +113,93 @@ export async function GET(
       }
     }
 
-    // Contract data бэлтгэх
-    const contractData = {
-      contractNumber: contract.contractNumber,
-      employeeName: contract.employee.firstName || '',
-      employeeLastName: contract.employee.lastName || '',
-      employeeId: contract.employee.employeeId || '',
-      registrationNumber: contract.employee.employeeId || '',
-      position: contract.employee.position?.title || '',
-      department: contract.employee.department?.name || contract.employee.position?.department?.name || '',
-      salary: contract.salary,
-      salaryText: numberToMongolianWords(Math.floor(contract.salary)),
-      startDate: contract.startDate.toISOString().split('T')[0],
-      endDate: contract.endDate ? contract.endDate.toISOString().split('T')[0] : null,
-      contractType: contract.contractType,
-      workSchedule: workSchedule,
-      contractDuration: contractDuration,
-      companyName: 'Эрдэнэс-Тавантолгой ХК',
-      directorName: 'Гүйцэтгэх захирал',
-      city: 'Улаанбаатар хот',
+    // Template файлын зам
+    const templatePath = join(process.cwd(), 'public', 'templates', 'contracts', 'template.docx');
+    
+    // Template файлыг унших
+    const templateBuffer = await readFile(templatePath);
+    
+    // Docx файлыг бэлтгэх
+    const zip = new PizZip(templateBuffer);
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+    });
+
+    // Гэрээний өгөгдлүүдийг бэлтгэх
+    const employeeFullName = `${contract.employee.lastName || ''} овогтой ${contract.employee.firstName || ''}`.trim();
+    const registrationNumber = contract.employee.employeeId || '';
+    const position = contract.employee.position?.title || '';
+    const department = contract.employee.department?.name || contract.employee.position?.department?.name || '';
+    const salary = contract.salary;
+    const salaryText = numberToMongolianWords(Math.floor(salary));
+    const formattedStartDate = formatDateMongolian(contract.startDate.toISOString().split('T')[0]);
+    
+    // Template-д орлуулах утгууд (Python script-тэй адил)
+    const replacements: Record<string, string> = {
+      '2025 оны. . . . дугаар сарын ….-ны өдөр': formattedStartDate,
+      '№ .........': `№ ${contract.contractNumber}`,
+      'Эрдэнэс-Тавантолгой ХК': 'Эрдэнэс-Тавантолгой ХК',
+      '. . . . . . . . . . . . . . . овогтой. . . ............': employeeFullName,
+      '. . . . . . . . . . . . . . овогтой. . ............': employeeFullName,
+      'Регистрийн дугаар: ................./': `Регистрийн дугаар: ${registrationNumber}`,
+      'Регистрийн дугаар: .................': `Регистрийн дугаар: ${registrationNumber}`,
+      'Албан тушаал: ...............': `Албан тушаал: ${position}`,
+      'Харьяалагдах нэгж: ..............': `Харьяалагдах нэгж: ${department}`,
+      'Үндсэн цалин: ................ /............................../-н төгрөг': `Үндсэн цалин: ${salary.toLocaleString('mn-MN')} /${salaryText}/-н төгрөг`,
     };
 
-    // Use temporary directory for all temporary files (works in serverless environments)
-    const tempDir = tmpdir();
-    const tempPrefix = `contract_${id}_${Date.now()}`;
+    // Docx файлд текст орлуулах (docxtemplater ашиглах)
+    // Note: Template файл дээр placeholder байхгүй бол text replacement хийх хэрэгтэй
+    // Энэ тохиолдолд бид docxtemplater-ийн setData ашиглахгүй, харин PizZip-ийн XML-ийг шууд засах
+    const docxData = doc.getZip();
     
-    // Temporary JSON file үүсгэх (contract data дамжуулах)
-    const tempJsonPath = join(tempDir, `${tempPrefix}.json`);
-    const pythonScriptPath = join(tempDir, `${tempPrefix}_script.py`);
+    // Word document-ийн бүх XML файлуудыг авах
+    const xmlFiles = docxData.files;
+    const textFiles = Object.keys(xmlFiles).filter((name) => 
+      name.startsWith('word/') && name.endsWith('.xml')
+    );
     
-    // Output file in temp directory
-    const outputFileName = `contract_${contract.contractNumber}_${Date.now()}.docx`;
-    const outputPath = join(tempDir, outputFileName);
-    
-    // Python API script үүсгэх (бичсэн contract data унших)
-    const projectRoot = process.cwd().replace(/\\/g, '/'); // Normalize path separators
-    const pythonApiScript = `
-import sys
-import json
-import os
-from pathlib import Path
-import traceback
-
-try:
-    # Set project root explicitly
-    project_root = r"${projectRoot}"
-    if not os.path.exists(project_root):
-        print(f"ERROR: Project root not found: {project_root}", file=sys.stderr)
-        sys.exit(1)
-    
-    # Add project root to path
-    sys.path.insert(0, project_root)
-    
-    # Import the function
-    from scripts.generate_contract_word import generate_contract_word
-    
-    if __name__ == "__main__":
-        json_path = sys.argv[1]
-        output_path = sys.argv[2]
-        
-        if not os.path.exists(json_path):
-            print(f"ERROR: JSON file not found: {json_path}", file=sys.stderr)
-            sys.exit(1)
-        
-        with open(json_path, 'r', encoding='utf-8') as f:
-            contract_data = json.load(f)
-        
-        result_path = generate_contract_word(contract_data, output_path)
-        print(result_path)
-except Exception as e:
-    print(f"ERROR: {str(e)}", file=sys.stderr)
-    print(traceback.format_exc(), file=sys.stderr)
-    sys.exit(1)
-`;
-
-    await writeFile(pythonScriptPath, pythonApiScript, 'utf-8');
-    await writeFile(tempJsonPath, JSON.stringify(contractData, null, 2), 'utf-8');
+    // Бүх XML файлуудад текст орлуулах
+    for (const fileName of textFiles) {
+      let xmlContent = xmlFiles[fileName].asText();
+      for (const [oldText, newText] of Object.entries(replacements)) {
+        // XML дотор текст орлуулах (энгийн replace)
+        // Word documents store text in <w:t> tags, so we need to be careful
+        // For now, do a simple global replace
+        xmlContent = xmlContent.split(oldText).join(newText);
+      }
+      docxData.file(fileName, xmlContent);
+    }
 
     try {
-      // Python script ажиллуулах
-      let stdout = '';
-      let stderr = '';
-      let pythonCommand = 'python';
-      
-      try {
-        const result = await execAsync(
-          `"${pythonCommand}" "${pythonScriptPath}" "${tempJsonPath}" "${outputPath}"`,
-          { maxBuffer: 10 * 1024 * 1024, encoding: 'utf-8' }
-        );
-        stdout = result.stdout || '';
-        stderr = result.stderr || '';
-      } catch (execError: unknown) {
-        // Try python3 as fallback on Windows/Linux
-        const error = execError as { stdout?: string; stderr?: string; code?: number; message?: string };
-        if (error.code === 1 || error.message?.includes('python')) {
-          try {
-            pythonCommand = 'python3';
-            const result = await execAsync(
-              `"${pythonCommand}" "${pythonScriptPath}" "${tempJsonPath}" "${outputPath}"`,
-              { maxBuffer: 10 * 1024 * 1024, encoding: 'utf-8' }
-            );
-            stdout = result.stdout || '';
-            stderr = result.stderr || '';
-          } catch (execError2: unknown) {
-            const error2 = execError2 as { stdout?: string; stderr?: string };
-            stdout = error2.stdout || error.stdout || '';
-            stderr = error2.stderr || error.stderr || '';
-            // Continue to check if file was created despite error
-          }
-        } else {
-          stdout = error.stdout || '';
-          stderr = error.stderr || '';
-        }
-      }
-
-      // Check if output file exists
-      if (!existsSync(outputPath)) {
-        const errorDetails = {
-          stdout,
-          stderr,
-          pythonCommand,
-          pythonScriptPath,
-          tempJsonPath,
-          outputPath,
-          jsonExists: existsSync(tempJsonPath),
-          scriptExists: existsSync(pythonScriptPath),
-        };
-        console.error('Python execution failed:', JSON.stringify(errorDetails, null, 2));
-        
-        // Clean up temp files
-        try {
-          await unlink(tempJsonPath);
-          await unlink(pythonScriptPath);
-        } catch {
-          // Ignore
-        }
-        
-        const errorMsg = stderr || stdout || 'Unknown error';
-        return NextResponse.json(
-          { 
-            error: `Word файл үүсээгүй байна. Python алдаа: ${errorMsg}`, 
-            details: errorDetails 
-          },
-          { status: 500 }
-        );
-      }
-
-      const fileBuffer = await readFile(outputPath);
-
-      // Temporary файлуудыг устгах
-      try {
-        await unlink(tempJsonPath);
-        await unlink(pythonScriptPath);
-      } catch {
-        // Ignore delete errors
-      }
-
-      // Үүссэн файлыг устгах (download дараа)
-      setTimeout(async () => {
-        try {
-          await unlink(outputPath);
-        } catch {
-          // Ignore
-        }
-      }, 60000); // 1 минутын дараа устгах
+      // Word файл үүсгэх
+      const buffer = doc.getZip().generate({
+        type: 'nodebuffer',
+        compression: 'DEFLATE',
+      });
 
       // Response буцаах
-      // Filename encoding for non-ASCII characters
       const safeFilename = `${contract.contractNumber}_Хөдөлмөрийн_гэрээ.docx`;
       const encodedFilename = encodeURIComponent(safeFilename);
       
-      return new NextResponse(new Uint8Array(fileBuffer), {
+      return new NextResponse(new Uint8Array(buffer), {
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}`,
         },
       });
-    } catch (execError: unknown) {
-      // Temporary файлуудыг устгах
-      try {
-        await unlink(tempJsonPath);
-        await unlink(pythonScriptPath);
-      } catch {
-        // Ignore
+    } catch (error: unknown) {
+      const err = error as { message?: string; properties?: { errors?: unknown[] } };
+      console.error('Word файл үүсгэхэд алдаа гарлаа:', error);
+      
+      let errorMessage = err.message || 'Word файл үүсгэхэд алдаа гарлаа';
+      if (err.properties?.errors) {
+        errorMessage += `: ${JSON.stringify(err.properties.errors)}`;
       }
       
-      const error = execError as { message?: string };
-      console.error('Python script execution error:', execError);
-      const errorMessage = error.message || 'Unknown error';
       return NextResponse.json(
-        { error: `Word файл үүсгэхэд алдаа гарлаа: ${errorMessage}`, details: error },
+        { error: errorMessage, details: err },
         { status: 500 }
       );
     }
