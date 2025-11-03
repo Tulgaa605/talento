@@ -64,8 +64,21 @@ export async function GET(
     });
 
     if (!contract) {
+      console.error('Contract not found with ID:', id);
       return NextResponse.json({ error: 'Гэрээ олдсонгүй' }, { status: 404 });
     }
+
+    if (!contract.employee) {
+      console.error('Employee not found for contract:', id);
+      return NextResponse.json({ error: 'Ажилтан олдсонгүй. Гэрээ дутуу байна.' }, { status: 400 });
+    }
+
+    console.log('Generating contract for:', {
+      contractId: contract.id,
+      contractNumber: contract.contractNumber,
+      employeeId: contract.employee.id,
+      employeeName: `${contract.employee.firstName} ${contract.employee.lastName}`,
+    });
 
     let contractDuration = 'Тодорхой хугацаагүй';
     if (contract.endDate) {
