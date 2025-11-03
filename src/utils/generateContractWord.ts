@@ -95,13 +95,8 @@ export function generateContractWordSimple(
       documentXml = documentXml.replace(new RegExp(placeholder, 'g'), value);
     }
     
-    // Handle signature section dots for ГҮЙЦЭТГЭХ ЗАХИРАЛ (caps version)
-    if (contractData.directorName && contractData.directorName.trim()) {
-      documentXml = documentXml.replace(
-        /ТӨЛӨӨЛЖ:\s*ГҮЙЦЭТГЭХ ЗАХИРАЛ\.?\s*\.+/g,
-        `ТӨЛӨӨЛЖ: ГҮЙЦЭТГЭХ ЗАХИРАЛ ${contractData.directorName}`
-      );
-    }
+    // Note: Signature section дээрх "ГҮЙЦЭТГЭХ ЗАХИРАЛ ........" нь гарын үсэг зурах зай
+    // Үүнийг replace хийхгүй!
     
     // Update the zip
     zip.file('word/document.xml', documentXml);
@@ -176,7 +171,7 @@ export function generateContractWordAdvanced(
     
     documentXml = documentXml.replace(
       /Гүйцэтгэх захирал[\s]+Гүйцэтгэх захирал/g,
-      'Гүйцэтгэх захирал'
+      'Гүйцэтгэх захирал: ${contractData.directorName}'
     );
     
     documentXml = documentXml.replace(
