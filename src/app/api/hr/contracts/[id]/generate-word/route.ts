@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { readFile, unlink, writeFile } from 'fs/promises';
+import { readFile, unlink, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 
@@ -119,9 +119,18 @@ export async function GET(
       city: 'Улаанбаатар хот',
     };
 
+    // Check if template file exists
+    const templatePath = join(process.cwd(), 'public', 'templates', 'contracts', 'template.docx');
+    if (!existsSync(templatePath)) {
+      return NextResponse.json(
+        { error: `Template файл олдсонгүй: ${templatePath}. Template файлыг public/templates/contracts/ folder-т байршуулна уу.` },
+        { status: 500 }
+      );
+    }
+
     const outputDir = join(process.cwd(), 'public', 'uploads', 'contracts');
     if (!existsSync(outputDir)) {
-      await execAsync(`mkdir -p "${outputDir}"`);
+      await mkdir(outputDir, { recursive: true });
     }
 
     const tempJsonPath = join(process.cwd(), `temp_contract_${id}_${Date.now()}.json`);
@@ -159,24 +168,46 @@ if __name__ == "__main__":
     try {
       let stdout = '';
       let stderr = '';
+      let pythonCmd = 'python';
+      
+      // Try python3 first, then python
+      try {
+        await execAsync('python3 --version');
+        pythonCmd = 'python3';
+      } catch {
+        try {
+          await execAsync('python --version');
+          pythonCmd = 'python';
+        } catch {
+          throw new Error('Python суугаагүй байна. Python 3 суулгана уу.');
+        }
+      }
+      
+      console.log(`Using Python command: ${pythonCmd}`);
+      console.log(`Script path: ${pythonScriptPath}`);
+      console.log(`JSON path: ${tempJsonPath}`);
+      console.log(`Output path: ${outputPath}`);
       
       try {
         const result = await execAsync(
-          `python "${pythonScriptPath}" "${tempJsonPath}" "${outputPath}"`,
+          `"${pythonCmd}" "${pythonScriptPath}" "${tempJsonPath}" "${outputPath}"`,
           { maxBuffer: 10 * 1024 * 1024, encoding: 'utf-8' }
         );
         stdout = result.stdout || '';
         stderr = result.stderr || '';
       } catch (execError: unknown) {
-        const error = execError as { stdout?: string; stderr?: string };
+        const error = execError as { stdout?: string; stderr?: string; message?: string };
         stdout = error.stdout || '';
         stderr = error.stderr || '';
+        console.error('Python execution error:', error.message);
+        console.error('Python stdout:', stdout);
+        console.error('Python stderr:', stderr);
       }
 
       if (!existsSync(outputPath)) {
         console.error('Python stdout:', stdout);
         console.error('Python stderr:', stderr);
-        throw new Error(`Word файл үүсээгүй байна. Python алдаа: ${stderr || stdout}`);
+        throw new Error(`Word файл үүсээгүй байна. Алдаа: ${stderr || stdout || 'Template файл эсвэл python-docx суугаагүй байж болзошгүй'}`);
       }
 
       const fileBuffer = await readFile(outputPath);
@@ -216,8 +247,20 @@ if __name__ == "__main__":
   } catch (error: unknown) {
     const err = error as { message?: string };
     console.error('Word гэрээ үүсгэхэд алдаа гарлаа:', error);
+    
+    // Provide helpful error messages based on common issues
+    let errorMessage = err.message || 'Word гэрээ үүсгэхэд алдаа гарлаа';
+    
+    if (errorMessage.includes('Python суугаагүй')) {
+      errorMessage = 'Python суугаагүй байна. Server дээр Python 3 суулгаж, python-docx санг суулгана уу: pip install python-docx';
+    } else if (errorMessage.includes('Template файл олдсонгүй')) {
+      errorMessage = 'Template файл олдсонгүй. public/templates/contracts/template.docx файлыг шалгана уу.';
+    } else if (errorMessage.includes('python-docx')) {
+      errorMessage = 'python-docx сан суугаагүй байна. Server дээр суулгана уу: pip install python-docx';
+    }
+    
     return NextResponse.json(
-      { error: err.message || 'Word гэрээ үүсгэхэд алдаа гарлаа' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
