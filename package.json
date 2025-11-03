@@ -7,9 +7,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "db:init": "ts-node scripts/init-db.ts",
-    "check:contracts": "node scripts/check-contract-setup.js",
-    "test:contracts": "node scripts/test-contract-generation.js"
+    "db:init": "ts-node scripts/init-db.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.3",

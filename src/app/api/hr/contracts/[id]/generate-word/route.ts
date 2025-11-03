@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { readFile, unlink, writeFile, mkdir } from 'fs/promises';
+import { readFile, unlink, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { generateContractWordAdvanced } from '@/utils/generateContractWord';
 
-const execAsync = promisify(exec);
 const prisma = new PrismaClient();
 
 type Params = { id: string };
@@ -64,21 +62,8 @@ export async function GET(
     });
 
     if (!contract) {
-      console.error('Contract not found with ID:', id);
       return NextResponse.json({ error: 'Гэрээ олдсонгүй' }, { status: 404 });
     }
-
-    if (!contract.employee) {
-      console.error('Employee not found for contract:', id);
-      return NextResponse.json({ error: 'Ажилтан олдсонгүй. Гэрээ дутуу байна.' }, { status: 400 });
-    }
-
-    console.log('Generating contract for:', {
-      contractId: contract.id,
-      contractNumber: contract.contractNumber,
-      employeeId: contract.employee.id,
-      employeeName: `${contract.employee.firstName} ${contract.employee.lastName}`,
-    });
 
     let contractDuration = 'Тодорхой хугацаагүй';
     if (contract.endDate) {
@@ -132,111 +117,39 @@ export async function GET(
       city: 'Улаанбаатар хот',
     };
 
-    // Check if template file exists
-    const templatePath = join(process.cwd(), 'public', 'templates', 'contracts', 'template.docx');
-    if (!existsSync(templatePath)) {
-      return NextResponse.json(
-        { error: `Template файл олдсонгүй: ${templatePath}. Template файлыг public/templates/contracts/ folder-т байршуулна уу.` },
-        { status: 500 }
-      );
-    }
-
     const outputDir = join(process.cwd(), 'public', 'uploads', 'contracts');
     if (!existsSync(outputDir)) {
       await mkdir(outputDir, { recursive: true });
     }
 
-    const tempJsonPath = join(process.cwd(), `temp_contract_${id}_${Date.now()}.json`);
-    const pythonScriptPath = join(process.cwd(), 'scripts', 'generate_contract_word_api.py');
+    const templatePath = join(process.cwd(), 'public', 'templates', 'contracts', 'template.docx');
     
-    const pythonApiScript = `
-import sys
-import json
-import os
-from pathlib import Path
-
-# Add project root to path
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, project_root)
-
-from scripts.generate_contract_word import generate_contract_word
-
-if __name__ == "__main__":
-    json_path = sys.argv[1]
-    output_path = sys.argv[2]
-    
-    with open(json_path, 'r', encoding='utf-8') as f:
-        contract_data = json.load(f)
-    
-    result_path = generate_contract_word(contract_data, output_path)
-    print(result_path)
-`;
-
-    await writeFile(pythonScriptPath, pythonApiScript, 'utf-8');
-    await writeFile(tempJsonPath, JSON.stringify(contractData, null, 2), 'utf-8');
+    if (!existsSync(templatePath)) {
+      throw new Error(`Template файл олдсонгүй: ${templatePath}`);
+    }
 
     const outputFileName = `contract_${contract.contractNumber}_${Date.now()}.docx`;
     const outputPath = join(outputDir, outputFileName);
 
     try {
-      let stdout = '';
-      let stderr = '';
-      let pythonCmd = 'python';
-      
-      // Try python3 first, then python
-      try {
-        await execAsync('python3 --version');
-        pythonCmd = 'python3';
-      } catch {
-        try {
-          await execAsync('python --version');
-          pythonCmd = 'python';
-        } catch {
-          throw new Error('Python суугаагүй байна. Python 3 суулгана уу.');
-        }
-      }
-      
-      console.log(`Using Python command: ${pythonCmd}`);
-      console.log(`Script path: ${pythonScriptPath}`);
-      console.log(`JSON path: ${tempJsonPath}`);
-      console.log(`Output path: ${outputPath}`);
-      
-      try {
-        const result = await execAsync(
-          `"${pythonCmd}" "${pythonScriptPath}" "${tempJsonPath}" "${outputPath}"`,
-          { maxBuffer: 10 * 1024 * 1024, encoding: 'utf-8' }
-        );
-        stdout = result.stdout || '';
-        stderr = result.stderr || '';
-      } catch (execError: unknown) {
-        const error = execError as { stdout?: string; stderr?: string; message?: string };
-        stdout = error.stdout || '';
-        stderr = error.stderr || '';
-        console.error('Python execution error:', error.message);
-        console.error('Python stdout:', stdout);
-        console.error('Python stderr:', stderr);
-      }
+      // Generate Word document using Node.js utility
+      generateContractWordAdvanced(contractData, templatePath, outputPath);
 
       if (!existsSync(outputPath)) {
-        console.error('Python stdout:', stdout);
-        console.error('Python stderr:', stderr);
-        throw new Error(`Word файл үүсээгүй байна. Алдаа: ${stderr || stdout || 'Template файл эсвэл python-docx суугаагүй байж болзошгүй'}`);
+        throw new Error('Word файл үүсээгүй байна');
       }
 
       const fileBuffer = await readFile(outputPath);
 
-      try {
-        await unlink(tempJsonPath);
-        await unlink(pythonScriptPath);
-      } catch {
-      }
-
+      // Cleanup file after 60 seconds
       setTimeout(async () => {
         try {
           await unlink(outputPath);
         } catch {
+          // Ignore cleanup errors
         }
       }, 60000);
+
       const safeFilename = `${contract.contractNumber}_Хөдөлмөрийн_гэрээ.docx`;
       const encodedFilename = encodeURIComponent(safeFilename);
       
@@ -246,34 +159,16 @@ if __name__ == "__main__":
           'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}`,
         },
       });
-    } catch (execError: unknown) {
-      try {
-        await unlink(tempJsonPath);
-        await unlink(pythonScriptPath);
-      } catch {
-      }
-      
-      const error = execError as { message?: string };
-      console.error('Python script execution error:', execError);
+    } catch (generateError: unknown) {
+      const error = generateError as { message?: string };
+      console.error('Word document generation error:', generateError);
       throw new Error(`Word файл үүсгэхэд алдаа гарлаа: ${error.message || 'Unknown error'}`);
     }
   } catch (error: unknown) {
     const err = error as { message?: string };
     console.error('Word гэрээ үүсгэхэд алдаа гарлаа:', error);
-    
-    // Provide helpful error messages based on common issues
-    let errorMessage = err.message || 'Word гэрээ үүсгэхэд алдаа гарлаа';
-    
-    if (errorMessage.includes('Python суугаагүй')) {
-      errorMessage = 'Python суугаагүй байна. Server дээр Python 3 суулгаж, python-docx санг суулгана уу: pip install python-docx';
-    } else if (errorMessage.includes('Template файл олдсонгүй')) {
-      errorMessage = 'Template файл олдсонгүй. public/templates/contracts/template.docx файлыг шалгана уу.';
-    } else if (errorMessage.includes('python-docx')) {
-      errorMessage = 'python-docx сан суугаагүй байна. Server дээр суулгана уу: pip install python-docx';
-    }
-    
     return NextResponse.json(
-      { error: errorMessage },
+      { error: err.message || 'Word гэрээ үүсгэхэд алдаа гарлаа' },
       { status: 500 }
     );
   }
