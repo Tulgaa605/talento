@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { readFile, unlink, mkdir } from 'fs/promises';
+import { readFile, unlink, mkdir, readdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { generateContractWordAdvanced } from '@/utils/generateContractWord';
@@ -117,12 +117,17 @@ export async function GET(
       city: 'Улаанбаатар хот',
     };
 
-    const outputDir = join(process.cwd(), 'public', 'uploads', 'contracts');
+    // Use /tmp directory for Vercel serverless environment
+    const outputDir = process.env.VERCEL ? '/tmp' : join(process.cwd(), 'public', 'uploads', 'contracts');
+    
     if (!existsSync(outputDir)) {
       await mkdir(outputDir, { recursive: true });
     }
 
     const templatePath = join(process.cwd(), 'public', 'templates', 'contracts', 'template.docx');
+    
+    console.log('Checking template path:', templatePath);
+    console.log('Template exists:', existsSync(templatePath));
     
     if (!existsSync(templatePath)) {
       throw new Error(`Template файл олдсонгүй: ${templatePath}`);
@@ -130,26 +135,34 @@ export async function GET(
 
     const outputFileName = `contract_${contract.contractNumber}_${Date.now()}.docx`;
     const outputPath = join(outputDir, outputFileName);
+    
+    console.log('Output directory:', outputDir);
+    console.log('Output path:', outputPath);
 
     try {
       // Generate Word document using Node.js utility
       console.log('Starting Word generation...');
+      console.log('Environment:', process.env.VERCEL ? 'Vercel' : 'Local');
       console.log('Template path:', templatePath);
+      console.log('Template exists:', existsSync(templatePath));
       console.log('Output path:', outputPath);
-      console.log('Contract data:', JSON.stringify(contractData, null, 2));
       
-      generateContractWordAdvanced(contractData, templatePath, outputPath);
-      
-      console.log('Word generation completed');
+      try {
+        generateContractWordAdvanced(contractData, templatePath, outputPath);
+        console.log('Word generation completed successfully');
+      } catch (genError) {
+        console.error('Generation function error:', genError);
+        throw genError;
+      }
 
       if (!existsSync(outputPath)) {
         console.error('Output file does not exist after generation');
+        console.error('Output directory contents:', await readdir(outputDir).catch(() => []));
         throw new Error('Word файл үүсээгүй байна');
       }
       
-      console.log('Output file exists, size:', (await readFile(outputPath)).length);
-
       const fileBuffer = await readFile(outputPath);
+      console.log('Output file read successfully, size:', fileBuffer.length);
 
       // Cleanup file after 60 seconds
       setTimeout(async () => {
@@ -170,15 +183,25 @@ export async function GET(
         },
       });
     } catch (generateError: unknown) {
-      const error = generateError as { message?: string };
-      console.error('Word document generation error:', generateError);
+      const error = generateError as { message?: string; stack?: string };
+      console.error('=== Word Generation Error ===');
+      console.error('Message:', error.message);
+      console.error('Stack:', error.stack);
+      console.error('Full error:', generateError);
       throw new Error(`Word файл үүсгэхэд алдаа гарлаа: ${error.message || 'Unknown error'}`);
     }
   } catch (error: unknown) {
-    const err = error as { message?: string };
-    console.error('Word гэрээ үүсгэхэд алдаа гарлаа:', error);
+    const err = error as { message?: string; stack?: string };
+    console.error('=== API Route Error ===');
+    console.error('Message:', err.message);
+    console.error('Stack:', err.stack);
+    console.error('Full error:', error);
+    
     return NextResponse.json(
-      { error: err.message || 'Word гэрээ үүсгэхэд алдаа гарлаа' },
+      { 
+        error: err.message || 'Word гэрээ үүсгэхэд алдаа гарлаа',
+        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      },
       { status: 500 }
     );
   }
