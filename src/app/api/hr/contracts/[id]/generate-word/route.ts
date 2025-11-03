@@ -133,11 +133,21 @@ export async function GET(
 
     try {
       // Generate Word document using Node.js utility
+      console.log('Starting Word generation...');
+      console.log('Template path:', templatePath);
+      console.log('Output path:', outputPath);
+      console.log('Contract data:', JSON.stringify(contractData, null, 2));
+      
       generateContractWordAdvanced(contractData, templatePath, outputPath);
+      
+      console.log('Word generation completed');
 
       if (!existsSync(outputPath)) {
+        console.error('Output file does not exist after generation');
         throw new Error('Word файл үүсээгүй байна');
       }
+      
+      console.log('Output file exists, size:', (await readFile(outputPath)).length);
 
       const fileBuffer = await readFile(outputPath);
 
