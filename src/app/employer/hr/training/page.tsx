@@ -26,6 +26,8 @@ export default function TrainingPage() {
   const [selectedTraining, setSelectedTraining] = useState<Training | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTraining, setEditingTraining] = useState<Training | null>(null);
   const componentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,6 +54,8 @@ export default function TrainingPage() {
   const [showParticipant, setShowParticipant] = useState(false);
   const [employeeTrainings, setEmployeeTrainings] = useState<Training[]>([]);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
+  const [showEditParticipant, setShowEditParticipant] = useState(false);
+  const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
 
   const openDetail = (training: Training) => {
     setSelectedTraining(training);
@@ -115,6 +119,48 @@ export default function TrainingPage() {
     closeAddTraining();
   };
 
+  const openEditTraining = (training: Training) => {
+    setEditingTraining(training);
+    setShowEditModal(true);
+  };
+  
+  const closeEditTraining = () => {
+    setShowEditModal(false);
+    setEditingTraining(null);
+  };
+
+  const handleEditTraining = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingTraining) return;
+    
+    const formData = new FormData(event.currentTarget);
+    const updatedTraining: Training = {
+      ...editingTraining,
+      name: String(formData.get("name") || editingTraining.name),
+      type: String(formData.get("type") || editingTraining.type),
+      objective: String(formData.get("objective") || editingTraining.objective),
+      content: String(formData.get("content") || editingTraining.content),
+      startDate: String(formData.get("startDate") || editingTraining.startDate),
+      endDate: String(formData.get("endDate") || editingTraining.endDate),
+      location: String(formData.get("location") || editingTraining.location),
+      instructor: String(formData.get("instructor") || editingTraining.instructor),
+      participants: Number(formData.get("participants") || editingTraining.participants),
+      status: String(formData.get("status") || editingTraining.status),
+      progress: Number(formData.get("progress") || editingTraining.progress)
+    };
+    
+    setTrainings((prev) => prev.map(t => t.id === updatedTraining.id ? updatedTraining : t));
+    try {
+      fetch(`/api/hr/training/${updatedTraining.id}`, { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(updatedTraining) 
+      });
+    } catch {}
+    closeEditTraining();
+    if (showDetail) closeDetail();
+  };
+
   const [participants, setParticipants] = useState<Participant[]>([]);
 
   useEffect(() => {
@@ -163,6 +209,49 @@ export default function TrainingPage() {
       fetch('/api/hr/training/participants', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newP) });
     } catch {}
     closeAddParticipant();
+  };
+
+  const openEditParticipant = (participant: Participant) => {
+    setEditingParticipant(participant);
+    setShowEditParticipant(true);
+  };
+  
+  const closeEditParticipant = () => {
+    setShowEditParticipant(false);
+    setEditingParticipant(null);
+  };
+
+  const handleEditParticipant = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingParticipant) return;
+    
+    const fd = new FormData(e.currentTarget);
+    const trainingId = Number(fd.get("trainingId") || editingParticipant.trainingId);
+    const trainingRef = trainings.find((t) => t.id === trainingId);
+    const updatedP: Participant = {
+      ...editingParticipant,
+      employeeId: String(fd.get("employeeId") || editingParticipant.employeeId),
+      name: String(fd.get("name") || editingParticipant.name),
+      position: String(fd.get("position") || editingParticipant.position),
+      training: trainingRef?.name || String(fd.get("training") || editingParticipant.training),
+      duration: String(fd.get("duration") || editingParticipant.duration),
+      status: String(fd.get("status") || editingParticipant.status),
+      score: Number(fd.get("score") || editingParticipant.score),
+      certificate: String(fd.get("certificate") || editingParticipant.certificate),
+      trainingId: trainingId
+    };
+    
+    setParticipants((prev) => prev.map(p => 
+      p.employeeId === updatedP.employeeId && p.trainingId === updatedP.trainingId ? updatedP : p
+    ));
+    try {
+      fetch('/api/hr/training/participants', { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(updatedP) 
+      });
+    } catch {}
+    closeEditParticipant();
   };
 
   return (
@@ -340,7 +429,10 @@ export default function TrainingPage() {
                     >
                       Дэлгэрэнгүй
                     </button>
-                    <button className="px-3 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 transition-colors">
+                    <button 
+                      onClick={() => openEditTraining(training)}
+                      className="px-3 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 transition-colors"
+                    >
                       Засах
                     </button>
                   </div>
@@ -395,7 +487,12 @@ export default function TrainingPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <button onClick={() => openParticipant(participant as unknown as Participant)} className="text-[#0C213A] hover:text-[#0C213A]/80">Үзэх</button>
-                      <button className="text-gray-500 hover:text-gray-700">Засах</button>
+                      <button 
+                        onClick={() => openEditParticipant(participant as unknown as Participant)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        Засах
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -562,7 +659,17 @@ export default function TrainingPage() {
             </div>
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">
               <button onClick={closeDetail} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">Хаах</button>
-              <button className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90">Засварлах</button>
+              <button 
+                onClick={() => {
+                  if (selectedTraining) {
+                    closeDetail();
+                    openEditTraining(selectedTraining);
+                  }
+                }}
+                className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90"
+              >
+                Засварлах
+              </button>
             </div>
           </div>
         </div>
@@ -679,6 +786,115 @@ export default function TrainingPage() {
               <div className="pt-4 flex justify-end gap-3 border-t border-gray-200 mt-4">
                 <button type="button" onClick={closeAddTraining} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">Цуцлах</button>
                 <button type="submit" className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90">Хадгалах</button>
+              </div>
+            </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {showEditModal && editingTraining && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-lg font-semibold text-[#0C213A]">Сургалт засах</h3>
+              <button
+                onClick={closeEditTraining}
+                className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-6">
+              <form onSubmit={handleEditTraining} className="space-y-4">
+              <div className="grid grid-cols-1 text-gray-700 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Сургалтын нэр</label>
+                  <input name="name" defaultValue={editingTraining.name} className="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Төрөл</label>
+                  <select name="type" defaultValue={editingTraining.type} className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="Дотоод">Дотоод</option>
+                    <option value="Гадаад">Гадаад</option>
+                    <option value="Онлайн">Онлайн</option>
+                    <option value="Заавал">Танхим</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Эхлэх огноо</label>
+                  <input name="startDate" type="date" defaultValue={editingTraining.startDate} className="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Дуусах огноо</label>
+                  <input name="endDate" type="date" defaultValue={editingTraining.endDate} className="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Байршил</label>
+                  <input name="location" defaultValue={editingTraining.location} className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Багш</label>
+                  <input name="instructor" defaultValue={editingTraining.instructor} className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Оролцогчдын тоо</label>
+                  <input name="participants" type="number" min="0" defaultValue={editingTraining.participants} className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Төлөв</label>
+                  <select name="status" defaultValue={editingTraining.status} className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="Төлөвлөгдсөн">Төлөвлөгдсөн</option>
+                    <option value="Идэвхтэй">Идэвхтэй</option>
+                    <option value="Дууссан">Дууссан</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm text-gray-600 mb-1">Зорилго</label>
+                  <input name="objective" defaultValue={editingTraining.objective} className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                </div>
+              </div>
+              <div className="pt-4 flex justify-end gap-3 border-t border-gray-200 mt-4">
+                <button type="button" onClick={closeEditTraining} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">Цуцлах</button>
+                <button type="submit" className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90">Хадгалах</button>
+              </div>
+            </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {showEditParticipant && editingParticipant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-lg font-semibold text-[#0C213A]">Оролцогч засах</h3>
+              <button onClick={closeEditParticipant} className="p-2 rounded-md hover:bg-gray-100">✕</button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-6">
+              <form onSubmit={handleEditParticipant} className="grid grid-cols-1 sm:grid-cols-2 text-gray-700 gap-4 text-sm">
+              <input name="employeeId" placeholder="Ажилтны ID" defaultValue={editingParticipant.employeeId} className="border rounded-lg px-3 py-2" required />
+              <input name="name" placeholder="Нэр" defaultValue={editingParticipant.name} className="border rounded-lg px-3 py-2" required />
+              <input name="position" placeholder="Албан тушаал" defaultValue={editingParticipant.position} className="border rounded-lg px-3 py-2" />
+              <select name="trainingId" defaultValue={editingParticipant.trainingId} className="border rounded-lg px-3 py-2">
+                {trainings.map((t)=> (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+              <input name="duration" placeholder="Оролцсон хугацаа" defaultValue={editingParticipant.duration} className="border rounded-lg px-3 py-2" />
+              <select name="status" defaultValue={editingParticipant.status} className="border rounded-lg px-3 py-2">
+                <option>Идэвхтэй</option>
+                <option>Дууссан</option>
+                <option>Төлөвлөгдсөн</option>
+              </select>
+              <input name="score" type="number" min="0" max="100" placeholder="Үнэлгээ (%)" defaultValue={editingParticipant.score} className="border rounded-lg px-3 py-2" />
+              <select name="certificate" defaultValue={editingParticipant.certificate} className="border rounded-lg px-3 py-2">
+                <option>Хүлээгдэж буй</option>
+                <option>Тийм</option>
+                <option>Үгүй</option>
+              </select>
+              <div className="col-span-1 sm:col-span-2 flex justify-end gap-3 mt-2">
+                <button type="button" onClick={closeEditParticipant} className="px-4 py-2 border rounded-lg">Цуцлах</button>
+                <button type="submit" className="px-4 py-2 bg-[#0C213A] text-white rounded-lg">Хадгалах</button>
               </div>
             </form>
             </div>

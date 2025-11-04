@@ -53,7 +53,6 @@ export default function RecruitmentPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedStatus, setSelectedStatus] = useState("all");
-  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [recruitmentData, setRecruitmentData] = useState<RecruitmentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -281,7 +280,7 @@ export default function RecruitmentPage() {
           <nav className="-mb-px flex space-x-8">
             {[
               { id: "overview", name: "Хянах самбар" },
-              { id: "questionnaire", name: "Төрийн албан хаагчийн анкет" },
+              { id: "questionnaire", name: "Анкет бөглөх" },
               { id: "applications", name: "Анкетууд" },
               { id: "positions", name: "Ажлын байр" }
             ].map((tab) => (
@@ -618,36 +617,17 @@ export default function RecruitmentPage() {
 
       {activeTab === "questionnaire" && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-[#0C213A]">Төрийн албан хаагчийн анкет</h3>
-            <p className="text-sm text-gray-600 mt-1">Төрийн албан хаагчийн анкет бөглөх</p>
-          </div>
           <div className="p-6">
-            {!showQuestionnaire ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-[#0C213A]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">📋</span>
-                </div>
-                <h4 className="text-lg font-medium text-[#0C213A] mb-2">Төрийн албан хаагчийн анкет</h4>
-                <p className="text-gray-600 mb-6">Төрийн албан хаагчийн анкет бөглөх боломжтой</p>
-                <button
-                  onClick={() => setShowQuestionnaire(true)}
-                  className="bg-[#0C213A] text-white px-6 py-3 rounded-lg hover:bg-[#0C213A]/90 transition-colors"
-                >
-                  Анкет бөглөх
-                </button>
-              </div>
-            ) : (
-              <GovernmentEmployeeQuestionnaire
-                onSubmit={(data) => {
-                  console.log('Questionnaire submitted:', data);
-                  setShowQuestionnaire(false);
-                  // Refresh recruitment data to show the new questionnaire response
-                  fetchRecruitmentData();
-                }}
-                onCancel={() => setShowQuestionnaire(false)}
-              />
-            )}
+            <GovernmentEmployeeQuestionnaire
+              onSubmit={(data) => {
+                console.log('Questionnaire submitted:', data);
+                setActiveTab("overview");
+                fetchRecruitmentData();
+              }}
+              onCancel={() => {
+                setActiveTab("overview");
+              }}
+            />
           </div>
         </div>
       )}

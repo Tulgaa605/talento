@@ -62,7 +62,7 @@ export default function EditDepartmentPage() {
       });
 
       if (res.ok) {
-        router.push('employer/hr/departments');
+        router.push('/employer/hr/departments');
       } else {
         const errorData = await res.json();
         alert(errorData.error || 'Хэлтсийн мэдээлэл шинэчлэхэд алдаа гарлаа');

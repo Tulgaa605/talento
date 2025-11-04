@@ -25,6 +25,11 @@ type Address = {
   email: string;
 };
 
+type PhotoInfo = {
+  file: File | null;
+  preview: string | null;
+};
+
 type EducationRow = {
   schoolName?: string;
   startDate?: string;
@@ -178,6 +183,8 @@ export default function GovernmentEmployeeQuestionnaire({
   onCancel,
 }: GovernmentEmployeeQuestionnaireProps) {
   
+  const [photo, setPhoto] = useState<PhotoInfo>({ file: null, preview: null });
+  
   // Validation functions
   const validateLettersOnly = (value: string) => {
     return /^[A-Za-zА-Яа-яЁёӨөҮү\s]*$/.test(value);
@@ -211,6 +218,35 @@ export default function GovernmentEmployeeQuestionnaire({
       return value.charAt(0).toUpperCase() + value.slice(1);
     }
     return value;
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check if file is an image
+      if (!file.type.startsWith('image/')) {
+        alert('Зөвхөн зураг файл оруулна уу');
+        return;
+      }
+      
+      // Check file size (5MB max)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > maxSize) {
+        alert('Файлын хэмжээ 5MB-аас их байна. Бага хэмжээтэй зураг сонгоно уу.');
+        return;
+      }
+      
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setPhoto({ file, preview: previewUrl });
+    }
+  };
+
+  const removePhoto = () => {
+    if (photo.preview) {
+      URL.revokeObjectURL(photo.preview);
+    }
+    setPhoto({ file: null, preview: null });
   };
 
   const handleInputChange = (field: string[], value: string, validationType?: 'letters' | 'numbers' | 'lettersAndPunctuation' | 'registration' | 'phone', maxLength?: number) => {
@@ -398,6 +434,15 @@ export default function GovernmentEmployeeQuestionnaire({
     }
   }, [initialData]);
 
+  // Cleanup photo preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (photo.preview) {
+        URL.revokeObjectURL(photo.preview);
+      }
+    };
+  }, [photo.preview]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -440,55 +485,81 @@ export default function GovernmentEmployeeQuestionnaire({
 
   return (
     <div className="max-w-5xl mx-auto p-6 bg-white text-gray-900">
-      <div className="mb-8 border-b pb-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">ТӨРИЙН АЛБАН ХААГЧИЙН АНКЕТ</h1>
-            <p className="text-center text-lg text-gray-600">Маягт № 1</p>
-            <p className="text-center text-sm text-gray-500 mt-2">
-          &quot;Төрийн албан хаагчийн хувийн хэрэг хөтлөх журам&quot;-ын 1 дүгээр хавсралт
-        </p>
-          </div>
-          <div className="text-right text-xs text-gray-500">
-            <p>Маягтыг өөрийн гараар, хар буюу хар хөх өнгийн бэхээр бөглөнө</p>
-            <p>Биеийн байцаалт бичих санамок ашиглаарай</p>
-          </div>
-        </div>
-      </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
         
-        <div className="border border-gray-300 p-6 rounded-lg">
-          <h2 className="text-xl font-bold mb-6">1. ХУВЬ ХҮНИЙ ТАЛААРХ МЭДЭЭЛЭЛ</h2>
-          
-          <div className="grid grid-cols-2 gap-6 mb-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">Регистрийн дугаар</label>
-              <input
-                type="text"
-                className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
-                value={formData.identification.registrationNumber}
-                onChange={(e) => handleInputChange(['identification', 'registrationNumber'], e.target.value, 'registration', 10)}
-                pattern="[A-ZА-ЯЁӨҮү]{2}[0-9]{8}"
-                maxLength={10}
-                placeholder="AA12345678"
-                title="Эхний 2 үсэг, дараа нь 8 тоо (жишээ: AA12345678)"
-              />
-        </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Иргэний үнэмлэхийн дугаар</label>
-              <input
-                type="text"
-                className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
-                value={formData.identification.citizenIdNumber}
-                onChange={(e) => handleInputChange(['identification', 'citizenIdNumber'], e.target.value, 'numbers', 10)}
-                pattern="[0-9]+"
-                maxLength={10}
-                placeholder="1234567890"
-              />
+          <div className="border border-gray-300 p-6 rounded-lg">
+            <h2 className="text-xl font-bold mb-6">1. ХУВЬ ХҮНИЙ ТАЛААРХ МЭДЭЭЛЭЛ</h2>
+            
+            <div className="flex flex-row gap-6 mb-6 items-start">
+              {/* Left side - Input fields in horizontal layout */}
+              <div className="flex-1 flex flex-row gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium mb-2">Регистрийн дугаар</label>
+                  <input
+                    type="text"
+                    className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
+                    value={formData.identification.registrationNumber}
+                    onChange={(e) => handleInputChange(['identification', 'registrationNumber'], e.target.value, 'registration', 10)}
+                    pattern="[A-ZА-ЯЁӨҮү]{2}[0-9]{8}"
+                    maxLength={10}
+                    placeholder="AA12345678"
+                    title="Эхний 2 үсэг, дараа нь 8 тоо (жишээ: AA12345678)"
+                  />
+                </div>
+                
+                <div className="flex-1">
+                  <label className="block text-sm font-medium mb-2">Иргэний үнэмлэхийн дугаар</label>
+                  <input
+                    type="text"
+                    className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-blue-500"
+                    value={formData.identification.citizenIdNumber}
+                    onChange={(e) => handleInputChange(['identification', 'citizenIdNumber'], e.target.value, 'numbers', 10)}
+                    pattern="[0-9]+"
+                    maxLength={10}
+                    placeholder="1234567890"
+                  />
+                </div>
+              </div>
+              
+              {/* Right side - Photo upload */}
+              <div className="flex-shrink-0 -mt-13">
+                <div className="relative">
+                  {!photo.preview ? (
+                    <label className="cursor-pointer">
+                      <div className="w-32 h-40 border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center hover:border-blue-500 transition-colors">
+                        <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span className="text-xs text-gray-500">Зураг оруулах</span>
+                        <span className="text-xs text-gray-400 mt-1">3x4</span>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="hidden"
+                      />
+                    </label>
+                  ) : (
+                    <div className="relative w-32 h-40">
+                      <img
+                        src={photo.preview}
+                        alt="Preview"
+                        className="w-full h-full object-cover rounded border-2 border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={removePhoto}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium mb-2">1.1. Эцэг/эх/-ийн нэр</label>

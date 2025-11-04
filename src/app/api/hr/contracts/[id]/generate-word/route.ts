@@ -84,7 +84,8 @@ export async function GET(
     }
 
     let workSchedule = contract.workSchedule || '';
-    if (!workSchedule) {
+    
+    if (!workSchedule || workSchedule.trim() === '') {
       switch (contract.contractType) {
         case 'FULL_TIME':
           workSchedule = 'Бүтэн цагийн (08:00-17:00)';
@@ -96,6 +97,9 @@ export async function GET(
           workSchedule = 'Бүтэн цагийн (08:00-17:00)';
       }
     }
+    
+    console.log('Contract workSchedule from DB:', contract.workSchedule);
+    console.log('Final workSchedule used:', workSchedule);
 
     const contractData = {
       contractNumber: contract.contractNumber,
@@ -115,9 +119,8 @@ export async function GET(
       companyName: 'Эрдэнэс-Тавантолгой ХК',
       directorName: 'Гүйцэтгэх захирал',
       city: 'Улаанбаатар хот',
+      benefits: contract.benefits || undefined,
     };
-
-    // Use /tmp directory for Vercel serverless environment
     const outputDir = process.env.VERCEL ? '/tmp' : join(process.cwd(), 'public', 'uploads', 'contracts');
     
     if (!existsSync(outputDir)) {
@@ -140,7 +143,6 @@ export async function GET(
     console.log('Output path:', outputPath);
 
     try {
-      // Generate Word document using Node.js utility
       console.log('Starting Word generation...');
       console.log('Environment:', process.env.VERCEL ? 'Vercel' : 'Local');
       console.log('Template path:', templatePath);
@@ -164,12 +166,10 @@ export async function GET(
       const fileBuffer = await readFile(outputPath);
       console.log('Output file read successfully, size:', fileBuffer.length);
 
-      // Cleanup file after 60 seconds
       setTimeout(async () => {
         try {
           await unlink(outputPath);
         } catch {
-          // Ignore cleanup errors
         }
       }, 60000);
 

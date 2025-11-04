@@ -50,12 +50,10 @@ export default function ContractDetailPage() {
 
   const fetchContract = async (id: string) => {
     try {
-      const response = await fetch(`/api/hr/contracts?employeeId=${id}`);
+      const response = await fetch(`/api/hr/contracts/${id}`);
       if (response.ok) {
         const data = await response.json();
-        if (data.length > 0) {
-          setContract(data[0]);
-        }
+        setContract(data);
       }
     } catch (error) {
       console.error('Error fetching contract:', error);
@@ -114,33 +112,8 @@ export default function ContractDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 mt-10">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-6 flex items-center justify-between">
-          <Link href="/employer/hr/contracts" className="text-blue-600 hover:text-blue-800">
-            ← Буцах
-          </Link>
-          <div className="flex gap-2">
-            <button
-              onClick={handleDownloadWord}
-              disabled={downloading}
-              className={`px-4 py-2 rounded-md text-white ${
-                downloading
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-purple-600 hover:bg-purple-700'
-              }`}
-            >
-              {downloading ? 'Татаж байна...' : 'Word татах'}
-            </button>
-            <Link
-              href={`/employer/hr/contracts/${contract.id}/edit`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Засах
-            </Link>
-          </div>
-        </div>
-
         <div className="bg-white rounded-lg shadow-md p-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">
             Хөдөлмөрийн гэрээ: {contract.contractNumber}
@@ -243,6 +216,31 @@ export default function ContractDetailPage() {
               <p className="text-sm text-gray-700 whitespace-pre-wrap">{contract.terms}</p>
             </div>
           )}
+
+          <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center gap-3">
+            <Link href="/employer/hr/contracts" className="text-blue-600 hover:text-blue-800">
+              ← Буцах
+            </Link>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDownloadWord}
+                disabled={downloading}
+                className={`px-6 py-2 rounded-md text-white ${
+                  downloading
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-purple-600 hover:bg-purple-700'
+                }`}
+              >
+                {downloading ? 'Татаж байна...' : 'Word татах'}
+              </button>
+              <Link
+                href={`/employer/hr/contracts/${contract.id}/edit`}
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Засах
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>

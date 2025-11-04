@@ -62,6 +62,10 @@ export async function PUT(
       salary,
       currency,
       status,
+      workSchedule,
+      probationPeriod,
+      benefits,
+      terms,
     } = body;
 
     if (!contractNumber || !contractType || !startDate || !salary || !currency) {
@@ -95,6 +99,10 @@ export async function PUT(
         salary: typeof salary === 'number' ? salary : parseFloat(salary),
         currency,
         status: status || 'ACTIVE',
+        workSchedule: workSchedule || null,
+        probationPeriod: probationPeriod ? parseInt(probationPeriod) : null,
+        benefits: benefits || null,
+        terms: terms || null,
       },
       include: {
         employee: {

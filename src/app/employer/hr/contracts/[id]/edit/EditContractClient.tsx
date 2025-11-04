@@ -14,6 +14,10 @@ interface Contract {
   currency: string;
   status: string;
   description?: string;
+  workSchedule?: string;
+  probationPeriod?: number;
+  benefits?: string;
+  terms?: string;
   employee: {
     id: string;
     firstName: string;
@@ -45,6 +49,10 @@ export default function EditContractClient({ id }: { id: string }) {
     currency: 'MNT',
     status: 'ACTIVE',
     description: '',
+    workSchedule: '',
+    probationPeriod: '',
+    benefits: '',
+    terms: '',
   });
 
   useEffect(() => {
@@ -70,6 +78,10 @@ export default function EditContractClient({ id }: { id: string }) {
           currency: data.currency || 'MNT',
           status: data.status || 'ACTIVE',
           description: data.description || '',
+          workSchedule: data.workSchedule || '',
+          probationPeriod: data.probationPeriod?.toString() || '',
+          benefits: data.benefits || '',
+          terms: data.terms || '',
         });
       } catch (e) {
         console.error('Мэдээлэл авахад алдаа гарлаа:', e);
@@ -101,7 +113,7 @@ export default function EditContractClient({ id }: { id: string }) {
         body: JSON.stringify(formData),
       });
       if (res.ok) {
-        router.push('/hr/contracts');
+        router.push('/employer/hr/contracts');
       } else {
         const err = await res.json();
         alert(err.error || 'Гэрээний мэдээлэл шинэчлэхэд алдаа гарлаа');
@@ -153,7 +165,7 @@ export default function EditContractClient({ id }: { id: string }) {
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Гэрээний дугаар *
@@ -164,7 +176,7 @@ export default function EditContractClient({ id }: { id: string }) {
                   value={formData.contractNumber}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -177,14 +189,12 @@ export default function EditContractClient({ id }: { id: string }) {
                   value={formData.contractType}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Төрөл сонгох</option>
                   <option value="FULL_TIME">Бүтэн цагийн</option>
                   <option value="PART_TIME">Хагас цагийн</option>
-                  <option value="CONTRACT">Гэрээт</option>
                   <option value="INTERNSHIP">Дадлага</option>
-                  <option value="PROBATION">Туршилтын</option>
                 </select>
               </div>
 
@@ -198,7 +208,7 @@ export default function EditContractClient({ id }: { id: string }) {
                   value={formData.startDate}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -211,7 +221,7 @@ export default function EditContractClient({ id }: { id: string }) {
                   name="endDate"
                   value={formData.endDate}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -227,7 +237,7 @@ export default function EditContractClient({ id }: { id: string }) {
                   required
                   min="0"
                   step="1000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -240,12 +250,42 @@ export default function EditContractClient({ id }: { id: string }) {
                   value={formData.currency}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="MNT">MNT</option>
                   <option value="USD">USD</option>
                   <option value="EUR">EUR</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ажлын хуваарь
+                </label>
+                <input
+                  type="text"
+                  name="workSchedule"
+                  value={formData.workSchedule}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Даваа-Баасан 08:00-17:00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Туршилтын хугацаа (сар)
+                </label>
+                <input
+                  type="number"
+                  name="probationPeriod"
+                  value={formData.probationPeriod}
+                  onChange={handleChange}
+                  min="0"
+                  max="12"
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="3"
+                />
               </div>
 
               <div>
@@ -256,7 +296,7 @@ export default function EditContractClient({ id }: { id: string }) {
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="ACTIVE">Идэвхтэй</option>
                   <option value="EXPIRED">Дууссан</option>
@@ -265,18 +305,21 @@ export default function EditContractClient({ id }: { id: string }) {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Тайлбар
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Гэрээний тайлбар..."
-              />
+            <div className="grid grid-cols-1 gap-1">
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Гэрээний нөхцөл
+                </label>
+                <textarea
+                  name="terms"
+                  value={formData.terms}
+                  onChange={handleChange}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Гэрээний нөхцөл, заалт..."
+                />
+              </div>
             </div>
 
             <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
