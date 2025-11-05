@@ -44,6 +44,7 @@ export default function NewContractPage() {
     contractNumber: '',
     employeeId: '',
     contractType: 'FULL_TIME',
+    workConditions: 'NORMAL',
     startDate: '',
     endDate: '',
     salary: '',
@@ -151,6 +152,8 @@ export default function NewContractPage() {
           ...formData,
           salary: parseFloat(formData.salary),
           probationPeriod: formData.probationPeriod ? parseInt(formData.probationPeriod) : null,
+          workConditions: formData.workConditions,
+          benefits: formData.terms,
         }),
       });
 
@@ -349,10 +352,25 @@ export default function NewContractPage() {
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="FULL_TIME">Бүтэн цагийн</option>
-                  <option value="PART_TIME">Хагас цагийн</option>
-                  <option value="CONTRACT">Гэрээт</option>
-                  <option value="INTERNSHIP">Дадлага</option>
+                  <option value="FULL_TIME">Үндсэн ажилтан</option>
+                  <option value="PART_TIME">Цагийн ажилтан</option>
+                  <option value="INTERNSHIP">Дадлага ажилтан</option>
+                  <option value="PROBATION">Туршилтын ажилтан</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                Хөдөлмөрийн нөхцөл *
+                </label>
+                <select
+                  name="workConditions"
+                  value={formData.workConditions}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="NORMAL">Ердийн</option>
+                  <option value="HARMFUL">Хортой</option>
                 </select>
               </div>
             </div>
@@ -463,7 +481,7 @@ export default function NewContractPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-lg font-medium text-gray-700 mb-2">
-                  Гэрээний нөхцөл, заалт
+                  Бусад хангамж
                 </label>
                 <textarea
                   name="terms"

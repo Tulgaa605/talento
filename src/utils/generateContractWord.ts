@@ -16,6 +16,7 @@ interface ContractData {
   startDate?: string;
   endDate?: string | null;
   contractType?: string;
+  workConditions?: string;
   workSchedule?: string;
   contractDuration?: string;
   companyName?: string;
@@ -55,14 +56,27 @@ function formatContractType(contractType?: string): string {
   if (!contractType) return 'Бүтэн цагийн';
   
   const typeMap: { [key: string]: string } = {
-    'FULL_TIME': 'Бүтэн цагийн',
-    'PART_TIME': 'Хагас цагийн',
-    'TEMPORARY': 'Түр хугацааны',
-    'CONTRACT': 'Гэрээт',
-    'INTERNSHIP': 'Дадлага',
+    'FULL_TIME': 'Үндсэн ажилтан',
+    'PART_TIME': 'Цагийн ажилтан',
+    'TEMPORARY': 'Туршилтын ажилтан',
+    'INTERNSHIP': 'Дадлага ажилтан',
   };
   
   return typeMap[contractType.toUpperCase()] || contractType;
+}
+
+/**
+ * Хөдөлмөрийн нөхцлийг монгол хэлээр форматлах
+ */
+function formatWorkConditions(workConditions?: string): string {
+  if (!workConditions) return 'Ердийн';
+  
+  const conditionsMap: { [key: string]: string } = {
+    'NORMAL': 'Ердийн',
+    'HARMFUL': 'Хортой',
+  };
+  
+  return conditionsMap[workConditions.toUpperCase()] || workConditions;
 }
 
 /**
@@ -84,28 +98,19 @@ export function generateContractWordSimple(
     }
     
     const simplePlaceholders: Array<[string, string]> = [
-      // Date
       ['___CONTRACT_DATE___', formatDateMongolian(contractData.startDate || new Date().toISOString().split('T')[0])],
-      // Contract number
       ['___CONTRACT_NUMBER___', contractData.contractNumber || ''],
-      // Employee info
       ['___EMPLOYEE_NAME___', `${contractData.employeeLastName || ''} овогтой ${contractData.employeeName || ''}`],
       ['___REGISTRATION_NUMBER___', contractData.registrationNumber || contractData.employeeId || ''],
-      // Company & Director
       ['___COMPANY_NAME___', contractData.companyName || 'Эрдэнэс-Тавантолгой'],
       ['___DIRECTOR_NAME___', contractData.directorName || ''],
-      // Position & Department
       ['___POSITION___', contractData.position || ''],
       ['___DEPARTMENT___', contractData.department || ''],
-      // Contract type
       ['___CONTRACT_TYPE___', formatContractType(contractData.contractType)],
-      // Work conditions
-      ['___WORK_CONDITIONS___', formatContractType(contractData.contractType)],
-      ['___WORK_SCHEDULE___', formatContractType(contractData.contractType)],
-      // Salary
+      ['___WORK_CONDITIONS___', formatWorkConditions(contractData.workConditions)],
+      ['___WORK_SCHEDULE___', contractData.workSchedule || 'Даваа-Баасан 09:00-18:00'],
       ['___SALARY___', (contractData.salary || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })],
       ['___SALARY_TEXT___', contractData.salaryText || ''],
-      // Benefits & Duration
       ['___BENEFITS___', contractData.benefits || 'Хөдөлмөрийн гэрээнд заасны дагуу'],
       ['___CONTRACT_DURATION___', contractData.contractDuration || 'Тодорхой хугацаагүй'],
     ];
@@ -113,14 +118,7 @@ export function generateContractWordSimple(
     for (const [placeholder, value] of simplePlaceholders) {
       documentXml = documentXml.replace(new RegExp(placeholder, 'g'), value);
     }
-    
-    // Note: Signature section дээрх "ГҮЙЦЭТГЭХ ЗАХИРАЛ ........" нь гарын үсэг зурах зай
-    // Үүнийг replace хийхгүй!
-    
-    // Update the zip
     zip.file('word/document.xml', documentXml);
-    
-    // Generate output
     const outputBuffer = zip.generate({
       type: 'nodebuffer',
       compression: 'DEFLATE',
@@ -171,8 +169,9 @@ export function generateContractWordAdvanced(
       ["Үндсэн цалин: ................ /............................../-н төгрөг", 
        `Үндсэн цалин: ${(contractData.salary || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })} /${contractData.salaryText || ''}/-н төгрөг`],
       ["Үндсэн цалин: ................", `Үндсэн цалин: ${(contractData.salary || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`],
-      ["Хөдөлмөрийн нөхцөл: ...................", `Хөдөлмөрийн нөхцөл: ${formatContractType(contractData.contractType)}`],
+      ["Хөдөлмөрийн нөхцөл: ...................", `Хөдөлмөрийн нөхцөл: ${formatWorkConditions(contractData.workConditions)}`],
       ["Бусад хангамж ...............................................", `Бусад хангамж: ${contractData.benefits || 'Хөдөлмөрийн гэрээнд заасны дагуу'}`],
+      ["Ажлын хуваарь: ...................", `Ажлын хуваарь: ${contractData.workSchedule || 'Даваа-Баасан 09:00-18:00'}`],
     ];
     
     for (const [oldText, newText] of replacements) {
@@ -201,12 +200,12 @@ export function generateContractWordAdvanced(
     
     documentXml = documentXml.replace(
       /Хөдөлмөрийн нөхцөл:[\s\.]+/g,
-      `Хөдөлмөрийн нөхцөл: ${formatContractType(contractData.contractType)}`
+      `Хөдөлмөрийн нөхцөл: ${formatWorkConditions(contractData.workConditions)}`
     );
     
     documentXml = documentXml.replace(
       /Ажлын цаг:[\s\.]+/g,
-      `Ажлын цаг: ${formatContractType(contractData.contractType)}`
+      `Ажлын цаг: ${contractData.workSchedule || 'Даваа-Баасан 09:00-18:00'}`
     );
     
     documentXml = documentXml.replace(

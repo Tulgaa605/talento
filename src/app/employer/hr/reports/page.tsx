@@ -4,6 +4,8 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
+import { useReactToPrint } from 'react-to-print';
+import { PrinterIcon } from '@heroicons/react/24/outline';
 
 // ==== Types (аль болох any-гүй болгов) ====
 type ReportStatus = "Дууссан" | "Хүлээгдэж буй" | "Эхлээгүй";
@@ -48,6 +50,11 @@ export default function ReportsPage() {
 
   const [reports, setReports] = useState<Report[]>([]);
   const componentRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: componentRef,
+    documentTitle: `Тайлан_статистик_${new Date().getTime()}`,
+  });
 
   useEffect(() => {
     setCurrentDate(new Date().toLocaleString('mn-MN', { 
@@ -279,6 +286,65 @@ export default function ReportsPage() {
 
   return (
     <>
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 1cm;
+          }
+          body {
+            background: white !important;
+          }
+          nav,
+          aside,
+          header,
+          [role="navigation"],
+          [role="banner"],
+          .sidebar,
+          .nav-sidebar,
+          header nav,
+          .fixed.inset-y-0,
+          [class*="fixed"][class*="inset-y-0"],
+          [class*="fixed"][class*="left-0"],
+          body > div > div > aside,
+          body > div > aside,
+          [class*="sidebar"],
+          [class*="Sidebar"],
+          [class*="navigation"],
+          [class*="Navigation"],
+          .print\\:hidden {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }
+          .hidden-on-screen {
+            display: block !important;
+          }
+          a, button[type="submit"], button[type="button"] {
+            text-decoration: none !important;
+            color: inherit !important;
+          }
+          * {
+            background: white !important;
+            background-color: white !important;
+            box-shadow: none !important;
+            border-color: #e5e7eb !important;
+          }
+          main {
+            margin-left: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+        }
+        @media screen {
+          .hidden-on-screen {
+            display: none;
+          }
+        }
+      `}</style>
       <main ref={componentRef} className="max-w-7xl mt-10 mx-auto px-4 py-8">
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -290,6 +356,15 @@ export default function ReportsPage() {
                   Хэвлэсэн огноо: {currentDate}
                 </div>
               )}
+            </div>
+            <div className="flex gap-2 print:hidden">
+              <button
+                onClick={handlePrint}
+                className="inline-flex items-center px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
+              >
+                <PrinterIcon className="w-5 h-5 mr-2" />
+                Хэвлэх
+              </button>
             </div>
           </div>
         </div>

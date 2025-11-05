@@ -57,6 +57,7 @@ export async function PUT(
     const {
       contractNumber,
       contractType,
+      workConditions,
       startDate,
       endDate,
       salary,
@@ -94,6 +95,7 @@ export async function PUT(
       data: {
         contractNumber,
         contractType,
+        workConditions: workConditions || null,
         startDate: new Date(startDate),
         endDate: endDate ? new Date(endDate) : null,
         salary: typeof salary === 'number' ? salary : parseFloat(salary),

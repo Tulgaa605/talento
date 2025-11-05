@@ -86,16 +86,7 @@ export async function GET(
     let workSchedule = contract.workSchedule || '';
     
     if (!workSchedule || workSchedule.trim() === '') {
-      switch (contract.contractType) {
-        case 'FULL_TIME':
-          workSchedule = 'Бүтэн цагийн (08:00-17:00)';
-          break;
-        case 'PART_TIME':
-          workSchedule = 'Хагас цагийн';
-          break;
-        default:
-          workSchedule = 'Бүтэн цагийн (08:00-17:00)';
-      }
+      workSchedule = 'Даваа-Баасан 09:00-18:00';
     }
     
     console.log('Contract workSchedule from DB:', contract.workSchedule);
@@ -114,12 +105,13 @@ export async function GET(
       startDate: contract.startDate.toISOString().split('T')[0],
       endDate: contract.endDate ? contract.endDate.toISOString().split('T')[0] : null,
       contractType: contract.contractType,
+      workConditions: (contract as { workConditions?: string }).workConditions || 'NORMAL',
       workSchedule: workSchedule,
       contractDuration: contractDuration,
       companyName: 'Эрдэнэс-Тавантолгой ХК',
       directorName: 'Гүйцэтгэх захирал',
       city: 'Улаанбаатар хот',
-      benefits: contract.benefits || undefined,
+      benefits: contract.benefits || contract.terms || undefined,
     };
     const outputDir = process.env.VERCEL ? '/tmp' : join(process.cwd(), 'public', 'uploads', 'contracts');
     

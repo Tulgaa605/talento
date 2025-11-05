@@ -8,6 +8,7 @@ interface Contract {
   id: string;
   contractNumber: string;
   contractType: string;
+  workConditions?: string;
   startDate: string;
   endDate?: string;
   salary: number;
@@ -49,6 +50,7 @@ export default function EditContractClient({ id }: { id: string }) {
     currency: 'MNT',
     status: 'ACTIVE',
     description: '',
+    workConditions: '',
     workSchedule: '',
     probationPeriod: '',
     benefits: '',
@@ -78,6 +80,7 @@ export default function EditContractClient({ id }: { id: string }) {
           currency: data.currency || 'MNT',
           status: data.status || 'ACTIVE',
           description: data.description || '',
+          workConditions: data.workConditions || '',
           workSchedule: data.workSchedule || '',
           probationPeriod: data.probationPeriod?.toString() || '',
           benefits: data.benefits || '',
@@ -192,9 +195,10 @@ export default function EditContractClient({ id }: { id: string }) {
                   className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Төрөл сонгох</option>
-                  <option value="FULL_TIME">Бүтэн цагийн</option>
-                  <option value="PART_TIME">Хагас цагийн</option>
-                  <option value="INTERNSHIP">Дадлага</option>
+                  <option value="FULL_TIME">Үндсэн ажилтан</option>
+                  <option value="PART_TIME">Цагийн ажилтан</option>
+                  <option value="INTERNSHIP">Дадлага ажилтан</option>
+                  <option value="PROBATION">Туршилтын ажилтан</option>
                 </select>
               </div>
 
@@ -303,13 +307,29 @@ export default function EditContractClient({ id }: { id: string }) {
                   <option value="TERMINATED">Цуцалсан</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Хөдөлмөрийн нөхцөл *
+                </label>
+                <select
+                  name="workConditions"
+                  value={formData.workConditions}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Төрөл сонгох</option>
+                  <option value="NORMAL">Ердийн</option>
+                  <option value="HARMFUL">Хортой</option>
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-1">
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Гэрээний нөхцөл
+                  Бусад хангамж
                 </label>
                 <textarea
                   name="terms"

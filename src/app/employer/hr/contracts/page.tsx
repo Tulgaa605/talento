@@ -34,7 +34,6 @@ export default function ContractsPage() {
 
   useEffect(() => {
     fetchContracts();
-    // Client-д л огноо үүсгэх (hydration алдаа засах)
     setCurrentDate(new Date().toLocaleString('mn-MN', { 
       year: 'numeric', 
       month: 'long', 
@@ -100,15 +99,13 @@ export default function ContractsPage() {
   const getContractTypeLabel = (type: string) => {
     switch (type) {
       case 'FULL_TIME':
-        return 'Бүтэн цагийн';
+        return 'Үндсэн ажилтан';
       case 'PART_TIME':
-        return 'Хагас цагийн';
-      case 'CONTRACT':
-        return 'Гэрээт';
+        return 'Цагийн ажилтан';
       case 'INTERNSHIP':
-        return 'Дадлага';
+        return 'Дадлага ажилтан';
       case 'PROBATION':
-        return 'Туршилтын';
+        return 'Туршилтын ажилтан';
       default:
         return type;
     }
@@ -175,10 +172,10 @@ export default function ContractsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
               >
                 <option value="">Бүгд</option>
-                <option value="FULL_TIME">Бүтэн цагийн</option>
-                <option value="PART_TIME">Хагас цагийн</option>
-                <option value="CONTRACT">Гэрээт</option>
-                <option value="INTERNSHIP">Дадлага</option>
+                <option value="FULL_TIME">Үндсэн ажилтан</option>
+                <option value="PART_TIME">Цагийн ажилтан</option>
+                <option value="INTERNSHIP">Дадлага ажилтан</option>
+                <option value="PROBATION">Туршилтын ажилтан</option>
               </select>
             </div>
             <div className="flex items-end">

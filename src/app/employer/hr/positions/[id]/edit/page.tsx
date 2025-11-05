@@ -85,7 +85,7 @@ export default function EditPositionPage() {
       });
 
       if (res.ok) {
-        router.push('/hr/positions');
+        router.push('/employer/hr/positions');
       } else {
         const errorData = await res.json();
         alert(errorData.error || 'Албан тушаалын мэдээлэл шинэчлэхэд алдаа гарлаа');
@@ -167,7 +167,7 @@ export default function EditPositionPage() {
                   value={formData.title}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -181,7 +181,7 @@ export default function EditPositionPage() {
                   value={formData.code}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -194,7 +194,7 @@ export default function EditPositionPage() {
                   value={formData.departmentId}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Хэлтэс сонгох</option>
                   {departments.map((dept) => (
@@ -215,7 +215,7 @@ export default function EditPositionPage() {
                 value={formData.description}
                 onChange={handleChange}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Албан тушаалын тайлбар..."
               />
             </div>

@@ -359,6 +359,7 @@ model EmploymentContract {
   employee        Employee                   @relation(fields: [employeeId], references: [id])
   employeeId      String                     @db.ObjectId
   contractType    ContractType
+  workConditions  String?
   startDate       DateTime
   endDate         DateTime?
   salary          Float
