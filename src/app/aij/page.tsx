@@ -1,7 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import CVUploadWithProfile from "@/components/CVUploadWithProfile";
 import { useState } from "react";
 import Link from "next/link";

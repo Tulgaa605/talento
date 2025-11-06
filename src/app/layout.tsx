@@ -18,9 +18,6 @@ export const metadata = {
   description: "Upload and analyze your CV using AI",
 };
 
-// Root layout - бүх хуудсуудад session, notification зэрэг шинэчлэгдэх хэрэгтэй
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export default function RootLayout({
   children,

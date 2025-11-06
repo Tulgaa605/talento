@@ -6,7 +6,6 @@ import { join } from "path";
 import { existsSync } from "fs";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 type RouteCtx = { params: Promise<{ id: string }> };
 

@@ -1,6 +1,4 @@
-// Бүх HR хуудсуудыг dynamic болгох
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// HR layout - өгөгдлийг fetch-д cache: 'no-store' ашиглана
 
 export default function HRLayout({
   children,

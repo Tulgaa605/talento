@@ -1,7 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { MapPinIcon, PhotoIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
