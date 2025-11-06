@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { TrashIcon } from '@heroicons/react/24/outline';
@@ -201,7 +199,7 @@ export default function DecisionsPage() {
                 <option value="HIRING">Ажилд авах</option>
                 <option value="PROMOTION">Дэвшүүлэх</option>
                 <option value="TRANSFER">Шилжүүлэх</option>
-                <option value="TERMINATION">Ажлаас хасах</option>
+                <option value="TERMINATION">Ажлаас халах</option>
                 <option value="SALARY_CHANGE">Цалин өөрчлөх</option>
                 <option value="OTHER">Бусад</option>
               </select>

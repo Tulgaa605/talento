@@ -106,39 +106,67 @@ export default async function JobApplicationsPage({ params }: PageProps) {
   return (
     <div className="min-h-screen pt-20 px-4 sm:px-6 md:px-8 lg:px-16 xl:px-32 bg-white">
       <div className="py-8 mt-20">
+        {/* Job Header */}
+        <div className="mb-8 bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {job.title}
+              </h1>
+              <div className="flex items-center gap-4 text-gray-600">
+                <span>📍 {job.location}</span>
+                <span>💼 {job.type}</span>
+                <span>📋 {job.applications.length} анкет</span>
+              </div>
+            </div>
+          </div>
+          {job.description && (
+            <div className="mt-4">
+              <p className="text-gray-700 text-sm">{job.description}</p>
+            </div>
+          )}
+        </div>
+
         <div className="space-y-4">
-          {job.applications.map((application) => (
-            <div
-              key={application.id}
-              className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
-            >
-              <div className="p-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                      {application.user.image ? (
-                        <Image
-                          src={application.user.image}
-                          alt={application.user.name || ""}
-                          width={40}
-                          height={40}
-                          className="rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-lg font-semibold text-gray-500">
-                          {application.user.name?.charAt(0).toUpperCase()}
-                        </span>
-                      )}
+          {job.applications.map((application) => {
+            // Skip applications with deleted users
+            if (!application.user) {
+              console.warn('Application has no user:', application.id);
+              return null;
+            }
+
+            return (
+              <div
+                key={application.id}
+                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+              >
+                <div className="p-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                        {application.user.image ? (
+                          <Image
+                            src={application.user.image}
+                            alt={application.user.name || ""}
+                            width={40}
+                            height={40}
+                            className="rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-lg font-semibold text-gray-500">
+                            {application.user.name?.charAt(0).toUpperCase() || '?'}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          {application.user.name || 'Хэрэглэгч устгагдсан'}
+                        </h2>
+                        <p className="text-gray-500 text-sm">
+                          {format(application.createdAt, "yyyy-MM-dd HH:mm")}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        {application.user.name}
-                      </h2>
-                      <p className="text-gray-500 text-sm">
-                        {format(application.createdAt, "yyyy-MM-dd HH:mm")}
-                      </p>
-                    </div>
-                  </div>
                   <div
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
                       application.status === "PENDING"
@@ -207,7 +235,8 @@ export default async function JobApplicationsPage({ params }: PageProps) {
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
 
           {job.applications.length === 0 && (
             <div className="bg-white rounded-lg shadow-sm p-8 text-center">

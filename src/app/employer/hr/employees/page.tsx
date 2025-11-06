@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -423,9 +421,9 @@ export default function EmployeesPage() {
                           ) : (
                             <>
                               <Link
-                                href={`/employer/hr/employees/${employee.id}/edit`}
+                                href={`/employer/hr/employees/new?userId=${employee.userData?.id}`}
                                 className="inline-flex items-center justify-center p-2 text-green-600 hover:text-white hover:bg-green-600 rounded-lg transition-colors border border-green-600"
-                                title="Засах"
+                                title="Ажилтан болгох"
                               >
                                 <PencilIcon className="h-5 w-5" />
                               </Link>

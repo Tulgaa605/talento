@@ -227,9 +227,32 @@ export default function QuestionnaireResponseView({
           </div>
         </div>
 
-        {/* Tabs - Hidden on Print */}
         <div className="border-b border-gray-200 print:hidden">
           <nav className="flex space-x-8 px-6">
+            {response.answers.length > 0 && (
+              <button
+                onClick={() => setActiveTab("answers")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "answers"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Хариулт
+              </button>
+            )}
+            {initialFormData && (
+              <button
+                onClick={() => setActiveTab("form")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "form"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Төрийн албан хаагчийн анкет
+              </button>
+            )}
             {response.attachmentFile && (
               <button
                 onClick={() => setActiveTab("attachment")}
@@ -245,7 +268,6 @@ export default function QuestionnaireResponseView({
           </nav>
         </div>
 
-        {/* Content */}
         <div className="p-6 overflow-y-auto print:overflow-visible print:p-0 print:max-h-none" style={{ maxHeight: 'calc(100vh - 300px)' }}>
           {activeTab === "answers" && (
             <div className="space-y-6">
@@ -285,7 +307,6 @@ export default function QuestionnaireResponseView({
 
           {activeTab === "form" && editedFormData && (
             <div className="space-y-8 bg-white">
-              {/* Header - Copy from GovernmentEmployeeQuestionnaire */}
               <div className="mb-8 border-b pb-6">
                 <div className="flex justify-center items-start">
                   <div>
@@ -298,12 +319,10 @@ export default function QuestionnaireResponseView({
                 </div>
               </div>
 
-              {/* Personal Information Section */}
               {editedFormData.personalInfo && (
                 <div className="border border-gray-300 p-6 rounded-lg">
                   <h2 className="text-xl font-bold mb-6">1. ХУВЬ ХҮНИЙ ТАЛААРХ МЭДЭЭЛЭЛ</h2>
                   
-                  {/* ID numbers - grid layout like the original */}
                   <div className="grid grid-cols-2 gap-6 mb-6">
                     <div>
                       <label className="block text-sm font-medium mb-2">Регистрийн дугаар</label>

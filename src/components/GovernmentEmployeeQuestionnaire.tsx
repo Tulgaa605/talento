@@ -543,6 +543,7 @@ export default function GovernmentEmployeeQuestionnaire({
                     </label>
                   ) : (
                     <div className="relative w-32 h-40">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={photo.preview}
                         alt="Preview"
@@ -1720,7 +1721,7 @@ export default function GovernmentEmployeeQuestionnaire({
             </p>
             <div className="border-b border-gray-300 w-64"></div>
             <p className="text-sm text-gray-700">
-              201__ он __ сар __ өдөр
+              202__ он __ сар __ өдөр
             </p>
           </div>
         </div>

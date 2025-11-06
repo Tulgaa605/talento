@@ -49,16 +49,13 @@ function formatDateMongolian(dateStr: string | Date): string {
   }
 }
 
-/**
- * Гэрээний төрлийг монгол хэлээр форматлах
- */
 function formatContractType(contractType?: string): string {
   if (!contractType) return 'Бүтэн цагийн';
   
   const typeMap: { [key: string]: string } = {
     'FULL_TIME': 'Үндсэн ажилтан',
     'PART_TIME': 'Цагийн ажилтан',
-    'TEMPORARY': 'Туршилтын ажилтан',
+    'PROBATION': 'Туршилтын ажилтан',
     'INTERNSHIP': 'Дадлага ажилтан',
   };
   

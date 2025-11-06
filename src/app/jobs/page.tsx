@@ -5,7 +5,9 @@ import JobsList from '@/components/JobsList';
 import JobDetails from '@/components/JobDetails';
 
 export const runtime = 'nodejs';
+// Jobs list - шинэ ажлын зарууд, хайлт үр дүн бодит цагийн
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface Job {
   id: string;
