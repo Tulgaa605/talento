@@ -54,10 +54,10 @@ const MONGOLIA_PROVINCES = [
 ];
 
 const FILTERS = [
-  { label: "Бүтэн цаг", icon: "⏰", type: "FULL_TIME" },
-  { label: "Хагас цаг", icon: "⏰", type: "PART_TIME" },
-  { label: "Гэрээт", icon: "📝", type: "CONTRACT" },
-  { label: "Дадлага", icon: "🎓", type: "INTERNSHIP" },
+  { label: "Үндсэн ажилтан", icon: "⏰", type: "FULL_TIME" },
+  { label: "Цагийн ажилтан", icon: "⏰", type: "PART_TIME" },
+  { label: "Дадлага ажилтан", icon: "🎓", type: "INTERNSHIP" },
+  { label: "Туршилтын ажилтан", icon: "📝", type: "PROBATION" },
 ];
 
 interface JobsListProps {
@@ -345,13 +345,13 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
                       <div className="flex flex-wrap gap-2 items-center mb-4">
                         <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold text-[#0BA02C] bg-[#E7F6EA] rounded-full">
                           {job.type === "FULL_TIME"
-                            ? "БҮТЭН ЦАГ"
+                            ? "Үндсэн ажилтан"
                             : job.type === "PART_TIME"
-                            ? "ХАГАС ЦАГ"
-                            : job.type === "CONTRACT"
-                            ? "ГЭРЭЭТ"
+                            ? "Цагийн ажилтан"
                             : job.type === "INTERNSHIP"
-                            ? "ДАДЛАГА"
+                            ? "Дадлага ажилтан"
+                            : job.type === "PROBATION"
+                            ? "Туршилтын ажилтан"
                             : job.type}
                         </span>
                         <span className="text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full bg-gray-100 text-gray-900">

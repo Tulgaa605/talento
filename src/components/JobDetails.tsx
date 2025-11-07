@@ -177,13 +177,13 @@ export default function JobDetails({ job }: JobDetailsProps) {
               <span className="font-semibold">Ажлын цаг</span>{" "}
               <span className="ml-1">
                 {jobData.type === "FULL_TIME"
-                  ? "БҮТЭН ЦАГ"
+                  ? "Үндсэн ажилтан"
                   : jobData.type === "PART_TIME"
-                  ? "ХАГАС ЦАГ"
-                  : jobData.type === "CONTRACT"
-                  ? "ГЭРЭЭТ"
+                  ? "Цагийн ажилтан"
                   : jobData.type === "INTERNSHIP"
-                  ? "ДАДЛАГА"
+                  ? "Дадлага ажилтан"
+                  : jobData.type === "PROBATION"
+                  ? "Туршилтын ажилтан"
                   : jobData.type}
               </span>
             </div>

@@ -342,11 +342,11 @@ export default function PostJobPageWithNewDesign() {
                         <input type="text" name="salary" className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400  rounded-md focus:outline-none  focus:ring-gray-500 focus:border-gray-500"} ${inputPadding}`} placeholder="Байгууллага"/>
                     </div>
                     <select name="type" className={`${"w-full text-sm text-slate-700 border border-slate-300 placeholder-slate-400 rounded-md focus:outline-none focus:ring-gray-500 focus:border-gray-500"} ${inputPadding}`}>
-                        <option value="">Ажлын цаг</option>
-                        <option value="FULL_TIME">Бүтэн цагийн</option>
-                        <option value="PART_TIME">Цагийн</option>
-                        <option value="CONTRACT">Гэрээт</option>
-                        <option value="INTERNSHIP">Дадлага</option>
+                        <option value="">Төрөл</option>
+                        <option value="FULL_TIME">Үндсэн ажилтан</option>
+                        <option value="PART_TIME">Цагийн ажилтан</option>
+                        <option value="INTERNSHIP">Дадлага ажилтан</option>
+                        <option value="PROBATION">Туршилтын ажилтан</option>
                     </select>
                 </div>
             </div>

@@ -280,11 +280,11 @@ export default function EditJobPage({
                   value={job.type}
                   onChange={handleInputChange}
                 >
-                  <option value="">Ажлын цаг</option>
-                  <option value="FULL_TIME">Бүтэн цагийн</option>
-                  <option value="PART_TIME">Цагийн</option>
-                  <option value="CONTRACT">Гэрээт</option>
-                  <option value="INTERNSHIP">Дадлага</option>
+                  <option value="">Төрөл</option>
+                  <option value="FULL_TIME">Үндсэн ажилтан</option>
+                  <option value="PART_TIME">Цагийн ажилтан</option>
+                  <option value="INTERNSHIP">Дадлага ажилтан</option>
+                  <option value="PROBATION">Туршилтын ажилтан</option>
                 </select>
               </div>
             </div>

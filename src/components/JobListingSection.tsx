@@ -38,15 +38,15 @@ export default function JobListingSection() {
         const transformedJobs: JobListing[] = data.map((job: ApiJob) => ({
           title: job.title,
           type:
-            job.type === "FULL_TIME"
-              ? "БҮТЭН ЦАГ"
+          job.type === "FULL_TIME"
+              ? "Үндсэн ажилтан"
               : job.type === "PART_TIME"
-              ? "ЦАГИЙН"
-              : job.type === "CONTRACT"
-              ? "ГЭРЭЭТ"
+              ? "Цагийн ажилтан"
               : job.type === "INTERNSHIP"
-              ? "ДАДЛАГА"
-              : "БҮТЭН ЦАГ",
+              ? "Дадлага ажилтан"
+              : job.type === "PROBATION"
+              ? "Туршилтын ажилтан"
+              : job.type,
           salary:
             typeof job.salary === "number"
               ? String(job.salary)

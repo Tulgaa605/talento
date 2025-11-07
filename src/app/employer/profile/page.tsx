@@ -1497,13 +1497,13 @@ export default function EmployerProfile() {
                       {job.type && (
                         <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 sm:px-3 py-1 rounded-full">
                           {job.type === "FULL_TIME"
-                            ? "БҮТЭН ЦАГ"
+                            ? "Үндсэн ажилтан"
                             : job.type === "PART_TIME"
-                            ? "ХАГАС ЦАГ"
-                            : job.type === "CONTRACT"
-                            ? "ГЭРЭЭТ"
+                            ? "Цагийн ажилтан"
                             : job.type === "INTERNSHIP"
-                            ? "ДАДЛАГА"
+                            ? "Дадлага ажилтан"
+                            : job.type === "PROBATION"
+                            ? "Туршилтын ажилтан"
                             : job.type}
                         </span>
                       )}

@@ -146,13 +146,13 @@ export default async function CompanyProfilePage({
                           <div>
                             <span className="font-medium">Төрөл:</span>{" "}
                             {job.type === "FULL_TIME"
-                              ? "Бүтэн цаг"
+                              ? "Үндсэн ажилтан"
                               : job.type === "PART_TIME"
-                              ? "Хагас цаг"
-                              : job.type === "CONTRACT"
-                              ? "Гэрээт"
+                              ? "Цагийн ажилтан"
                               : job.type === "INTERNSHIP"
-                              ? "Дадлага"
+                              ? "Дадлага ажилтан"
+                              : job.type === "PROBATION"
+                              ? "Туршилтын ажилтан"
                               : job.type}
                           </div>
                         </div>
