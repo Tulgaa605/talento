@@ -1,5 +1,3 @@
-// HR layout - өгөгдлийг fetch-д cache: 'no-store' ашиглана
-
 export default function HRLayout({
   children,
 }: {

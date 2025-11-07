@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+export const dynamic = 'force-dynamic';
+
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeftIcon, PencilIcon } from '@heroicons/react/24/outline';
@@ -53,7 +55,7 @@ export default function EmployeeDetailsPage() {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchEmployee = useCallback(async () => {
+  const fetchEmployee = async () => {
     try {
       const response = await fetch(`/api/hr/employees/${params.id}`);
       if (response.ok) {
@@ -69,13 +71,14 @@ export default function EmployeeDetailsPage() {
     } finally {
       setLoading(false);
     }
-  }, [params.id, router]);
+  };
 
   useEffect(() => {
     if (params.id) {
       fetchEmployee();
     }
-  }, [params.id, fetchEmployee]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('mn-MN');

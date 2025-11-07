@@ -3,7 +3,7 @@ import ProcessSection from "../components/ProcessSection";
 import { Footer } from "../components/Footer";
 import JobListingSection from "../components/JobListingSection";
 
-// Home page - шинэ ажлын зарууд JobListingSection-д fetch хийнэ
+export const dynamic = 'force-dynamic';
 
 export default function Home() {
   return (

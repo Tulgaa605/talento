@@ -5,7 +5,7 @@ import JobsList from '@/components/JobsList';
 import JobDetails from '@/components/JobDetails';
 
 export const runtime = 'nodejs';
-// Jobs list - өгөгдлийг fetch-д cache: 'no-store' ашиглана
+export const dynamic = 'force-dynamic';
 
 interface Job {
   id: string;
@@ -35,8 +35,7 @@ export default function JobsPage() {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        // Cache: no-store - өгөгдлийг cache хийхгүй, үргэлж шинэ авна
-        const response = await fetch('/api/jobs', { cache: 'no-store' });
+        const response = await fetch('/api/jobs');
         if (!response.ok) throw new Error('Failed to fetch jobs');
         const data = await response.json();
         setJobs(data);

@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+export const dynamic = 'force-dynamic';
+
+import { useState, useEffect, useCallback} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -28,7 +30,7 @@ interface Employee {
   employeeId: string;
 }
 
-function NewEmployeePageContent() {
+export default function NewEmployeePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -751,17 +753,5 @@ function NewEmployeePageContent() {
       </div>
       </div>
     </>
-  );
-}
-
-export default function NewEmployeePage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    }>
-      <NewEmployeePageContent />
-    </Suspense>
   );
 }

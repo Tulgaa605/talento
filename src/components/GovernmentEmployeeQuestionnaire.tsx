@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import GovernmentEmployeeQuestionnaireSkills from './GovernmentEmployeeQuestionnaireSkills';
 
 type Level = '' | 'average' | 'good' | 'excellent';
@@ -543,11 +544,13 @@ export default function GovernmentEmployeeQuestionnaire({
                     </label>
                   ) : (
                     <div className="relative w-32 h-40">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={photo.preview}
                         alt="Preview"
+                        width={128}
+                        height={160}
                         className="w-full h-full object-cover rounded border-2 border-gray-300"
+                        unoptimized
                       />
                       <button
                         type="button"
