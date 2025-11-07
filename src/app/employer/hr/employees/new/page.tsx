@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { validateLettersOnly, validateNumbersOnly, capitalizeFirstLetter } from '@/utils/validations';
+import { fetchDepartments, fetchPositions, fetchEmployees } from '@/utils/hrDataFetchers';
 import { 
   ArrowLeftIcon,
   UserIcon,
@@ -251,8 +253,8 @@ export default function NewEmployeePage() {
   }, []);
 
   useEffect(() => {
-    fetchDepartments();
-    fetchEmployees();
+    loadDepartments();
+    loadManagers();
   }, []);
 
   useEffect(() => {
@@ -271,46 +273,25 @@ export default function NewEmployeePage() {
 
   useEffect(() => {
     if (selectedDepartment) {
-      fetchPositions(selectedDepartment);
+      loadPositions(selectedDepartment);
     } else {
       setPositions([]);
     }
   }, [selectedDepartment]);
 
-  const fetchDepartments = async () => {
-    try {
-      const response = await fetch('/api/hr/departments');
-      if (response.ok) {
-        const data = await response.json();
-        setDepartments(data);
-      }
-    } catch (error) {
-      console.error('Хэлтсүүдийг авахад алдаа гарлаа:', error);
-    }
+  const loadDepartments = async () => {
+    const data = await fetchDepartments();
+    setDepartments(data as Department[]);
   };
 
-  const fetchPositions = async (departmentId: string) => {
-    try {
-      const response = await fetch(`/api/hr/positions?departmentId=${departmentId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPositions(data);
-      }
-    } catch (error) {
-      console.error('Албан тушаалуудыг авахад алдаа гарлаа:', error);
-    }
+  const loadPositions = async (departmentId: string) => {
+    const data = await fetchPositions(departmentId);
+    setPositions(data as Position[]);
   };
 
-  const fetchEmployees = async () => {
-    try {
-      const response = await fetch('/api/hr/employees?status=ACTIVE');
-      if (response.ok) {
-        const data = await response.json();
-        setManagers(data);
-      }
-    } catch (error) {
-      console.error('Ажилтнуудыг авахад алдаа гарлаа:', error);
-    }
+  const loadManagers = async () => {
+    const data = await fetchEmployees('ACTIVE');
+    setManagers(data as Employee[]);
   };
 
   const handleInputChange = (
@@ -323,42 +304,35 @@ export default function NewEmployeePage() {
     if (name === 'employeeId' && value) {
       const upperValue = value.toUpperCase();
       
-      // Эхний 2 тэмдэгт - зөвхөн үсэг
       if (upperValue.length <= 2) {
         if (/^[A-ZА-ЯЁӨҮ]*$/.test(upperValue)) {
           processedValue = upperValue;
         } else {
-          return; // Үсэг биш бол буцаах
+          return;
         }
-      }
-      // 3-аас эхлэн - зөвхөн тоо
-      else {
+      } else {
         const letters = upperValue.slice(0, 2);
         const numbers = upperValue.slice(2);
         
         if (/^[A-ZА-ЯЁӨҮ]{2}$/.test(letters) && /^[0-9]*$/.test(numbers)) {
           processedValue = letters + numbers;
         } else {
-          return; // Буруу формат бол буцаах
+          return;
         }
       }
     }
     
+    // Нэр, овог хэсэгт зөвхөн үсэг
     if ((name === 'lastName' || name === 'firstName' || name === 'middleName' || name === 'emergencyContact') && value) {
-      const lettersOnly = /^[A-Za-zА-Яа-яЁёӨөҮү\s]*$/;
-      if (!lettersOnly.test(value)) {
+      if (!validateLettersOnly(value)) {
         return;
       }
-      
-      // Эхний үсгийг том үсэг болгох
-      if (value.length > 0) {
-        processedValue = value.charAt(0).toUpperCase() + value.slice(1);
-      }
+      processedValue = capitalizeFirstLetter(value);
     }
     
+    // Утасны дугаар, дансны дугаарт зөвхөн тоо
     if ((name === 'phoneNumber' || name === 'emergencyPhone' || name === 'bankAccountNumber') && value) {
-      const numbersOnly = /^[0-9]*$/;
-      if (!numbersOnly.test(value)) {
+      if (!validateNumbersOnly(value)) {
         return;
       }
     }

@@ -3,6 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import GovernmentEmployeeQuestionnaireSkills from './GovernmentEmployeeQuestionnaireSkills';
+import {
+  validateLettersOnly,
+  validateNumbersOnly,
+  validateNumbersWithDots,
+  validateLettersAndPunctuation,
+  validateRegistrationNumber,
+  capitalizeFirstLetter,
+} from '@/utils/validations';
 
 type Level = '' | 'average' | 'good' | 'excellent';
 
@@ -185,41 +193,6 @@ export default function GovernmentEmployeeQuestionnaire({
 }: GovernmentEmployeeQuestionnaireProps) {
   
   const [photo, setPhoto] = useState<PhotoInfo>({ file: null, preview: null });
-  
-  // Validation functions
-  const validateLettersOnly = (value: string) => {
-    return /^[A-Za-zА-Яа-яЁёӨөҮү\s]*$/.test(value);
-  };
-
-  const validateNumbersOnly = (value: string) => {
-    return /^[0-9]*$/.test(value);
-  };
-
-  const validateNumbersWithDots = (value: string) => {
-    return /^[0-9.]*$/.test(value);
-  };
-
-  const validateLettersAndPunctuation = (value: string) => {
-    return /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/.test(value);
-  };
-
-  const validateRegistrationNumber = (value: string) => {
-    const upperValue = value.toUpperCase();
-    if (upperValue.length <= 2) {
-      return /^[A-ZА-ЯЁӨҮү]*$/.test(upperValue);
-    } else {
-      const letters = upperValue.slice(0, 2);
-      const numbers = upperValue.slice(2);
-      return /^[A-ZА-ЯЁӨҮү]{2}$/.test(letters) && /^[0-9]*$/.test(numbers);
-    }
-  };
-
-  const capitalizeFirstLetter = (value: string) => {
-    if (value.length > 0) {
-      return value.charAt(0).toUpperCase() + value.slice(1);
-    }
-    return value;
-  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

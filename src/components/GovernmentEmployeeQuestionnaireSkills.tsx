@@ -1,6 +1,11 @@
 'use client';
 
 import React from 'react';
+import {
+  validateLettersAndPunctuation,
+  validateNumbersWithDots,
+  capitalizeFirstLetter,
+} from '@/utils/validations';
 
 type Level = '' | 'average' | 'good' | 'excellent';
 
@@ -70,22 +75,6 @@ export default function GovernmentEmployeeQuestionnaireSkills({
   addArrayItem,
   removeArrayItem,
 }: SkillsSectionProps) {
-  
-  // Validation functions
-  const validateLettersAndPunctuation = (value: string) => {
-    return /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/.test(value);
-  };
-
-  const validateNumbersWithDots = (value: string) => {
-    return /^[0-9.]*$/.test(value);
-  };
-
-  const capitalizeFirstLetter = (value: string) => {
-    if (value.length > 0) {
-      return value.charAt(0).toUpperCase() + value.slice(1);
-    }
-    return value;
-  };
 
   const updateSkillLevel = (path: string[], value: 1 | 2 | 3) => {
     updateField(path, value);

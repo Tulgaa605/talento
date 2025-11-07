@@ -37,24 +37,18 @@ export default function DepartmentsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const loadDepartments = async () => {
+    const response = await fetch('/api/hr/departments');
+    if (response.ok) {
+      const data = await response.json();
+      setDepartments(data);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    fetchDepartments();
+    loadDepartments();
   }, []);
-
-  const fetchDepartments = async () => {
-    try {
-      const response = await fetch('/api/hr/departments');
-      if (response.ok) {
-        const data = await response.json();
-        setDepartments(data);
-      }
-    } catch (error) {
-      console.error('Хэлтсүүдийг авахад алдаа гарлаа:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredDepartments = departments.filter(department =>
     department.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -71,7 +65,7 @@ export default function DepartmentsPage() {
 
         if (response.ok) {
           alert('Хэлтэс амжилттай устгагдлаа');
-          fetchDepartments();
+          loadDepartments();
         } else {
           const error = await response.json();
           alert(error.error || 'Алдаа гарлаа');
@@ -221,7 +215,7 @@ export default function DepartmentsPage() {
                   <div className="mb-3 sm:mb-4">
                     <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Албан тушаалууд:</h4>
                     <div className="space-y-1">
-                      {department.positions.slice(0, 3).map((position) => (
+                      {department.positions.slice(0, 3).map((position: { id: string; title: string; code: string }) => (
                         <div key={position.id} className="text-xs sm:text-sm text-gray-600 truncate">
                           • {position.title} ({position.code})
                         </div>
@@ -240,7 +234,7 @@ export default function DepartmentsPage() {
                   <div>
                     <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Ажилтнууд:</h4>
                     <div className="space-y-1">
-                      {department.employees.slice(0, 3).map((employee) => (
+                      {department.employees.slice(0, 3).map((employee: { id: string; firstName: string; lastName: string; employeeId: string }) => (
                         <div key={employee.id} className="text-xs sm:text-sm text-gray-600 truncate">
                           • {employee.firstName} {employee.lastName} ({employee.employeeId})
                         </div>

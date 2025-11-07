@@ -4,6 +4,8 @@
 import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { validateLettersOnly, validateNumbersOnly, capitalizeFirstLetter } from '@/utils/validations';
+import { fetchDepartments, fetchPositions } from '@/utils/hrDataFetchers';
 
 interface User {
   id: string;
@@ -88,28 +90,14 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
   const [positions, setPositions] = useState<Position[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
 
-  const fetchDepartments = useCallback(async () => {
-    try {
-      const response = await fetch('/api/hr/departments');
-      if (response.ok) {
-        const data = await response.json();
-        setDepartments(data);
-      }
-    } catch (error) {
-      console.error('Хэлтсүүдийг авахад алдаа гарлаа:', error);
-    }
+  const loadDepartments = useCallback(async () => {
+    const data = await fetchDepartments();
+    setDepartments(data as Department[]);
   }, []);
 
-  const fetchPositions = useCallback(async (departmentId: string) => {
-    try {
-      const response = await fetch(`/api/hr/positions?departmentId=${departmentId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPositions(data);
-      }
-    } catch (error) {
-      console.error('Албан тушаалуудыг авахад алдаа гарлаа:', error);
-    }
+  const loadPositions = useCallback(async (departmentId: string) => {
+    const data = await fetchPositions(departmentId);
+    setPositions(data as Position[]);
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -171,16 +159,16 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
 
   useEffect(() => {
     fetchData();
-    fetchDepartments();
-  }, [fetchData, fetchDepartments]);
+    loadDepartments();
+  }, [fetchData, loadDepartments]);
 
   useEffect(() => {
     if (selectedDepartment) {
-      fetchPositions(selectedDepartment);
+      loadPositions(selectedDepartment);
     } else {
       setPositions([]);
     }
-  }, [selectedDepartment, fetchPositions]);
+  }, [selectedDepartment, loadPositions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,19 +226,15 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
     
     // Овог, нэр, эцэг/эхийн нэр, яаралтай холбоо барих нэрт зөвхөн үсэг
     if ((name === 'lastName' || name === 'firstName' || name === 'middleName' || name === 'emergencyContact') && value) {
-      const lettersOnly = /^[A-Za-zА-Яа-яЁёӨөҮү\s]*$/;
-      if (!lettersOnly.test(value)) {
+      if (!validateLettersOnly(value)) {
         return;
       }
-      if (value.length > 0) {
-        processedValue = value.charAt(0).toUpperCase() + value.slice(1);
-      }
+      processedValue = capitalizeFirstLetter(value);
     }
     
     // Утасны дугаарт зөвхөн тоо
     if ((name === 'phoneNumber' || name === 'emergencyPhone') && value) {
-      const numbersOnly = /^[0-9]*$/;
-      if (!numbersOnly.test(value)) {
+      if (!validateNumbersOnly(value)) {
         return;
       }
     }

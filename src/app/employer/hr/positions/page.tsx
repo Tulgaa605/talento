@@ -34,36 +34,32 @@ export default function PositionsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
 
-  useEffect(() => {
-    fetchPositions();
-    fetchDepartments();
-  }, []);
-
-  const fetchPositions = async () => {
+  const loadData = async () => {
     try {
-      const response = await fetch('/api/hr/positions');
-      if (response.ok) {
-        const data = await response.json();
-        setPositions(data);
+      const [positionsRes, departmentsRes] = await Promise.all([
+        fetch('/api/hr/positions'),
+        fetch('/api/hr/departments')
+      ]);
+      
+      if (positionsRes.ok) {
+        const positionsData = await positionsRes.json();
+        setPositions(positionsData);
+      }
+      
+      if (departmentsRes.ok) {
+        const departmentsData = await departmentsRes.json();
+        setDepartments(departmentsData);
       }
     } catch (error) {
-      console.error('Error fetching positions:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchDepartments = async () => {
-    try {
-      const response = await fetch('/api/hr/departments');
-      if (response.ok) {
-        const data = await response.json();
-        setDepartments(data);
-      }
-    } catch (error) {
-      console.error('Error fetching departments:', error);
-    }
-  };
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const filteredPositions = positions.filter(position => {
     const matchesSearch = 
@@ -85,7 +81,7 @@ export default function PositionsPage() {
 
         if (response.ok) {
           alert('Албан тушаал амжилттай устгагдлаа');
-          fetchPositions();
+          loadData();
         } else {
           const error = await response.json();
           alert(error.error || 'Алдаа гарлаа');
