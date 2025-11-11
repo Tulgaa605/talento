@@ -26,21 +26,29 @@ export async function GET(request: NextRequest) {
 
     const decisions = await prisma.decision.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        decisionNumber: true,
+        title: true,
+        description: true,
+        type: true,
+        decisionDate: true,
+        effectiveDate: true,
+        status: true,
+        createdAt: true,
         employee: {
-          include: {
-            position: {
-              include: {
-                department: true,
-              },
-            },
-            department: true,
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeId: true,
           },
         },
       },
       orderBy: {
         decisionDate: 'desc',
       },
+      take: 100,
     });
 
     return NextResponse.json(decisions);

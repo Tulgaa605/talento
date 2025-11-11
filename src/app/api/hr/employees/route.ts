@@ -31,31 +31,48 @@ export async function GET(request: NextRequest) {
 
     const employees = await prisma.employee.findMany({
       where,
-      include: {
-        position: { include: { department: true } },
-        department: true,
-        jobClassification: true,
-        manager: {
-          select: { id: true, firstName: true, lastName: true, employeeId: true },
+      select: {
+        id: true,
+        employeeId: true,
+        firstName: true,
+        lastName: true,
+        middleName: true,
+        email: true,
+        phoneNumber: true,
+        status: true,
+        hireDate: true,
+        position: {
+          select: {
+            title: true,
+            department: {
+              select: { name: true }
+            }
+          }
         },
-        subordinates: {
-          select: { id: true, firstName: true, lastName: true, employeeId: true },
+        department: {
+          select: { name: true }
+        },
+        manager: {
+          select: { firstName: true, lastName: true }
         },
         contracts: {
           where: { status: EmploymentContractStatus.ACTIVE },
+          select: {
+            contractNumber: true,
+            contractType: true,
+            salary: true,
+            currency: true
+          },
           orderBy: { startDate: 'desc' },
           take: 1,
         },
-        _count: {
-          select: { subordinates: true, contracts: true, decisions: true, documents: true },
-        },
       },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+      take: 200,
     });
 
     return NextResponse.json(employees);
-  } catch (error) {
-    console.error('Ажилтнуудыг авахад алдаа гарлаа:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Ажилтнуудыг авахад алдаа гарлаа' },
       { status: 500 }
@@ -146,7 +163,7 @@ export async function POST(request: NextRequest) {
       positionId,
       departmentId,
       managerId: managerId && managerId.trim() !== '' ? managerId : null,
-      jobClassificationId: null, // доор нөхцөлөөр дүүргэнэ
+      jobClassificationId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -195,8 +212,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(employee, { status: 201 });
-  } catch (error) {
-    console.error('Ажилтны бүртгэл нэмэхэд алдаа гарлаа:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Ажилтны бүртгэл нэмэхэд алдаа гарлаа' },
       { status: 500 }

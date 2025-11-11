@@ -18,6 +18,7 @@ export async function GET() {
             title: true,
             code: true,
           },
+          take: 50,
         },
         employees: {
           select: {
@@ -26,9 +27,11 @@ export async function GET() {
             lastName: true,
             employeeId: true,
           },
+          take: 50,
         },
       },
       orderBy: { name: 'asc' },
+      take: 100,
     });
 
     return NextResponse.json(departments);

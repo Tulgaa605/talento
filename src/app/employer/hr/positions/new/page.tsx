@@ -1,7 +1,7 @@
 'use client';
 
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Briefcase, Search } from 'lucide-react';
 import { PrinterIcon } from '@heroicons/react/24/outline';
@@ -44,6 +44,35 @@ export default function NewPositionPage() {
   });
   const componentRef = useRef<HTMLDivElement>(null);
 
+  // Generate code function
+  const generateCode = useCallback(async () => {
+    try {
+      // Database-аас бүх position-ууд авах
+      const response = await fetch('/api/hr/positions');
+      if (response.ok) {
+        const positions = await response.json();
+        
+        // DD0000X форматтай кодуудыг олох
+        const ddCodes = positions
+          .map((p: { code: string }) => p.code)
+          .filter((code: string) => /^DD\d{5}$/.test(code))
+          .map((code: string) => parseInt(code.substring(2), 10))
+          .sort((a: number, b: number) => b - a); // Эхнээс их рүү эрэмбэлэх
+        
+        // Хамгийн их дугаар олох, эсвэл 0-ээс эхлүүлэх
+        const maxNumber = ddCodes.length > 0 ? ddCodes[0] : 0;
+        const nextNumber = maxNumber + 1;
+        const code = `DD${String(nextNumber).padStart(5, '0')}`;
+        
+        setFormData(prev => ({ ...prev, code }));
+      }
+    } catch (error) {
+      console.error('Код үүсгэхэд алдаа гарлаа:', error);
+      // Алдаа гарвал энгийн байдлаар 00001-ээс эхлүүлэх
+      setFormData(prev => ({ ...prev, code: 'DD00001' }));
+    }
+  }, []);
+
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
     documentTitle: `Шинэ_албан_тушаал_${new Date().getTime()}`,
@@ -51,6 +80,7 @@ export default function NewPositionPage() {
 
   useEffect(() => {
     fetchDepartments();
+    generateCode(); // Хуудас ачаалагдахад автоматаар код үүсгэх
     setCurrentDate(new Date().toLocaleString('mn-MN', { 
       year: 'numeric', 
       month: 'long', 
@@ -58,7 +88,7 @@ export default function NewPositionPage() {
       hour: '2-digit',
       minute: '2-digit'
     }));
-  }, []);
+  }, [generateCode]);
 
   useEffect(() => {
     if (occupationSearch.trim()) {
@@ -137,14 +167,6 @@ export default function NewPositionPage() {
         jobProfessionName: '',
       }));
     }
-  };
-
-  const generateCode = () => {
-    const current = formData.code;
-    const match = current.match(/^DD(\d{5})$/);
-    const nextNumber = match ? parseInt(match[1], 10) + 1 : 1;
-    const code = `DD${String(nextNumber).padStart(5, '0')}`;
-    setFormData(prev => ({ ...prev, code }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

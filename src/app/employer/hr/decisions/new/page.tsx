@@ -129,12 +129,9 @@ export default function NewDecisionPage() {
               </div>
             </div>
           </div>
-
-        {/* Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <form onSubmit={handleSubmit} className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Шидвэрийн дугаар */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Шийдвэрийн дугаар *
@@ -177,7 +174,6 @@ export default function NewDecisionPage() {
                 </select>
               </div>
 
-              {/* Гарчиг */}
               <div className="">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Гарчиг *
@@ -188,7 +184,6 @@ export default function NewDecisionPage() {
                   value={formData.title}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // Зөвхөн үсэг, тэмдэглэгээ
                     const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-()]*$/;
                     if (!lettersAndPunctuation.test(value)) {
                       return;
@@ -204,7 +199,6 @@ export default function NewDecisionPage() {
                 />
               </div>
 
-              {/* Ажилтан */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ажилтан *

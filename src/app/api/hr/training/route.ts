@@ -4,7 +4,10 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function GET() {
-  const rows = await prisma.training.findMany({ orderBy: { startDate: 'desc' } });
+  const rows = await prisma.training.findMany({ 
+    orderBy: { startDate: 'desc' },
+    take: 100
+  });
   const data = rows.map((t) => ({
     id: t.legacyId,
     name: t.name,

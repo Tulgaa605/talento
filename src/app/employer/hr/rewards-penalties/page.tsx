@@ -38,6 +38,7 @@ export default function RewardsPenaltiesPage() {
   const [showAddPenaltyModal, setShowAddPenaltyModal] = useState(false);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [penalties, setPenalties] = useState<Penalty[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [rewardMode, setRewardMode] = useState<"view" | "edit" | null>(null);
   const [selectedPenalty, setSelectedPenalty] = useState<Penalty | null>(null);
@@ -68,13 +69,17 @@ export default function RewardsPenaltiesPage() {
   useEffect(() => {
     const load = async () => {
       try {
+        setLoading(true);
         const [r, p] = await Promise.all([
           fetch('/api/hr/rewards').then(res => res.json()),
           fetch('/api/hr/penalties').then(res => res.json()),
         ]);
         setRewards(r as Reward[]);
         setPenalties(p as Penalty[]);
-      } catch {}
+      } catch {
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);
@@ -182,6 +187,66 @@ export default function RewardsPenaltiesPage() {
     setShowAddPenaltyModal(false);
     setActiveTab("penalties");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <main className="max-w-7xl mx-auto mt-10 px-4 py-8">
+          <div className="mb-8">
+            <div className="h-9 bg-gray-200 rounded w-1/3 mb-2 animate-pulse"></div>
+            <div className="h-5 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mb-6">
+            <div className="flex space-x-8 border-b border-gray-200">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-8 bg-gray-200 rounded w-28 mb-2 animate-pulse"></div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="h-6 bg-gray-200 rounded w-40 animate-pulse"></div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <th key={i} className="px-6 py-3">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {[1, 2, 3, 4].map((i) => (
+                    <tr key={i}>
+                      {[1, 2, 3, 4, 5, 6].map((j) => (
+                        <td key={j} className="px-6 py-4">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <>

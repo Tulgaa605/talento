@@ -5,9 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { Job, JobApplication, User, CV } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-
-
- 
 import QuestionnaireDropdown from "./QuestionnaireDropdown";
 import QuestionnaireResponseButton from "@/components/QuestionnaireResponseButton";
 import Image from "next/image";
@@ -106,7 +103,6 @@ export default async function JobApplicationsPage({ params }: PageProps) {
   return (
     <div className="min-h-screen pt-20 px-4 sm:px-6 md:px-8 lg:px-16 xl:px-32 bg-white">
       <div className="py-8 mt-20">
-        {/* Job Header */}
         <div className="mb-8 bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -115,7 +111,17 @@ export default async function JobApplicationsPage({ params }: PageProps) {
               </h1>
               <div className="flex items-center gap-4 text-gray-600">
                 <span>📍 {job.location}</span>
-                <span>💼 {job.type}</span>
+                <span>💼 {
+                  job.type === "FULL_TIME"
+                    ? "Үндсэн ажилтан"
+                    : job.type === "PART_TIME"
+                    ? "Цагийн ажилтан"
+                    : job.type === "INTERNSHIP"
+                    ? "Дадлагын ажилтан"
+                    : job.type === "PROBATION"
+                    ? "Туршлагын ажилтан"
+                    : job.type
+                }</span>
                 <span>📋 {job.applications.length} анкет</span>
               </div>
             </div>
@@ -129,7 +135,6 @@ export default async function JobApplicationsPage({ params }: PageProps) {
 
         <div className="space-y-4">
           {job.applications.map((application) => {
-            // Skip applications with deleted users
             if (!application.user) {
               console.warn('Application has no user:', application.id);
               return null;

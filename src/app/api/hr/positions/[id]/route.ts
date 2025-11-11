@@ -1,114 +1,185 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-type RouteCtx = { params: Promise<{ id: string }> }
-
-export async function GET(_req: NextRequest, { params }: RouteCtx) {
-  const { id } = await params
+// GET single position
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+
     const position = await prisma.position.findUnique({
       where: { id },
       include: {
-        department: { select: { id: true, name: true, code: true } },
-        employees: { select: { id: true, firstName: true, lastName: true, employeeId: true } },
+        department: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        employees: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeId: true,
+            email: true,
+            phoneNumber: true,
+          },
+        },
       },
-    })
+    });
 
     if (!position) {
-      return NextResponse.json({ error: 'Албан тушаал олдсонгүй' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Position not found' },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json(position)
+    return NextResponse.json(position);
   } catch (error) {
-    console.error('Албан тушаалын мэдээлэл авахад алдаа гарлаа:', error)
-    return NextResponse.json({ error: 'Албан тушаалын мэдээлэл авахад алдаа гарлаа' }, { status: 500 })
+    console.error('Error fetching position:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch position' },
+      { status: 500 }
+    );
   }
 }
 
-export async function PUT(req: NextRequest, { params }: RouteCtx) {
-  const { id } = await params
+// PUT (update position)
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const body = await req.json()
-    const { title, description, code, departmentId } = body as {
-      title?: string
-      description?: string | null
-      code?: string
-      departmentId?: string
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!title || !code || !departmentId) {
+    const { id } = await params;
+    const body = await req.json();
+    const { title, code, description, departmentId, salaryRange, requirements } = body;
+
+    // Validation
+    if (!title || !code || !description || !departmentId) {
       return NextResponse.json(
-        { error: 'Нэр, код болон хэлтэс заавал оруулах шаардлагатай' },
+        { error: 'Missing required fields' },
         { status: 400 }
-      )
+      );
     }
 
-    const existingPosition = await prisma.position.findFirst({
-      where: { code, id: { not: id } },
-    })
-    if (existingPosition) {
+    // Check if position exists
+    const existingPosition = await prisma.position.findUnique({
+      where: { id },
+    });
+
+    if (!existingPosition) {
       return NextResponse.json(
-        { error: 'Энэ код өөр албан тушаалд ашиглагдсан байна' },
+        { error: 'Position not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if code is unique (excluding current position)
+    const positionWithSameCode = await prisma.position.findFirst({
+      where: {
+        code,
+        id: { not: id },
+      },
+    });
+
+    if (positionWithSameCode) {
+      return NextResponse.json(
+        { error: 'Position code already exists' },
         { status: 400 }
-      )
+      );
     }
 
-    const department = await prisma.department.findUnique({ where: { id: departmentId } })
-    if (!department) {
-      return NextResponse.json({ error: 'Хэлтэс олдсонгүй' }, { status: 404 })
-    }
-
+    // Update position
     const updatedPosition = await prisma.position.update({
       where: { id },
       data: {
         title,
-        description: description || null,
         code,
+        description,
         departmentId,
+        salaryRange,
+        requirements,
       },
       include: {
         department: true,
         employees: true,
       },
-    })
+    });
 
-    return NextResponse.json(updatedPosition)
+    return NextResponse.json(updatedPosition);
   } catch (error) {
-    console.error('Албан тушаалын мэдээлэл шинэчлэхэд алдаа гарлаа:', error)
+    console.error('Error updating position:', error);
     return NextResponse.json(
-      { error: 'Албан тушаалын мэдээлэл шинэчлэхэд алдаа гарлаа' },
+      { error: 'Failed to update position' },
       { status: 500 }
-    )
+    );
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: RouteCtx) {
-  const { id } = await params
+// DELETE position
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    // Check if position exists
     const position = await prisma.position.findUnique({
       where: { id },
-      include: { employees: true },
-    })
+      include: {
+        employees: true,
+      },
+    });
 
     if (!position) {
-      return NextResponse.json({ error: 'Албан тушаал олдсонгүй' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Position not found' },
+        { status: 404 }
+      );
     }
 
+    // Check if there are employees with this position
     if (position.employees.length > 0) {
       return NextResponse.json(
-        { error: 'Энэ албан тушаалд ажилтнууд байгаа тул устгах боломжгүй' },
+        { error: 'Cannot delete position with assigned employees' },
         { status: 400 }
-      )
+      );
     }
 
-    await prisma.position.delete({ where: { id } })
+    // Delete position
+    await prisma.position.delete({
+      where: { id },
+    });
 
-    return NextResponse.json({ message: 'Албан тушаал амжилттай устгагдлаа' }, { status: 200 })
+    return NextResponse.json({ message: 'Position deleted successfully' });
   } catch (error) {
-    console.error('Албан тушаалын устгахад алдаа гарлаа:', error)
+    console.error('Error deleting position:', error);
     return NextResponse.json(
-      { error: 'Албан тушаалын устгахад алдаа гарлаа' },
+      { error: 'Failed to delete position' },
       { status: 500 }
-    )
+    );
   }
 }

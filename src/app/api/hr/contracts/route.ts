@@ -26,15 +26,27 @@ export async function GET(request: NextRequest) {
 
     const contracts = await prisma.employmentContract.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        contractNumber: true,
+        contractType: true,
+        startDate: true,
+        endDate: true,
+        salary: true,
+        currency: true,
+        status: true,
+        createdAt: true,
         employee: {
-          include: {
-            position: { include: { department: true } },
-            department: true,
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeId: true,
           },
         },
       },
       orderBy: { startDate: 'desc' },
+      take: 100,
     });
 
     return NextResponse.json(contracts);

@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { createdAt: 'desc' },
+      take: 200,
     });
 
     const employeesWithAnyContract = await prisma.employee.findMany({
@@ -80,8 +81,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(results);
-  } catch (error) {
-    console.error('Хэрэглэгчдийн жагсаалт авахад алдаа гарлаа:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Хэрэглэгчдийн жагсаалт авахад алдаа гарлаа' },
       { status: 500 }

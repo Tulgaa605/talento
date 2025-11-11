@@ -74,12 +74,19 @@ export async function GET() {
       }),
       prisma.job.findMany({
         where: { status: 'ACTIVE' },
-        include: {
-          company: true,
-          applications: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          createdAt: true,
+          company: {
             select: {
-              id: true,
-              status: true
+              name: true
+            }
+          },
+          _count: {
+            select: {
+              applications: true
             }
           }
         },
@@ -91,27 +98,48 @@ export async function GET() {
           id: true,
           name: true,
           code: true
-        }
+        },
+        take: 50
       }),
       prisma.questionnaire.findMany({
         where: { type: 'GOVERNMENT_EMPLOYEE' },
-        include: {
-          responses: {
-            include: {
-              user: { select: { name: true, email: true } }
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          _count: {
+            select: {
+              responses: true
             }
           }
-        }
+        },
+        take: 5
       }),
       prisma.questionnaireResponse.findMany({
         where: {
           questionnaire: { type: 'GOVERNMENT_EMPLOYEE' }
         },
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-          questionnaire: { select: { title: true, type: true } }
+        select: {
+          id: true,
+          questionnaireId: true,
+          formData: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          questionnaire: {
+            select: {
+              title: true,
+              type: true
+            }
+          }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: 20
       })
     ]);
 
@@ -123,7 +151,7 @@ export async function GET() {
     };
 
     const processedApplications = applications
-      .filter(app => app.user) // Filter out applications without users
+      .filter(app => app.user)
       .map((app) => ({
         id: app.id,
         jobId: app.jobId,
@@ -140,64 +168,40 @@ export async function GET() {
       id: job.id,
       title: job.title,
       department: job.company?.name || 'N/A',
-      applicants: job.applications.length,
+      applicants: job._count?.applications || 0,
       status: job.status === 'ACTIVE' ? 'Идэвхтэй' : 'Дууссан',
       deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10) // 30 days from now
     }));
 
-    console.log('Government responses found:', governmentResponses.length);
-    governmentResponses.forEach((response, index) => {
-      console.log(`Response ${index + 1}:`, {
-        id: response.id,
-        userName: response.user?.name,
-        userEmail: response.user?.email,
-        questionnaireTitle: response.questionnaire?.title,
-        createdAt: response.createdAt,
-        hasFormData: !!response.formData
-      });
-    });
-
     const processedGovernmentResponses = governmentResponses
-      .filter(response => response.user) // Filter out responses without users
+      .filter(response => response.user)
       .map((response) => {
         let formData = null;
         try {
           formData = response.formData ? JSON.parse(response.formData as string) : null;
-        } catch (error) {
-          console.error('Error parsing formData:', error);
+        } catch {
+          // Silent error handling
         }
 
-        // Get name from formData if available, otherwise use user name
         const displayName = formData?.personalInfo?.name || response.user?.name || 'Unknown';
-
-        console.log('Processing government response:', {
-          responseId: response.id,
-          questionnaireId: response.questionnaireId,
-          userId: response.user?.id,
-          userName: response.user?.name
-        });
 
         return {
           id: response.id,
-          cvId: null, // Government questionnaires don't have CV
+          cvId: null,
           name: displayName,
           position: 'Төрийн албан хаагч',
           department: 'Төрийн байгууллага',
           status: 'GOVERNMENT_QUESTIONNAIRE',
           date: response.createdAt.toISOString().slice(0, 10),
-          score: 95, // Default high score for government employees
+          score: 95,
           type: 'government',
           responseId: response.id,
-          questionnaireId: response.questionnaireId, // Add questionnaire ID
+          questionnaireId: response.questionnaireId,
           formData: formData
         };
       });
 
-    // Combine regular applications with government questionnaire responses
     const allApplications = [...processedApplications, ...processedGovernmentResponses];
-
-    console.log('Processed government responses:', processedGovernmentResponses.length);
-    console.log('All applications count:', allApplications.length);
 
     return NextResponse.json({
       stats,

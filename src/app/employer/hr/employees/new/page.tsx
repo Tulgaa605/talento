@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { validateLettersOnly, validateNumbersOnly, capitalizeFirstLetter } from '@/utils/validations';
 import { fetchDepartments, fetchPositions, fetchEmployees } from '@/utils/hrDataFetchers';
 import { 
@@ -546,11 +548,20 @@ export default function NewEmployeePage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Төрсөн огноо *</label>
-                <input
-                  type="date"
-                  name="dateOfBirth"
-                  value={formData.dateOfBirth}
-                  onChange={handleInputChange}
+                <DatePicker
+                  selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+                  onChange={(date: Date | null) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      dateOfBirth: date ? date.toISOString().split('T')[0] : ''
+                    }));
+                  }}
+                  dateFormat="yyyy-MM-dd"
+                  maxDate={new Date()}
+                  showYearDropdown
+                  scrollableYearDropdown
+                  yearDropdownItemNumber={100}
+                  placeholderText="Огноо сонгох"
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
                 />
@@ -617,11 +628,19 @@ export default function NewEmployeePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Ажилд орсон огноо *</label>
-                <input
-                  type="date"
-                  name="hireDate"
-                  value={formData.hireDate}
-                  onChange={handleInputChange}
+                <DatePicker
+                  selected={formData.hireDate ? new Date(formData.hireDate) : null}
+                  onChange={(date: Date | null) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      hireDate: date ? date.toISOString().split('T')[0] : ''
+                    }));
+                  }}
+                  dateFormat="yyyy-MM-dd"
+                  showYearDropdown
+                  scrollableYearDropdown
+                  yearDropdownItemNumber={15}
+                  placeholderText="Огноо сонгох"
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
                 />

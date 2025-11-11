@@ -583,14 +583,153 @@ export default function QuestionnaireResponseView({
                 </div>
               )}
 
+              {/* Professional Training */}
+              {editedFormData.professionalTraining && (
+                <div className="border border-gray-300 p-6 rounded-lg">
+                  <h2 className="text-xl font-bold mb-6">4. МЭРГЭЖЛИЙН СУРГАЛТ, ЦОЛ ЗЭРЭГ</h2>
+                  
+                  {editedFormData.professionalTraining.training && editedFormData.professionalTraining.training.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-4">4.1. Мэргэжлийн сургалт</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border border-gray-300">
+                          <thead>
+                            <tr className="bg-gray-50">
+                              <th className="border border-gray-300 p-2 text-left">№</th>
+                              <th className="border border-gray-300 p-2 text-left">Байгууллагын нэр</th>
+                              <th className="border border-gray-300 p-2 text-left">Эхэлсэн огноо</th>
+                              <th className="border border-gray-300 p-2 text-left">Дууссан огноо</th>
+                              <th className="border border-gray-300 p-2 text-left">Үргэлжилсэн хугацаа</th>
+                              <th className="border border-gray-300 p-2 text-left">Чиглэл</th>
+                              <th className="border border-gray-300 p-2 text-left">Гэрчилгээний дугаар</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {editedFormData.professionalTraining.training.map(
+                              (training: { organization?: string; startDate?: string; endDate?: string; duration?: string; field?: string; certificateNumber?: string }, index: number) => (
+                                <tr key={index}>
+                                  <td className="border border-gray-300 p-2">{index + 1}</td>
+                                  <td className="border border-gray-300 p-2">{training.organization || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{training.startDate || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{training.endDate || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{training.duration || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{training.field || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{training.certificateNumber || '-'}</td>
+                                </tr>
+                              )
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {editedFormData.education?.doctoralDegrees && editedFormData.education.doctoralDegrees.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-4">4.2. Докторын зэрэг</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border border-gray-300">
+                          <thead>
+                            <tr className="bg-gray-50">
+                              <th className="border border-gray-300 p-2 text-left">№</th>
+                              <th className="border border-gray-300 p-2 text-left">Зэрэг</th>
+                              <th className="border border-gray-300 p-2 text-left">Хамгаалсан газар</th>
+                              <th className="border border-gray-300 p-2 text-left">Он</th>
+                              <th className="border border-gray-300 p-2 text-left">Гэрчилгээний дугаар</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {editedFormData.education.doctoralDegrees.map(
+                              (degree: { degree?: string; defendedAt?: string; year?: string; certificateNumber?: string }, index: number) => (
+                                <tr key={index}>
+                                  <td className="border border-gray-300 p-2">{index + 1}</td>
+                                  <td className="border border-gray-300 p-2">{degree.degree || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{degree.defendedAt || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{degree.year || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{degree.certificateNumber || '-'}</td>
+                                </tr>
+                              )
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {editedFormData.professionalTraining.officialRanks && editedFormData.professionalTraining.officialRanks.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-4">4.3. Албан тушаалын ангилал, зэрэг</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border border-gray-300">
+                          <thead>
+                            <tr className="bg-gray-50">
+                              <th className="border border-gray-300 p-2 text-left">№</th>
+                              <th className="border border-gray-300 p-2 text-left">Ангилал</th>
+                              <th className="border border-gray-300 p-2 text-left">Зэрэг</th>
+                              <th className="border border-gray-300 p-2 text-left">Тушаалын дугаар</th>
+                              <th className="border border-gray-300 p-2 text-left">Гэрчилгээний дугаар</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {editedFormData.professionalTraining.officialRanks.map(
+                              (rank: { category?: string; rank?: string; decree?: string; certificateNumber?: string }, index: number) => (
+                                <tr key={index}>
+                                  <td className="border border-gray-300 p-2">{index + 1}</td>
+                                  <td className="border border-gray-300 p-2">{rank.category || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{rank.rank || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{rank.decree || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{rank.certificateNumber || '-'}</td>
+                                </tr>
+                              )
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {editedFormData.professionalTraining.academicTitles && editedFormData.professionalTraining.academicTitles.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-4">4.4. Эрдэм шинжилгээний цол</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border border-gray-300">
+                          <thead>
+                            <tr className="bg-gray-50">
+                              <th className="border border-gray-300 p-2 text-left">№</th>
+                              <th className="border border-gray-300 p-2 text-left">Цол</th>
+                              <th className="border border-gray-300 p-2 text-left">Олгосон байгууллага</th>
+                              <th className="border border-gray-300 p-2 text-left">Он</th>
+                              <th className="border border-gray-300 p-2 text-left">Гэрчилгээний дугаар</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {editedFormData.professionalTraining.academicTitles.map(
+                              (title: { title?: string; issuingOrganization?: string; year?: string; certificateNumber?: string }, index: number) => (
+                                <tr key={index}>
+                                  <td className="border border-gray-300 p-2">{index + 1}</td>
+                                  <td className="border border-gray-300 p-2">{title.title || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{title.issuingOrganization || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{title.year || '-'}</td>
+                                  <td className="border border-gray-300 p-2">{title.certificateNumber || '-'}</td>
+                                </tr>
+                              )
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Skills - Matching GovernmentEmployeeQuestionnaireSkills */}
               {editedFormData.skills && (
                 <div className="border border-gray-300 p-6 rounded-lg">
-                  <h2 className="text-xl font-bold mb-6">4. УР ЧАДВАРЫН ТАЛААРХ МЭДЭЭЛЭЛ</h2>
+                  <h2 className="text-xl font-bold mb-6">5. УР ЧАДВАРЫН ТАЛААРХ МЭДЭЭЛЭЛ</h2>
                   
                   {/* Skills Assessment */}
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-4">4.1. Ур чадвар (1-3 оноо /1-муу, 2-дунд, 3-сайн/)</h3>
+                    <h3 className="text-lg font-semibold mb-4">5.1. Ур чадвар (1-3 оноо /1-муу, 2-дунд, 3-сайн/)</h3>
                     
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {/* Personal Skills */}
@@ -822,7 +961,7 @@ export default function QuestionnaireResponseView({
 
                   {/* Foreign Languages */}
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-4">4.2. Гадаад хэлний мэдлэг (түвшинг &quot;+&quot; гэж тэмдэглэнэ)</h3>
+                    <h3 className="text-lg font-semibold mb-4">5.2. Гадаад хэлний мэдлэг (түвшинг &quot;+&quot; гэж тэмдэглэнэ)</h3>
                     {editedFormData.foreignLanguages && editedFormData.foreignLanguages.length > 0 && (
                       <div className="overflow-x-auto">
                         <table className="w-full border border-gray-300">
@@ -885,7 +1024,7 @@ export default function QuestionnaireResponseView({
                   </div>
 
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-4">4.3. Компьютерийн болон оффисийн тоног төхөөрөмж, технологи эзэмшсэн байдал (түвшинг &quot;+&quot; гэж тэмдэглэнэ)</h3>
+                    <h3 className="text-lg font-semibold mb-4">5.3. Компьютерийн болон оффисийн тоног төхөөрөмж, технологи эзэмшсэн байдал (түвшинг &quot;+&quot; гэж тэмдэглэнэ)</h3>
                     
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {editedFormData.computerSkills?.software && editedFormData.computerSkills.software.length > 0 && (
@@ -1002,7 +1141,7 @@ export default function QuestionnaireResponseView({
 
               {editedFormData.foreignLanguages && editedFormData.foreignLanguages.length > 0 && (
                 <div className="border border-gray-300 p-6 rounded-lg">
-                  <h2 className="text-xl font-bold mb-6">5. ГАДААД ХЭЛНИЙ МЭДЛЭГ</h2>
+                  <h2 className="text-xl font-bold mb-6">6. ГАДААД ХЭЛНИЙ МЭДЛЭГ</h2>
                   <div className="overflow-x-auto">
                     <table className="w-full border border-gray-300">
                       <thead>
@@ -1033,7 +1172,7 @@ export default function QuestionnaireResponseView({
               )}
               {editedFormData.computerSkills && (
                 <div className="border border-gray-300 p-6 rounded-lg">
-                  <h2 className="text-xl font-bold mb-6">6. КОМПЬЮТЕРИЙН МЭДЛЭГ</h2>
+                  <h2 className="text-xl font-bold mb-6">7. КОМПЬЮТЕРИЙН МЭДЛЭГ</h2>
                   
                   {editedFormData.computerSkills.software && editedFormData.computerSkills.software.length > 0 && (
                     <div className="mb-6">

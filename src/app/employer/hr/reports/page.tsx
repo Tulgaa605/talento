@@ -7,7 +7,6 @@ import { useEffect, useState, useRef } from "react";
 import { useReactToPrint } from 'react-to-print';
 import { PrinterIcon } from '@heroicons/react/24/outline';
 
-// ==== Types (аль болох any-гүй болгов) ====
 type ReportStatus = "Дууссан" | "Хүлээгдэж буй" | "Эхлээгүй";
 
 interface Report {
@@ -49,6 +48,7 @@ export default function ReportsPage() {
   const [showEditTemplateModal, setShowEditTemplateModal] = useState(false);
 
   const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
   const componentRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
@@ -83,6 +83,7 @@ export default function ReportsPage() {
   useEffect(() => {
     const load = async () => {
       try {
+        setLoading(true);
         const res = await fetch("/api/hr/reports");
         if (!res.ok) return;
         const data: unknown = await res.json();
@@ -90,6 +91,8 @@ export default function ReportsPage() {
           setReports(data as Report[]);
         }
       } catch {
+      } finally {
+        setLoading(false);
       }
     };
     load();
@@ -222,21 +225,6 @@ export default function ReportsPage() {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const departmentStats: {
-    department: string;
-    employees: number;
-    avgSalary: string;
-    performance: number;
-    trend: "up" | "down" | "stable";
-  }[] = [
-    { department: "IT", employees: 45, avgSalary: "2,500,000₮", performance: 4.2, trend: "up" },
-    { department: "Маркетинг", employees: 32, avgSalary: "2,200,000₮", performance: 4.1, trend: "up" },
-    { department: "Санхүү", employees: 28, avgSalary: "2,800,000₮", performance: 4.3, trend: "stable" },
-    { department: "HR", employees: 15, avgSalary: "2,100,000₮", performance: 4.0, trend: "up" },
-    { department: "Борлуулалт", employees: 38, avgSalary: "2,300,000₮", performance: 3.9, trend: "down" },
-  ];
-
   const initialTemplates: ReportTemplate[] = [
     {
       name: "Ажилтны ерөнхий тайлан",
@@ -283,6 +271,51 @@ export default function ReportsPage() {
   ];
 
   const [reportTemplates] = useState<ReportTemplate[]>(initialTemplates);
+
+  if (loading) {
+    return (
+      <main className="max-w-7xl mt-10 mx-auto px-4 py-8">
+        <div className="mb-8">
+          <div className="h-9 bg-gray-200 rounded w-1/3 mb-2 animate-pulse"></div>
+          <div className="h-5 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="h-4 bg-gray-200 rounded w-20 mb-2 animate-pulse"></div>
+              <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mb-6">
+          <div className="flex space-x-8 border-b border-gray-200">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-8 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="h-6 bg-gray-200 rounded w-40 animate-pulse"></div>
+          </div>
+          <div className="p-6 space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+                </div>
+                <div className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <>

@@ -28,8 +28,8 @@ enum JobStatus {
 enum JobType {
   FULL_TIME
   PART_TIME
-  CONTRACT
   INTERNSHIP
+  PROBATION
 }
 
 enum JobApplicationStatus {

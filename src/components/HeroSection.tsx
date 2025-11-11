@@ -156,7 +156,6 @@ export default function HeroSection() {
         ];
         setStats(metrics);
       } catch {
-        // same valid icon URLs, values as 0
         setStats([
           {
             icon:

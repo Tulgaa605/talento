@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { format } from "date-fns";
 
 interface JobApplication {
@@ -187,7 +188,7 @@ export default function JobseekerApplicationsPage() {
               Та одоогоор ямар нэгэн ажлын байрт өргөдөл гаргаагүй байна.
             </p>
             <div className="mt-6">
-              <a
+              <Link
                 href="/jobs"
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
@@ -203,7 +204,7 @@ export default function JobseekerApplicationsPage() {
                   />
                 </svg>
                 Ажлын байр хайх
-              </a>
+              </Link>
             </div>
           </div>
         ) : (

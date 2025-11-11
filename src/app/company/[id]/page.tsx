@@ -149,10 +149,11 @@ export default async function CompanyProfilePage({
                               ? "Үндсэн ажилтан"
                               : job.type === "PART_TIME"
                               ? "Цагийн ажилтан"
-                              : job.type === "CONTRACT"
-                              ? "Гэрээт ажилтан"
                               : job.type === "INTERNSHIP"
                               ? "Дадлага ажилтан"
+                              : job.type}
+                              {job.type === "PROBATION"
+                              ? "Туршилтын ажилтан"
                               : job.type}
                           </div>
                         </div>

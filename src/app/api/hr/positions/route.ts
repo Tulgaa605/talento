@@ -30,9 +30,11 @@ export async function GET() {
             lastName: true,
             employeeId: true,
           },
+          take: 50,
         },
       },
       orderBy: { title: 'asc' },
+      take: 100,
     });
 
     return NextResponse.json(positions);
