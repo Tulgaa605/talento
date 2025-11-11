@@ -82,6 +82,9 @@ export async function PUT(
     // Check if position exists
     const existingPosition = await prisma.position.findUnique({
       where: { id },
+      include: {
+        employees: true,
+      },
     });
 
     if (!existingPosition) {
@@ -106,21 +109,41 @@ export async function PUT(
       );
     }
 
-    // Update position
-    const updatedPosition = await prisma.position.update({
-      where: { id },
-      data: {
-        title,
-        code,
-        description,
-        departmentId,
-        salaryRange,
-        requirements,
-      },
-      include: {
-        department: true,
-        employees: true,
-      },
+    // Check if department changed
+    const departmentChanged = existingPosition.departmentId !== departmentId;
+
+    // Update position and employees in a transaction
+    const updatedPosition = await prisma.$transaction(async (tx) => {
+      // Update position
+      const position = await tx.position.update({
+        where: { id },
+        data: {
+          title,
+          code,
+          description,
+          departmentId,
+          salaryRange,
+          requirements,
+        },
+        include: {
+          department: true,
+          employees: true,
+        },
+      });
+
+      // If department changed, update all employees with this position
+      if (departmentChanged && existingPosition.employees.length > 0) {
+        await tx.employee.updateMany({
+          where: {
+            positionId: id,
+          },
+          data: {
+            departmentId: departmentId,
+          },
+        });
+      }
+
+      return position;
     });
 
     return NextResponse.json(updatedPosition);

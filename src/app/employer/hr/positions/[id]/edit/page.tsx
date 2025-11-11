@@ -203,6 +203,9 @@ export default function EditPositionPage() {
                     </option>
                   ))}
                 </select>
+                <p className="mt-2 text-xs text-amber-600">
+                  ⚠️ Хэлтэс солих нь энэ албан тушаалд ажиллаж буй БҮХ ажилтнуудыг шинэ хэлтэст автоматаар шилжүүлнэ.
+                </p>
               </div>
             </div>
 

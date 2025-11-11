@@ -108,6 +108,14 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
       const employeeResponse = await fetch(`/api/hr/employees/${id}`);
       if (employeeResponse.ok) {
         const employeeData: Employee = await employeeResponse.json();
+        
+        // Check if employee is terminated
+        if (employeeData.status === 'TERMINATED') {
+          alert('Халагдсан ажилтны мэдээллийг засварлах боломжгүй!');
+          router.push('/employer/hr/employees');
+          return;
+        }
+        
         setEmployee(employeeData);
         setIsEmployee(true);
         setFormData({

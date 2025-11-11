@@ -149,7 +149,6 @@ export default function ViewDecisionPage() {
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Ерөнхий мэдээлэл */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1">

@@ -210,9 +210,56 @@ export default function GovernmentEmployeeQuestionnaire({
         return;
       }
       
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file);
-      setPhoto({ file, preview: previewUrl });
+      // Resize to 3x4 passport size (300x400px)
+      const img = document.createElement('img') as HTMLImageElement;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Passport photo size: 3:4 ratio (300x400px for good quality)
+        const targetWidth = 300;
+        const targetHeight = 400;
+        
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        // Calculate crop dimensions to maintain 3:4 ratio
+        const imgRatio = img.width / img.height;
+        const targetRatio = 3 / 4;
+        
+        let sourceX = 0;
+        let sourceY = 0;
+        let sourceWidth = img.width;
+        let sourceHeight = img.height;
+        
+        if (imgRatio > targetRatio) {
+          // Image is wider, crop width
+          sourceWidth = img.height * targetRatio;
+          sourceX = (img.width - sourceWidth) / 2;
+        } else {
+          // Image is taller, crop height
+          sourceHeight = img.width / targetRatio;
+          sourceY = (img.height - sourceHeight) / 2;
+        }
+        
+        // Draw cropped and resized image
+        ctx?.drawImage(
+          img,
+          sourceX, sourceY, sourceWidth, sourceHeight,
+          0, 0, targetWidth, targetHeight
+        );
+        
+        // Convert to blob
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const resizedFile = new File([blob], file.name, { type: 'image/jpeg' });
+            const previewUrl = URL.createObjectURL(blob);
+            setPhoto({ file: resizedFile, preview: previewUrl });
+          }
+        }, 'image/jpeg', 0.9);
+      };
+      
+      img.src = URL.createObjectURL(file);
     }
   };
 

@@ -100,6 +100,11 @@ model User {
   questionnaireResponses QuestionnaireResponse[]
   passwordResets PasswordReset[]
   notifications Notification[]
+
+  @@index([role])
+  @@index([status])
+  @@index([companyId])
+  @@index([createdAt])
 }
 
 model Company {
@@ -115,6 +120,8 @@ model Company {
   users         User[]
   jobs          Job[]
   questionnaires Questionnaire[]
+
+  @@index([name])
 }
 
 model Job {
@@ -139,6 +146,11 @@ model Job {
   jobProfessionCode String?
   jobProfessionName String?
   otherInfo        String?
+
+  @@index([status])
+  @@index([companyId])
+  @@index([type])
+  @@index([createdAt])
 }
 
 model CV {
@@ -154,6 +166,9 @@ model CV {
   status      String?  @default("PENDING")
   matchScore  Float?
   applications JobApplication[]
+
+  @@index([userId])
+  @@index([status])
 }
 
 model JobApplication {
@@ -173,6 +188,10 @@ model JobApplication {
   questionnaireId String? @db.ObjectId
 
   @@unique([jobId, userId])
+  @@index([userId])
+  @@index([jobId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model SavedJob {
@@ -184,6 +203,8 @@ model SavedJob {
   jobId     String   @db.ObjectId
 
   @@unique([userId, jobId])
+  @@index([userId])
+  @@index([jobId])
 }
 
 model Questionnaire {
@@ -200,6 +221,9 @@ model Questionnaire {
   questions   Question[]
   responses   QuestionnaireResponse[]
   applications JobApplication[]
+
+  @@index([companyId])
+  @@index([type])
 }
 
 model Question {
@@ -225,6 +249,10 @@ model QuestionnaireResponse {
   answers        Answer[]
   attachmentFile String?
   attachmentUrl  String?
+
+  @@index([questionnaireId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model Answer {
@@ -246,6 +274,10 @@ model Notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
 }
 
 enum EmployeeStatus {
@@ -290,6 +322,8 @@ model Department {
   updatedAt   DateTime @updatedAt
   employees   Employee[]
   positions   Position[]
+
+  @@index([name])
 }
 
 model Position {
@@ -306,6 +340,9 @@ model Position {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   employees        Employee[]
+
+  @@index([departmentId])
+  @@index([title])
 }
 
 model Employee {
@@ -345,6 +382,12 @@ model Employee {
   leaveSchedules  LeaveSchedule[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
+  @@index([lastName, firstName])
+  @@index([departmentId])
+  @@index([positionId])
+  @@index([status])
+  @@index([managerId])
 }
 
 enum EmploymentContractStatus {
@@ -372,6 +415,10 @@ model EmploymentContract {
   documentUrl     String?
   createdAt       DateTime                   @default(now())
   updatedAt       DateTime                   @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate])
 }
 
 model Decision {
@@ -391,6 +438,11 @@ model Decision {
   createdBy     String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([type])
+  @@index([decisionDate])
 }
 
 model EmployeeDocument {
@@ -406,6 +458,9 @@ model EmployeeDocument {
   expiryDate  DateTime?
   description String?
   isRequired  Boolean  @default(false)
+
+  @@index([employeeId])
+  @@index([type])
 }
 
 enum SalaryType {
@@ -445,6 +500,9 @@ model SalaryStructure {
   currency    String   @default("MNT")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([effectiveDate])
 }
 
 model SalaryCalculation {
@@ -465,6 +523,10 @@ model SalaryCalculation {
   calculatedAt DateTime @default(now())
   paidAt      DateTime?
   status      String   @default("PENDING")
+
+  @@index([employeeId])
+  @@index([year, month])
+  @@index([status])
 }
 
 model SalaryAllowance {
@@ -479,6 +541,9 @@ model SalaryAllowance {
   currency    String     @default("MNT")
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  @@index([employeeId])
+  @@index([type])
 }
 
 model SalaryDeduction {
@@ -493,6 +558,9 @@ model SalaryDeduction {
   currency    String     @default("MNT")
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  @@index([employeeId])
+  @@index([type])
 }
 
 model LeaveBalance {
@@ -508,6 +576,8 @@ model LeaveBalance {
   updatedAt   DateTime @updatedAt
 
   @@unique([employeeId, year, leaveType])
+  @@index([employeeId])
+  @@index([year])
 }
 
 model LeaveRequest {
@@ -527,6 +597,10 @@ model LeaveRequest {
   rejectionReason String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate])
 }
 
 model LeaveSchedule {
@@ -540,6 +614,9 @@ model LeaveSchedule {
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([year])
 }
 
 model JobClassification {
@@ -572,6 +649,10 @@ model Training {
   progress     Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@index([startDate])
 }
 
 model TrainingParticipant {
@@ -586,6 +667,10 @@ model TrainingParticipant {
   certificate    String?
   trainingLegacyId Int
   createdAt      DateTime @default(now())
+
+  @@index([employeeId])
+  @@index([trainingLegacyId])
+  @@index([status])
 }
 
 model Reward {
@@ -601,6 +686,10 @@ model Reward {
   issuedBy    String?
   orderNumber String?
   createdAt   DateTime @default(now())
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([date])
 }
 
 model Penalty {
@@ -616,6 +705,10 @@ model Penalty {
   decidedBy   String?
   orderNumber String?
   createdAt   DateTime @default(now())
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([date])
 }
 
 model PerformanceEvaluation {
@@ -635,6 +728,10 @@ model PerformanceEvaluation {
   averageScore  Float
   evaluationType String
   createdAt     DateTime @default(now())
+
+  @@index([employeeRefId])
+  @@index([status])
+  @@index([evaluationDate])
 }
 
 model HRReport {
@@ -651,6 +748,10 @@ model HRReport {
   lastModified DateTime @default(now())
   format       String
   department   String
+
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
 }
 
 model Occupation {
