@@ -134,7 +134,6 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
         return;
       }
 
-      // Else fetch as user
       const userResponse = await fetch(`/api/hr/users/${id}`);
       if (userResponse.ok) {
         const userData: User = await userResponse.json();
@@ -184,7 +183,13 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
       setSaving(true);
 
       if (isEmployee) {
-        // Update employee
+        // Validate department and position are selected
+        if (!formData.departmentId || !formData.positionId) {
+          alert('Хэлтэс болон албан тушаалыг заавал сонгоно уу!');
+          setSaving(false);
+          return;
+        }
+
         const response = await fetch(`/api/hr/employees/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -198,7 +203,6 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
           alert(errorData.error || 'Ажилтныг шинэчлэхэд алдаа гарлаа');
         }
       } else {
-        // Update user
         const userData = {
           name: `${formData.firstName} ${formData.lastName}`.trim(),
           email: formData.email,
@@ -360,12 +364,13 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Хэлтэс
+                      Хэлтэс *
                     </label>
                     <select
                       name="departmentId"
                       value={formData.departmentId}
                       onChange={handleChange}
+                      required
                       className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Хэлтэс сонгох</option>
@@ -379,12 +384,13 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Албан тушаал
+                      Албан тушаал *
                     </label>
                     <select
                       name="positionId"
                       value={formData.positionId}
                       onChange={handleChange}
+                      required
                       className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Албан тушаал сонгох</option>
@@ -423,7 +429,7 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
                   </div>
 
                   <div>
-                    <label className="block text-sm fontmedium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Яаралтын утас
                     </label>
                     <input

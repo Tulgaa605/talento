@@ -247,7 +247,6 @@ export default function EmployeesPage() {
     <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div>
-          {/* Гарчиг */}
           <div className="mb-6 sm:mb-8 sm:mt-10">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
               <div>
@@ -306,7 +305,6 @@ export default function EmployeesPage() {
             </div>
           </div>
 
-        {/* Хайлт */}
         <div className="bg-white rounded-lg shadow mb-6 p-4 sm:p-6">
           <div className="relative max-w-md">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -323,7 +321,6 @@ export default function EmployeesPage() {
           </div>
         </div>
 
-        {/* Жагсаалт */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
             {viewMode === 'EMPLOYEES' ? (
@@ -363,7 +360,6 @@ export default function EmployeesPage() {
                     >
                       <td className="px-6 py-5">
                         <div className="space-y-3">
-                          {/* Нэр */}
                           <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
                             <div className="text-lg font-bold text-gray-900">
                               {employee.firstName} {employee.lastName}
@@ -375,7 +371,6 @@ export default function EmployeesPage() {
                             )}
                           </div>
                           
-                          {/* Мэдээлэл */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5">
                             <div className="flex flex-col space-y-0.5">
                               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">ID дугаар</span>
