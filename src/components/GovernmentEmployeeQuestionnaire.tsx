@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import React, { useState, useEffect, useCallback } from 'react';
+import Cropper from 'react-easy-crop';
+import type { Area } from 'react-easy-crop';
 import GovernmentEmployeeQuestionnaireSkills from './GovernmentEmployeeQuestionnaireSkills';
 import {
   validateLettersOnly,
@@ -185,6 +186,13 @@ interface GovernmentEmployeeQuestionnaireProps {
   onCancel: () => void;
 }
 
+const createImage = (url: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', (error) => reject(error));
+    image.src = url;
+  });
 
 export default function GovernmentEmployeeQuestionnaire({
   initialData,
@@ -193,74 +201,93 @@ export default function GovernmentEmployeeQuestionnaire({
 }: GovernmentEmployeeQuestionnaireProps) {
   
   const [photo, setPhoto] = useState<PhotoInfo>({ file: null, preview: null });
+  
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [originalFileName, setOriginalFileName] = useState<string>('');
+
+  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check if file is an image
       if (!file.type.startsWith('image/')) {
         alert('Зөвхөн зураг файл оруулна уу');
         return;
       }
       
-      // Check file size (5MB max)
-      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
         alert('Файлын хэмжээ 5MB-аас их байна. Бага хэмжээтэй зураг сонгоно уу.');
         return;
       }
       
-      // Resize to 3x4 passport size (300x400px)
-      const img = document.createElement('img') as HTMLImageElement;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Passport photo size: 3:4 ratio (300x400px for good quality)
-        const targetWidth = 300;
-        const targetHeight = 400;
-        
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-        
-        // Calculate crop dimensions to maintain 3:4 ratio
-        const imgRatio = img.width / img.height;
-        const targetRatio = 3 / 4;
-        
-        let sourceX = 0;
-        let sourceY = 0;
-        let sourceWidth = img.width;
-        let sourceHeight = img.height;
-        
-        if (imgRatio > targetRatio) {
-          // Image is wider, crop width
-          sourceWidth = img.height * targetRatio;
-          sourceX = (img.width - sourceWidth) / 2;
-        } else {
-          // Image is taller, crop height
-          sourceHeight = img.width / targetRatio;
-          sourceY = (img.height - sourceHeight) / 2;
-        }
-        
-        // Draw cropped and resized image
-        ctx?.drawImage(
-          img,
-          sourceX, sourceY, sourceWidth, sourceHeight,
-          0, 0, targetWidth, targetHeight
-        );
-        
-        // Convert to blob
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const resizedFile = new File([blob], file.name, { type: 'image/jpeg' });
-            const previewUrl = URL.createObjectURL(blob);
-            setPhoto({ file: resizedFile, preview: previewUrl });
-          }
-        }, 'image/jpeg', 0.9);
-      };
-      
-      img.src = URL.createObjectURL(file);
+      setOriginalFileName(file.name);
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        setImageSrc(reader.result as string);
+        setShowCropModal(true);
+      });
+      reader.readAsDataURL(file);
     }
+    e.target.value = '';
+  };
+
+  const createCroppedImage = useCallback(async () => {
+    if (!imageSrc || !croppedAreaPixels) return;
+
+    try {
+      const image = await createImage(imageSrc);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) return;
+
+      const targetWidth = 300;
+      const targetHeight = 400;
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+
+      // Draw cropped image
+      ctx.drawImage(
+        image,
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height,
+        0,
+        0,
+        targetWidth,
+        targetHeight
+      );
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const croppedFile = new File([blob], originalFileName, { type: 'image/jpeg' });
+          const previewUrl = URL.createObjectURL(blob);
+          setPhoto({ file: croppedFile, preview: previewUrl });
+          setShowCropModal(false);
+          setImageSrc(null);
+          setCrop({ x: 0, y: 0 });
+          setZoom(1);
+        }
+      }, 'image/jpeg', 0.9);
+    } catch (error) {
+      console.error('Error creating cropped image:', error);
+      alert('Зураг crop хийхэд алдаа гарлаа');
+    }
+  }, [imageSrc, croppedAreaPixels, originalFileName]);
+
+  const cancelCrop = () => {
+    setShowCropModal(false);
+    setImageSrc(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
   };
 
   const removePhoto = () => {
@@ -505,9 +532,64 @@ export default function GovernmentEmployeeQuestionnaire({
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 bg-white text-gray-900">
+    <>
+      {/* Crop Modal */}
+      {showCropModal && imageSrc && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full p-6">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">
+              Зургаа 3×4 хэмжээнд тохируулах
+            </h3>
+            
+            <div className="relative h-96 bg-gray-100 rounded-lg mb-4">
+              <Cropper
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={3 / 4}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Томруулах: {zoom.toFixed(1)}x
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={cancelCrop}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+              >
+                Цуцлах
+              </button>
+              <button
+                type="button"
+                onClick={createCroppedImage}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Crop хийх
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-5xl mx-auto p-6 bg-white text-gray-900">
+        <form onSubmit={handleSubmit} className="space-y-8">
         
           <div className="border border-gray-300 p-6 rounded-lg">
             <h2 className="text-xl font-bold mb-6">1. ХУВЬ ХҮНИЙ ТАЛААРХ МЭДЭЭЛЭЛ</h2>
@@ -564,13 +646,10 @@ export default function GovernmentEmployeeQuestionnaire({
                     </label>
                   ) : (
                     <div className="relative w-32 h-40">
-                      <Image
+                      <img
                         src={photo.preview}
                         alt="Preview"
-                        width={128}
-                        height={160}
                         className="w-full h-full object-cover rounded border-2 border-gray-300"
-                        unoptimized
                       />
                       <button
                         type="button"
@@ -1761,6 +1840,7 @@ export default function GovernmentEmployeeQuestionnaire({
           </button>
         </div>
       </form>
-    </div>
+      </div>
+    </>
   );
 }

@@ -323,52 +323,70 @@ export default function QuestionnaireResponseView({
                 <div className="border border-gray-300 p-6 rounded-lg">
                   <h2 className="text-xl font-bold mb-6">1. ХУВЬ ХҮНИЙ ТАЛААРХ МЭДЭЭЛЭЛ</h2>
                   
-                  <div className="grid grid-cols-2 gap-6 mb-6">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Регистрийн дугаар</label>
-                      <div className="w-full border-b border-gray-300 py-2">
-                        {editedFormData.identification?.registrationNumber || '-'}
-                      </div>
-                    </div>
+                  <div className="flex flex-row gap-6 mb-6 items-start">
+                    {/* Left side: Personal info */}
+                    <div className="flex-1">
+                      <div className="grid grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Регистрийн дугаар</label>
+                          <div className="w-full border-b border-gray-300 py-2">
+                            {editedFormData.identification?.registrationNumber || '-'}
+                          </div>
+                        </div>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Иргэний үнэмлэхийн дугаар</label>
-                      <div className="w-full border-b border-gray-300 py-2">
-                        {editedFormData.identification?.citizenIdNumber || '-'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6 mb-6">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">1.1. Эцэг /эх/-ийн нэр</label>
-                      <div className="w-full border-b border-gray-300 py-2">
-                        {editedFormData.personalInfo.fatherName || '-'}
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Иргэний үнэмлэхийн дугаар</label>
+                          <div className="w-full border-b border-gray-300 py-2">
+                            {editedFormData.identification?.citizenIdNumber || '-'}
+                          </div>
+                        </div>
+                      
+                        <div>
+                          <label className="block text-sm font-medium mb-2">1.1. Эцэг /эх/-ийн нэр</label>
+                          <div className="w-full border-b border-gray-300 py-2">
+                            {editedFormData.personalInfo.fatherName || '-'}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Нэр</label>
+                          <div className="w-full border-b border-gray-300 py-2">
+                            {editedFormData.personalInfo.name || '-'}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-2">1.2. Хүйс</label>
+                          <div className="w-full border-b border-gray-300 py-2">
+                            {editedFormData.personalInfo.gender || '-'}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-2">1.3. Төрсөн</label>
+                          <div className="w-full border-b border-gray-300 py-2">
+                            {editedFormData.personalInfo.birthYear || '-'} 
+                            {editedFormData.personalInfo.birthMonth && ` / ${editedFormData.personalInfo.birthMonth}`}
+                            {editedFormData.personalInfo.birthDay && ` / ${editedFormData.personalInfo.birthDay}`}
+                          </div>
+                        </div>
                       </div>
                     </div>
                     
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Нэр</label>
-                      <div className="w-full border-b border-gray-300 py-2">
-                        {editedFormData.personalInfo.name || '-'}
+                    {/* Right side: Photo */}
+                    {editedFormData.photoUrl && (
+                      <div className="flex-shrink-0">
+                        <div className="border-2 border-gray-300 p-1 bg-gray-50">
+                          <img
+                            src={editedFormData.photoUrl}
+                            alt="Анкетын зураг"
+                            className="w-32 h-40 object-cover"
+                            style={{ aspectRatio: '3/4' }}
+                          />
+                        </div>
+                        <p className="text-xs text-center text-gray-500 mt-1">3×4 зураг</p>
                       </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2">1.2. Хүйс</label>
-                      <div className="w-full border-b border-gray-300 py-2">
-                        {editedFormData.personalInfo.gender || '-'}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2">1.3. Төрсөн</label>
-                      <div className="w-full border-b border-gray-300 py-2">
-                        {editedFormData.personalInfo.birthYear || '-'} 
-                        {editedFormData.personalInfo.birthMonth && ` / ${editedFormData.personalInfo.birthMonth}`}
-                        {editedFormData.personalInfo.birthDay && ` / ${editedFormData.personalInfo.birthDay}`}
-                      </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* Birth place */}
