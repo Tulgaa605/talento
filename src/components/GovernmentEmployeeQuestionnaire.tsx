@@ -209,6 +209,14 @@ export default function GovernmentEmployeeQuestionnaire({
   const [showCropModal, setShowCropModal] = useState(false);
   const [originalFileName, setOriginalFileName] = useState<string>('');
 
+  // Reset zoom when opening crop modal
+  useEffect(() => {
+    if (showCropModal) {
+      setZoom(1);
+      setCrop({ x: 0, y: 0 });
+    }
+  }, [showCropModal]);
+
   const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
@@ -253,7 +261,6 @@ export default function GovernmentEmployeeQuestionnaire({
       canvas.width = targetWidth;
       canvas.height = targetHeight;
 
-      // Draw cropped image
       ctx.drawImage(
         image,
         croppedAreaPixels.x,
@@ -482,7 +489,6 @@ export default function GovernmentEmployeeQuestionnaire({
     }
   }, [initialData]);
 
-  // Cleanup photo preview URL on unmount
   useEffect(() => {
     return () => {
       if (photo.preview) {
@@ -495,6 +501,32 @@ export default function GovernmentEmployeeQuestionnaire({
     e.preventDefault();
     
     try {
+      let photoUrl: string | undefined;
+      if (photo.file) {
+        try {
+          const photoFormData = new FormData();
+          photoFormData.append('file', photo.file);
+          
+          const uploadResponse = await fetch('/api/upload/company-logo', {
+            method: 'POST',
+            body: photoFormData,
+          });
+
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json();
+            photoUrl = uploadData.url;
+          } else {
+            console.error('Photo upload failed');
+            alert('Зураг хадгалахад алдаа гарлаа. Дахин оролдоно уу.');
+            return;
+          }
+        } catch (uploadError) {
+          console.error('Error uploading photo:', uploadError);
+          alert('Зураг хадгалахад алдаа гарлаа. Дахин оролдоно уу.');
+          return;
+        }
+      }
+
       // Find government questionnaire ID
       const response = await fetch('/api/questionnaires');
       if (!response.ok) throw new Error('Questionnaires fetch failed');
@@ -507,6 +539,12 @@ export default function GovernmentEmployeeQuestionnaire({
         return;
       }
 
+      // Add photoUrl to formData
+      const formDataWithPhoto = {
+        ...formData,
+        photoUrl: photoUrl || undefined,
+      };
+
       // Submit the questionnaire
       const submitResponse = await fetch(`/api/questionnaires/${governmentQuestionnaire.id}/submit-government`, {
         method: 'POST',
@@ -514,7 +552,7 @@ export default function GovernmentEmployeeQuestionnaire({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          formData: formData,
+          formData: formDataWithPhoto,
         }),
       });
 
@@ -524,7 +562,7 @@ export default function GovernmentEmployeeQuestionnaire({
       }
 
       // Success - call parent callback (parent will show success message)
-      onSubmit(formData);
+      onSubmit(formDataWithPhoto);
     } catch (error) {
       console.error('Error submitting questionnaire:', error);
       alert(error instanceof Error ? error.message : 'Анкет илгээхэд алдаа гарлаа');
@@ -533,56 +571,102 @@ export default function GovernmentEmployeeQuestionnaire({
 
   return (
     <>
-      {/* Crop Modal */}
+      {/* Crop Modal - Instagram Story Style */}
       {showCropModal && imageSrc && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full p-6">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900">
-              Зургаа 3×4 хэмжээнд тохируулах
+        <div className="fixed inset-0 bg-black z-[9999] flex flex-col">
+          {/* Header */}
+          <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent">
+            <button
+              type="button"
+              onClick={cancelCrop}
+              className="text-white text-lg font-semibold hover:opacity-70 transition-opacity"
+            >
+              Цуцлах
+            </button>
+            <h3 className="text-white text-lg font-semibold">
+              3×4 зураг тохируулах
             </h3>
-            
-            <div className="relative h-96 bg-gray-100 rounded-lg mb-4">
-              <Cropper
-                image={imageSrc}
-                crop={crop}
-                zoom={zoom}
-                aspect={3 / 4}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={onCropComplete}
-              />
-            </div>
+            <button
+              type="button"
+              onClick={createCroppedImage}
+              className="text-white text-lg font-semibold hover:opacity-70 transition-opacity"
+            >
+              Болсон
+            </button>
+          </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Томруулах: {zoom.toFixed(1)}x
-              </label>
-              <input
-                type="range"
-                min={1}
-                max={3}
-                step={0.1}
-                value={zoom}
-                onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
+          {/* Crop Area - Fullscreen */}
+          <div className="flex-1 relative w-full h-full">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={3 / 4}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
+              cropShape="rect"
+              showGrid={true}
+              style={{
+                containerStyle: {
+                  width: '100%',
+                  height: '100%',
+                  position: 'relative',
+                },
+                cropAreaStyle: {
+                  border: '2px solid white',
+                  boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
+                },
+              }}
+            />
+          </div>
 
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={cancelCrop}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
-              >
-                Цуцлах
-              </button>
-              <button
-                type="button"
-                onClick={createCroppedImage}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Crop хийх
-              </button>
+          {/* Bottom Controls */}
+          <div className="absolute bottom-0 left-0 right-0 z-10 p-6 bg-gradient-to-t from-black/80 to-transparent">
+            <div className="max-w-md mx-auto">
+              <div className="flex items-center gap-4 mb-4">
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"
+                  />
+                </svg>
+                <input
+                  type="range"
+                  min={1}
+                  max={5}
+                  step={0.1}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="flex-1 h-2 bg-white/30 rounded-lg appearance-none cursor-pointer slider"
+                  style={{
+                    background: `linear-gradient(to right, white 0%, white ${((zoom - 1) / 4) * 100}%, rgba(255,255,255,0.3) ${((zoom - 1) / 4) * 100}%, rgba(255,255,255,0.3) 100%)`,
+                  }}
+                />
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10V7m0 0V4m0 3H10m3 0h3"
+                  />
+                </svg>
+              </div>
+              <p className="text-white/70 text-center text-sm">
+                Зургаа зөөж, томруулж тохируулна уу
+              </p>
             </div>
           </div>
         </div>

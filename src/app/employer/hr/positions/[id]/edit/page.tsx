@@ -104,7 +104,6 @@ export default function EditPositionPage() {
     const { name, value } = e.target;
     let processedValue = value;
     
-    // Гарчиг - эхний үсэг том, зөвхөн үсэг
     if (name === 'title' && value) {
       const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-()]*$/;
       if (!lettersAndPunctuation.test(value)) {
@@ -115,7 +114,6 @@ export default function EditPositionPage() {
       }
     }
     
-    // Тайлбар - эхний үсэг том, зөвхөн үсэг
     if (name === 'description' && value) {
       const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/;
       if (!lettersAndPunctuation.test(value)) {

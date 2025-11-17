@@ -1,5 +1,3 @@
-// Shared data fetching utilities for HR module
-
 export interface Department {
   id: string;
   name: string;
@@ -30,9 +28,6 @@ export interface Employee {
   department?: Department;
 }
 
-/**
- * Fetch all departments
- */
 export async function fetchDepartments(): Promise<Department[]> {
   try {
     const response = await fetch('/api/hr/departments');
@@ -47,9 +42,6 @@ export async function fetchDepartments(): Promise<Department[]> {
   }
 }
 
-/**
- * Fetch all positions or filter by department
- */
 export async function fetchPositions(departmentId?: string): Promise<Position[]> {
   try {
     const url = departmentId 

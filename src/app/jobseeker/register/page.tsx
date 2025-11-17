@@ -289,6 +289,7 @@ export default function JobseekerRegisterPage() {
                       Та аль хэдийн бүртгүүлсэн үү?
                     </span>
                     <button
+                      type="button"
                       onClick={handleLoginClick}
                       className="text-[#0C213A] text-[12px] sm:text-[14px] lg:text-[16px] font-bold font-poppins hover:underline"
                     >

@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    // Get all questionnaires including government ones
     const questionnaires = await prisma.questionnaire.findMany({
       where: {
         OR: [

@@ -5,6 +5,20 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request });
   const { pathname } = request.nextUrl;
 
+  // Public routes that don't require authentication
+  const publicRoutes = [
+    '/employer/login',
+    '/employer/register',
+    '/admin/login',
+    '/jobseeker/login',
+    '/jobseeker/register',
+  ];
+
+  // Skip authentication for public routes
+  if (publicRoutes.some(route => pathname.startsWith(route))) {
+    return NextResponse.next();
+  }
+
   // HR routes access control - restrict to EMPLOYER and ADMIN only
   if (pathname.startsWith('/employer/hr')) {
     if (!token) {

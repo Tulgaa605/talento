@@ -213,6 +213,7 @@ export default function EmployerLoginPage() {
                       Бүртгэлгүй юу?
                     </span>
                     <button
+                      type="button"
                       onClick={handleRegisterClick}
                       className="text-[#0C213A] text-[12px] sm:text-[14px] font-bold font-poppins hover:underline"
                     >

@@ -21,11 +21,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "http",
-        hostname: "192.168.0.117",
+        hostname: "192.168.0.118",
       },
     ],
   },
-  allowedDevOrigins: ["http://192.168.0.117"],
+  allowedDevOrigins: ["http://192.168.0.118"],
 };
 
 export default nextConfig;
