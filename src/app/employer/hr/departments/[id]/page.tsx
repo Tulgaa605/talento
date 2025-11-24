@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { DetailPageSkeleton } from '@/components/Skeletons';
 import { useParams, useRouter } from 'next/navigation';
 import { BuildingOfficeIcon, UsersIcon, PencilIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
@@ -70,8 +71,8 @@ export default function DepartmentDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <DetailPageSkeleton />
       </div>
     );
   }

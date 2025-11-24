@@ -44,22 +44,17 @@ export default function NewPositionPage() {
   });
   const componentRef = useRef<HTMLDivElement>(null);
 
-  // Generate code function
   const generateCode = useCallback(async () => {
     try {
-      // Database-аас бүх position-ууд авах
       const response = await fetch('/api/hr/positions');
       if (response.ok) {
         const positions = await response.json();
         
-        // DD0000X форматтай кодуудыг олох
         const ddCodes = positions
           .map((p: { code: string }) => p.code)
           .filter((code: string) => /^DD\d{5}$/.test(code))
           .map((code: string) => parseInt(code.substring(2), 10))
-          .sort((a: number, b: number) => b - a); // Эхнээс их рүү эрэмбэлэх
-        
-        // Хамгийн их дугаар олох, эсвэл 0-ээс эхлүүлэх
+          .sort((a: number, b: number) => b - a);
         const maxNumber = ddCodes.length > 0 ? ddCodes[0] : 0;
         const nextNumber = maxNumber + 1;
         const code = `DD${String(nextNumber).padStart(5, '0')}`;
@@ -68,7 +63,6 @@ export default function NewPositionPage() {
       }
     } catch (error) {
       console.error('Код үүсгэхэд алдаа гарлаа:', error);
-      // Алдаа гарвал энгийн байдлаар 00001-ээс эхлүүлэх
       setFormData(prev => ({ ...prev, code: 'DD00001' }));
     }
   }, []);
@@ -80,7 +74,7 @@ export default function NewPositionPage() {
 
   useEffect(() => {
     fetchDepartments();
-    generateCode(); // Хуудас ачаалагдахад автоматаар код үүсгэх
+    generateCode();
     setCurrentDate(new Date().toLocaleString('mn-MN', { 
       year: 'numeric', 
       month: 'long', 
@@ -297,7 +291,6 @@ export default function NewPositionPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <form onSubmit={handleSubmit} className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Ажил мэргэжил */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ажил мэргэжил *

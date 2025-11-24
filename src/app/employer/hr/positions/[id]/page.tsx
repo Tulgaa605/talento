@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { DetailPageSkeleton } from '@/components/Skeletons';
 import { ArrowLeftIcon, PencilIcon, UsersIcon } from '@heroicons/react/24/outline';
 
 interface Position {
@@ -66,8 +67,8 @@ export default function PositionDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <DetailPageSkeleton />
       </div>
     );
   }

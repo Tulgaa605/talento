@@ -219,7 +219,7 @@ export default function NewDecisionPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ШиЙдвэр гарсан огноо *
+                  Шийдвэр гарсан огноо *
                 </label>
                 <input
                   type="date"
@@ -249,7 +249,6 @@ export default function NewDecisionPage() {
                   value={formData.description}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // Зөвхөн үсэг, тэмдэглэгээ
                     const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/;
                     if (!lettersAndPunctuation.test(value)) {
                       return;
@@ -261,7 +260,7 @@ export default function NewDecisionPage() {
                   }}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="ШиЙдвэрийн дэлгэрэнгүй тайлбар..."
+                  placeholder="Шийдвэрийн дэлгэрэнгүй тайлбар..."
                 />
               </div>
               
@@ -273,7 +272,6 @@ export default function NewDecisionPage() {
                   value={formData.reason}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // Зөвхөн үсэг, тэмдэглэгээ
                     const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/;
                     if (!lettersAndPunctuation.test(value)) {
                       return;
@@ -285,7 +283,7 @@ export default function NewDecisionPage() {
                   }}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="ШиЙдвэр гаргасан шалтгаан..."
+                  placeholder="Шийдвэр гаргасан шалтгаан..."
                 />
               </div>
             </div>

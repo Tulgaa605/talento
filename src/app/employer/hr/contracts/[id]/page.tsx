@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { DetailPageSkeleton } from '@/components/Skeletons';
 
 interface Contract {
   id: string;
@@ -92,8 +93,8 @@ export default function ContractDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Уншиж байна...</div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <DetailPageSkeleton />
       </div>
     );
   }

@@ -59,6 +59,13 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json(updatedNotification);
   } catch (error) {
+    // Ignore aborted requests (ECONNRESET, client disconnection)
+    const errorObj = error as { code?: string; name?: string; message?: string };
+    if (errorObj?.code === 'ECONNRESET' || errorObj?.name === 'AbortError' || errorObj?.message?.includes('aborted')) {
+      return new NextResponse(null, { status: 499 }); // 499 Client Closed Request
+    }
+    
+    // Only log non-abort errors
     console.error("Error updating notification:", error);
     return NextResponse.json(
       { error: "Internal server error" },

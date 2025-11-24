@@ -5,7 +5,6 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request });
   const { pathname } = request.nextUrl;
 
-  // Public routes that don't require authentication
   const publicRoutes = [
     '/employer/login',
     '/employer/register',
@@ -14,39 +13,50 @@ export async function middleware(request: NextRequest) {
     '/jobseeker/register',
   ];
 
-  // Skip authentication for public routes
   if (publicRoutes.some(route => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
-  // HR routes access control - restrict to EMPLOYER and ADMIN only
+  const createRedirectUrl = (path: string) => {
+    const baseUrl = request.nextUrl.clone();
+    baseUrl.pathname = path;
+    baseUrl.search = '';
+    return baseUrl;
+  };
+
   if (pathname.startsWith('/employer/hr')) {
     if (!token) {
-      return NextResponse.redirect(new URL('/employer/login', request.url));
+      const loginUrl = createRedirectUrl('/employer/login');
+      return NextResponse.redirect(loginUrl);
     }
 
     if (token.role !== 'EMPLOYER' && token.role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/employer/login', request.url));
+      const loginUrl = createRedirectUrl('/employer/login');
+      return NextResponse.redirect(loginUrl);
     }
   }
 
   // Admin routes access control
   if (pathname.startsWith('/admin')) {
     if (!token) {
-      return NextResponse.redirect(new URL('/admin/login', request.url));
+      const loginUrl = createRedirectUrl('/admin/login');
+      return NextResponse.redirect(loginUrl);
     }
     if (token.role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/admin/login', request.url));
+      const loginUrl = createRedirectUrl('/admin/login');
+      return NextResponse.redirect(loginUrl);
     }
   }
 
   // Employer routes access control
   if (pathname.startsWith('/employer')) {
     if (!token) {
-      return NextResponse.redirect(new URL('/employer/login', request.url));
+      const loginUrl = createRedirectUrl('/employer/login');
+      return NextResponse.redirect(loginUrl);
     }
     if (token.role !== 'EMPLOYER' && token.role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/employer/login', request.url));
+      const loginUrl = createRedirectUrl('/employer/login');
+      return NextResponse.redirect(loginUrl);
     }
   }
 

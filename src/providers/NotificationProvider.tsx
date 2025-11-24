@@ -72,10 +72,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ notificationId: id }),
       });
 
-      if (response.ok) {
+      if (response.ok || response.status === 499) {
         setDatabaseNotifications(prev => prev.filter(n => n.id !== id));
       }
     } catch (error) {
+      const errorObj = error as { name?: string; message?: string };
+      if (errorObj?.name === 'AbortError' || errorObj?.message?.includes('aborted')) {
+        return;
+      }
       console.error('Error marking notification as read:', error);
     }
   }, [isClient]);

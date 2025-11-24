@@ -59,9 +59,6 @@ export async function fetchPositions(departmentId?: string): Promise<Position[]>
   }
 }
 
-/**
- * Fetch all employees or filter by status
- */
 export async function fetchEmployees(status?: string): Promise<Employee[]> {
   try {
     const url = status 

@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import { CV } from "@prisma/client";
 import { useState } from "react";

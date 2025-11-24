@@ -62,9 +62,6 @@ function formatContractType(contractType?: string): string {
   return typeMap[contractType.toUpperCase()] || contractType;
 }
 
-/**
- * Хөдөлмөрийн нөхцлийг монгол хэлээр форматлах
- */
 function formatWorkConditions(workConditions?: string): string {
   if (!workConditions) return 'Ердийн';
   

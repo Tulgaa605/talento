@@ -65,7 +65,6 @@ export default function NewContractPage() {
   useEffect(() => {
     fetchEmployees();
     fetchUsers();
-    // Client-д л огноо үүсгэх (hydration алдаа засах)
     setCurrentDate(new Date().toLocaleString('mn-MN', { 
       year: 'numeric', 
       month: 'long', 

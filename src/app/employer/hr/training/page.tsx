@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
+import { StatsSkeleton, PageHeaderSkeleton, CardSkeleton } from "@/components/Skeletons";
 
 type Training = {
   id: number;
@@ -263,20 +264,8 @@ export default function TrainingPage() {
     return (
       <div className="min-h-screen bg-gray-50">
         <main className="max-w-7xl mx-auto mt-10 px-4 py-8">
-          <div className="mb-8">
-            <div className="h-9 bg-gray-200 rounded w-1/3 mb-2 animate-pulse"></div>
-            <div className="h-5 bg-gray-200 rounded w-2/3 animate-pulse"></div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
-                <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
-              </div>
-            ))}
-          </div>
-
+          <PageHeaderSkeleton />
+          <StatsSkeleton count={4} />
           <div className="mb-6">
             <div className="flex space-x-8 border-b border-gray-200">
               {[1, 2, 3].map((i) => (
@@ -284,6 +273,7 @@ export default function TrainingPage() {
               ))}
             </div>
           </div>
+          <CardSkeleton count={6} />
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
@@ -427,7 +417,7 @@ export default function TrainingPage() {
                     <p className="text-sm text-gray-600">Ажилтнуудыг сургалтад бүртгэх</p>
                   </div>
                 </Link>
-                <Link href="#" className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                <Link href="/employer/hr/reports" className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
                   <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
                     <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

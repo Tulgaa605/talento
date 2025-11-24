@@ -2,10 +2,10 @@
 
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { useReactToPrint } from 'react-to-print';
 import { PrinterIcon } from '@heroicons/react/24/outline';
+import { StatsSkeleton, PageHeaderSkeleton, CardSkeleton } from "@/components/Skeletons";
 
 type ReportStatus = "Дууссан" | "Хүлээгдэж буй" | "Эхлээгүй";
 
@@ -18,8 +18,8 @@ interface Report {
   size: string;
   description: string;
   createdBy: string;
-  createdAt: string;     // YYYY-MM-DD
-  lastModified: string;  // YYYY-MM-DD
+  createdAt: string;
+  lastModified: string;
   format: "PDF" | "Excel" | "Word" | string;
   department: "HR" | "Санхүү" | "IT" | "Маркетинг" | string;
 }
@@ -27,7 +27,7 @@ interface Report {
 interface ReportTemplate {
   name: string;
   description: string;
-  icon: string;         // emoji
+  icon: string;
   category: string;
   fields: string[];
 }
@@ -275,20 +275,8 @@ export default function ReportsPage() {
   if (loading) {
     return (
       <main className="max-w-7xl mt-10 mx-auto px-4 py-8">
-        <div className="mb-8">
-          <div className="h-9 bg-gray-200 rounded w-1/3 mb-2 animate-pulse"></div>
-          <div className="h-5 bg-gray-200 rounded w-2/3 animate-pulse"></div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="h-4 bg-gray-200 rounded w-20 mb-2 animate-pulse"></div>
-              <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
-            </div>
-          ))}
-        </div>
-
+        <PageHeaderSkeleton />
+        <StatsSkeleton count={4} />
         <div className="mb-6">
           <div className="flex space-x-8 border-b border-gray-200">
             {[1, 2, 3, 4].map((i) => (
@@ -296,6 +284,7 @@ export default function ReportsPage() {
             ))}
           </div>
         </div>
+        <CardSkeleton count={6} />
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
@@ -448,9 +437,12 @@ export default function ReportsPage() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-[#0C213A]">Сүүлийн тайланууд</h3>
-              <Link href="#" className="text-sm text-[#0C213A] hover:text-[#0C213A]/80">
+              <button 
+                onClick={() => setActiveTab("reports")}
+                className="text-sm text-[#0C213A] hover:text-[#0C213A]/80 cursor-pointer"
+              >
                 Бүгдийг харах
-              </Link>
+              </button>
             </div>
             <div className="p-6">
               <div className="space-y-4">

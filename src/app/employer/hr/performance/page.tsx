@@ -2,8 +2,8 @@
 
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { StatsSkeleton, PageHeaderSkeleton, CardSkeleton } from "@/components/Skeletons";
 
 type EvalStatus = "Дууссан" | "Хүлээгдэж буй" | "Эхлээгүй" | string;
 type EvalType =
@@ -199,20 +199,8 @@ export default function PerformancePage() {
     return (
       <div className="min-h-screen bg-gray-50">
         <main className="max-w-7xl mx-auto mt-10 px-4 py-8">
-          <div className="mb-8">
-            <div className="h-9 bg-gray-200 rounded w-1/3 mb-2 animate-pulse"></div>
-            <div className="h-5 bg-gray-200 rounded w-2/3 animate-pulse"></div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
-                <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
-              </div>
-            ))}
-          </div>
-
+          <PageHeaderSkeleton />
+          <StatsSkeleton count={4} />
           <div className="mb-6">
             <div className="flex space-x-8 border-b border-gray-200">
               {[1, 2, 3, 4].map((i) => (
@@ -220,6 +208,7 @@ export default function PerformancePage() {
               ))}
             </div>
           </div>
+          <CardSkeleton count={6} />
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
@@ -342,9 +331,12 @@ export default function PerformancePage() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-[#0C213A]">Сүүлийн үнэлгээ</h3>
-              <Link href="#" className="text-sm text-[#0C213A] hover:text-[#0C213A]/80">
+              <button 
+                onClick={() => setActiveTab("evaluations")}
+                className="text-sm text-[#0C213A] hover:text-[#0C213A]/80 cursor-pointer"
+              >
                 Бүгдийг харах
-              </Link>
+              </button>
             </div>
             <div className="p-6">
               <div className="space-y-4">
