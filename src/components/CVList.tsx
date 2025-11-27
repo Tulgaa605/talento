@@ -32,7 +32,6 @@ export default function CVList({ cvs: initialCvs }: CVListProps) {
         throw new Error(data.error || "CV устгахад алдаа гарлаа");
       }
 
-      // Remove the deleted CV from the list
       setCVs(cvs.filter((cv) => cv.id !== cvId));
     } catch (error) {
       console.error("Error deleting CV:", error);
