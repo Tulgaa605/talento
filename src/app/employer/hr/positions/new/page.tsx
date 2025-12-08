@@ -339,7 +339,6 @@ export default function NewPositionPage() {
                   </div>
                 )}
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Код *
@@ -406,10 +405,9 @@ export default function NewPositionPage() {
                   value={formData.requirements}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // Зөвхөн үсэг, зай, таслал, цэг зэрэг тэмдэгтүүд
                     const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/;
                     if (!lettersAndPunctuation.test(value)) {
-                      return; // Тоо эсвэл бусад тэмдэгт орсон бол буцаах
+                      return;
                     }
                     const processedValue = value.length > 0 
                       ? value.charAt(0).toUpperCase() + value.slice(1)

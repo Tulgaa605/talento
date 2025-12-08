@@ -21,17 +21,15 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "http",
-        hostname: "192.168.0.118",
+        hostname: "192.168.0.105",
       },
     ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  allowedDevOrigins: ["http://192.168.0.118"],
-  // Ensure proper routing for production
+  allowedDevOrigins: ["http://192.168.0.105"],
   trailingSlash: false,
-  // Enable proper error handling
   onDemandEntries: {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
