@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "prisma generate && next build",
+    "build": "next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
     "db:init": "ts-node scripts/init-db.ts"
@@ -45,7 +46,8 @@
     "react-easy-crop": "^5.5.3",
     "react-icons": "^5.5.0",
     "react-to-print": "^3.2.0",
-    "zod": "^3.24.4"
+    "zod": "^3.24.4",
+    "prisma": "6.8.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -56,7 +58,6 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
-    "prisma": "6.8.2",
     "tailwindcss": "^4.1.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
