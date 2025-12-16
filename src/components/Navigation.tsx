@@ -28,7 +28,6 @@ export const Header = () => {
     }
   }, [session, fetchNotifications]);
   
-  // Close notification dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;

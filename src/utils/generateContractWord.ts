@@ -160,7 +160,7 @@ export function generateContractWordAdvanced(
       ["Албан тушаал: ...............", `Албан тушаал: ${contractData.position || ''}`],
       ["Харьяалагдах нэгж: ..............", `Харьяалагдах нэгж: ${contractData.department || ''}`],
       ["Гэрээний төрөл: ..................", `Гэрээний төрөл: ${formatContractType(contractData.contractType)}`],
-      ["Үндсэн цалин: ................ /............................../-н төгрөг", 
+      ["Үндсэн цалин: ................ /............................../-н төгрөг",
        `Үндсэн цалин: ${(contractData.salary || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })} /${contractData.salaryText || ''}/-н төгрөг`],
       ["Үндсэн цалин: ................", `Үндсэн цалин: ${(contractData.salary || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`],
       ["Хөдөлмөрийн нөхцөл: ...................", `Хөдөлмөрийн нөхцөл: ${formatWorkConditions(contractData.workConditions)}`],
