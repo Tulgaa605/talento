@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Disable lightningcss to avoid native build issues on some hosts (e.g. Vercel)
+    optimizeCss: false,
+  },
   images: {
     remotePatterns: [
       {
