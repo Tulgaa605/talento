@@ -5,4 +5,3 @@ pm2 save
 echo.
 echo Application stopped successfully!
 pause
-

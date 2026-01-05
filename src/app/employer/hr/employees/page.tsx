@@ -113,7 +113,6 @@ export default function EmployeesPage() {
     fetchEmployees();
   }, [fetchEmployees]);
 
-  // Refresh employees when tab regains focus / visibility
   useEffect(() => {
     const handleFocus = () => {
       if (viewMode === 'EMPLOYEES') {
@@ -133,14 +132,12 @@ export default function EmployeesPage() {
     };
   }, [viewMode, fetchEmployees]);
 
-  // If USERS view is opened first time or list is empty -> fetch
   useEffect(() => {
     if (viewMode === 'USERS' && users.length === 0 && !usersLoading) {
       fetchUsers();
     }
   }, [viewMode, users.length, usersLoading, fetchUsers]);
 
-  // Merge employees with admin-approved users
   const mergedEmployees = useMemo(() => {
     const adminApprovedUsers = users.map((u) => ({
       id: u.id,
@@ -185,7 +182,7 @@ export default function EmployeesPage() {
     const search = searchTerm.toLowerCase();
     return (
       employee.firstName.toLowerCase().includes(search) ||
-      employee.lastName.toLowerCase().includes(search) ||
+      employee.middleName?.toLowerCase().includes(search) ||
       employee.employeeId.toLowerCase().includes(search) ||
       employee.email.toLowerCase().includes(search) ||
       employee.phoneNumber?.toLowerCase().includes(search) ||
@@ -334,7 +331,7 @@ export default function EmployeesPage() {
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
                             <div className="text-lg font-bold text-gray-900">
-                              {employee.firstName} {employee.lastName}
+                              {employee.firstName} {employee.middleName}
                             </div>
                             {employee.isUser && (
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">

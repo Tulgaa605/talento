@@ -3,7 +3,9 @@
 
 import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ArrowLeftIcon, CalendarIcon, UserIcon } from '@heroicons/react/24/outline';
 import { validateLettersOnly, validateNumbersOnly, capitalizeFirstLetter } from '@/utils/validations';
 import { fetchDepartments, fetchPositions } from '@/utils/hrDataFetchers';
 
@@ -29,6 +31,8 @@ interface Employee {
   middleName?: string;
   email: string;
   phoneNumber: string;
+  dateOfBirth?: string;
+  gender?: string;
   status: string;
   hireDate: string;
   position: {
@@ -43,11 +47,17 @@ interface Employee {
     id: string;
     name: string;
   };
-  // Optional fields used in formData population
   address?: string;
   emergencyContact?: string;
   emergencyPhone?: string;
 }
+
+const formatDateToLocalString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 interface Department {
   id: string;
@@ -79,11 +89,16 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
     middleName: '',
     email: '',
     phoneNumber: '',
+    dateOfBirth: '',
+    gender: '',
+    hireDate: '',
     positionId: '',
     departmentId: '',
     address: '',
     emergencyContact: '',
     emergencyPhone: '',
+    bankName: '',
+    bankAccountNumber: '',
   });
 
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -118,17 +133,39 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
         
         setEmployee(employeeData);
         setIsEmployee(true);
+        
+        let dateOfBirthStr = '';
+        if (employeeData.dateOfBirth) {
+          const date = new Date(employeeData.dateOfBirth);
+          if (!isNaN(date.getTime())) {
+            dateOfBirthStr = formatDateToLocalString(date);
+          }
+        }
+        
+        let hireDateStr = '';
+        if (employeeData.hireDate) {
+          const date = new Date(employeeData.hireDate);
+          if (!isNaN(date.getTime())) {
+            hireDateStr = formatDateToLocalString(date);
+          }
+        }
+        
         setFormData({
           firstName: employeeData.firstName || '',
           lastName: employeeData.lastName || '',
           middleName: employeeData.middleName || '',
           email: employeeData.email || '',
           phoneNumber: employeeData.phoneNumber || '',
+          dateOfBirth: dateOfBirthStr,
+          gender: employeeData.gender || '',
+          hireDate: hireDateStr,
           positionId: employeeData.position?.id || '',
           departmentId: employeeData.department?.id || '',
           address: employeeData.address || '',
           emergencyContact: employeeData.emergencyContact || '',
           emergencyPhone: employeeData.emergencyPhone || '',
+          bankName: '',
+          bankAccountNumber: '',
         });
         setSelectedDepartment(employeeData.department?.id || '');
         return;
@@ -146,11 +183,16 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
           middleName: '',
           email: userData.email || '',
           phoneNumber: userData.phoneNumber || '',
+          dateOfBirth: '',
+          gender: '',
+          hireDate: '',
           positionId: '',
           departmentId: '',
           address: '',
           emergencyContact: '',
           emergencyPhone: '',
+          bankName: '',
+          bankAccountNumber: '',
         });
         return;
       }
@@ -232,7 +274,7 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     let processedValue = value;
     
@@ -287,8 +329,13 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
             </h1>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={handleSubmit} className="p-6 space-y-8">
+            <div>
+              <div className="flex items-center mb-4">
+                <UserIcon className="h-6 w-6 text-blue-500 mr-2" />
+                <h2 className="text-xl font-semibold text-gray-900">Үндсэн мэдээлэл</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Нэр *
@@ -303,34 +350,84 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Овог *
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
               {isEmployee && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Төрсөн огноо
-                  </label>
-                  <input
-                    type="text"
-                    name="middleName"
-                    value={formData.middleName}
-                    onChange={handleChange}
-                    placeholder="Төрсөн огноо"
-                    className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ургийн овог *
+                    </label>
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      placeholder="Ургийн овог"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Эцэг/эхийн нэр *
+                    </label>
+                    <input
+                      type="text"
+                      name="middleName"
+                      value={formData.middleName}
+                      onChange={handleChange}
+                      placeholder="Эцэг/эхийн нэр"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Төрсөн огноо
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <CalendarIcon className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <DatePicker
+                        selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+                        onChange={(date: Date | null) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            dateOfBirth: date ? formatDateToLocalString(date) : ''
+                          }));
+                        }}
+                        dateFormat="yyyy-MM-dd"
+                        maxDate={new Date()}
+                        showYearDropdown
+                        scrollableYearDropdown
+                        yearDropdownItemNumber={100}
+                        showMonthDropdown
+                        dropdownMode="select"
+                        placeholderText="(YYYY-MM-DD)"
+                        isClearable
+                        allowSameDay={false}
+                        className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                        wrapperClassName="w-full"
+                        calendarClassName="react-datepicker-custom"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Хүйс
+                    </label>
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Сонгоно уу</option>
+                      <option value="male">Эрэгтэй</option>
+                      <option value="female">Эмэгтэй</option>
+                    </select>
+                  </div>
+                </>
               )}
 
               <div>
@@ -359,9 +456,46 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
                   className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+            </div>
+            </div>
+            {isEmployee && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Ажлын мэдээлэл</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ажилд орсон огноо *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <CalendarIcon className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <DatePicker
+                        selected={formData.hireDate ? new Date(formData.hireDate) : null}
+                        onChange={(date: Date | null) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            hireDate: date ? formatDateToLocalString(date) : ''
+                          }));
+                        }}
+                        dateFormat="yyyy-MM-dd"
+                        maxDate={new Date(new Date().setFullYear(new Date().getFullYear() + 1))}
+                        showYearDropdown
+                        scrollableYearDropdown
+                        yearDropdownItemNumber={20}
+                        showMonthDropdown
+                        dropdownMode="select"
+                        placeholderText="(YYYY-MM-DD)"
+                        required
+                        isClearable
+                        allowSameDay={true}
+                        className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                        wrapperClassName="w-full"
+                        calendarClassName="react-datepicker-custom"
+                      />
+                    </div>
+                  </div>
 
-              {isEmployee && (
-                <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Хэлтэс *
@@ -391,7 +525,8 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
                       value={formData.positionId}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={!selectedDepartment}
+                      className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                     >
                       <option value="">Албан тушаал сонгох</option>
                       {positions.map((pos) => (
@@ -401,23 +536,35 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
                       ))}
                     </select>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {isEmployee && (
+              <div>
+                <div className="mt-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Хаяг
+                  </label>
+                  <textarea
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {isEmployee && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Яаралтай холбоо барих</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Хаяг
-                    </label>
-                    <input
-                      type="text"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Яаралтын холбоо барих
+                      Таны хэн болох
                     </label>
                     <input
                       type="text"
@@ -430,19 +577,21 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Яаралтын утас
+                      Утасны дугаар
                     </label>
                     <input
                       type="tel"
                       name="emergencyPhone"
                       value={formData.emergencyPhone}
                       onChange={handleChange}
+                      pattern="[0-9]+"
+                      maxLength={8}
                       className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
               <button

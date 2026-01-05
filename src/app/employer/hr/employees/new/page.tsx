@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useCallback} from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import DatePicker from 'react-datepicker';
@@ -12,6 +12,7 @@ import { fetchDepartments, fetchPositions, fetchEmployees } from '@/utils/hrData
 import { 
   ArrowLeftIcon,
   UserIcon,
+  CalendarIcon,
 } from '@heroicons/react/24/outline';
 
 interface Department {
@@ -34,6 +35,15 @@ interface Employee {
   employeeId: string;
 }
 
+const SESSION_STORAGE_KEY = 'employee_form_data';
+
+const formatDateToLocalString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function NewEmployeePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,6 +58,7 @@ export default function NewEmployeePage() {
     userName?: string;
     userEmail?: string;
   } | null>(null);
+  
   const [formData, setFormData] = useState({
     employeeId: '',
     firstName: '',
@@ -68,6 +79,34 @@ export default function NewEmployeePage() {
     bankAccountNumber: '',
   });
 
+  // SessionStorage-аас form data ачаалах
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setFormData(prev => ({ ...prev, ...parsed }));
+        if (parsed.departmentId) {
+          setSelectedDepartment(parsed.departmentId);
+        }
+      } catch (error) {
+        console.error('Error loading form data from session:', error);
+      }
+    }
+  }, []);
+ 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(formData));
+    } catch (error) {
+      console.error('Error saving form data to session:', error);
+    }
+  }, [formData]);
+
   useEffect(() => {
     setCurrentDate(new Date().toLocaleString('mn-MN', { 
       year: 'numeric', 
@@ -76,6 +115,8 @@ export default function NewEmployeePage() {
       hour: '2-digit',
       minute: '2-digit'
     }));
+    loadDepartments();
+    loadManagers();
   }, []);
 
   const parseCVAnalysis = (analysis: string) => {
@@ -89,22 +130,19 @@ export default function NewEmployeePage() {
     } = {};
     
     try {
-      // Extract birth date
       const birthDateMatch = analysis.match(/(?:төрсөн|birth|born).*?(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4})/i);
       if (birthDateMatch) {
         const dateStr = birthDateMatch[1];
-        // Convert to MM/DD/YYYY format
         const parts = dateStr.split(/[-/]/);
         if (parts.length === 3) {
-          if (parts[0].length === 4) { // YYYY-MM-DD format
+          if (parts[0].length === 4) {
             parsedData.birthDate = `${parts[1]}/${parts[2]}/${parts[0]}`;
-          } else { // MM/DD/YYYY format
+          } else {
             parsedData.birthDate = `${parts[0]}/${parts[1]}/${parts[2]}`;
           }
         }
       }
       
-      // Extract gender
       const genderMatch = analysis.match(/(?:хүйс|gender|sex).*?(эр|эм|male|female|м|ж)/i);
       if (genderMatch) {
         const gender = genderMatch[1].toLowerCase();
@@ -115,30 +153,25 @@ export default function NewEmployeePage() {
         }
       }
       
-      // Extract address
       const addressMatch = analysis.match(/(?:хаяг|address|location).*?([^.\n]{10,100})/i);
       if (addressMatch) {
         parsedData.address = addressMatch[1].trim();
       }
       
-      // Extract emergency contact
       const emergencyMatch = analysis.match(/(?:яаралтай|emergency|urgent).*?(?:холбоо|contact).*?([^.\n]{5,50})/i);
       if (emergencyMatch) {
         parsedData.emergencyContact = emergencyMatch[1].trim();
       }
       
-      // Extract emergency phone
       const emergencyPhoneMatch = analysis.match(/(?:яаралтай|emergency).*?(?:утас|phone).*?(\d{8,})/i);
       if (emergencyPhoneMatch) {
         parsedData.emergencyPhone = emergencyPhoneMatch[1];
       }
       
-      // Extract middle name (father's name)
       const middleNameMatch = analysis.match(/(?:эцэг|эх|father|mother).*?(?:нэр|name).*?([А-Яа-яЁёӨөҮү\s]{2,20})/i);
       if (middleNameMatch) {
         parsedData.middleName = middleNameMatch[1].trim();
       }
-      
     } catch (error) {
       console.error('Error parsing CV analysis:', error);
     }
@@ -152,19 +185,16 @@ export default function NewEmployeePage() {
       if (response.ok) {
         const application = await response.json();
         
-        // Application мэдээллийг хадгалах
         setApplicationInfo({
           jobTitle: application.job?.title,
           userName: application.user?.name,
           userEmail: application.user?.email,
         });
 
-        // Хэрэглэгчийн мэдээллийг form-д бөглөх
         if (application.user) {
           const user = application.user;
-          const nameParts = user.name?.split(' ') || [];
+          const nameParts = user.name?.trim().split(/\s+/) || [];
           
-          // Parse CV analysis for additional details
           let cvData: {
             middleName?: string;
             birthDate?: string;
@@ -175,28 +205,43 @@ export default function NewEmployeePage() {
           } = {};
           if (application.cv?.analysis) {
             cvData = parseCVAnalysis(application.cv.analysis);
-            console.log('Parsed CV data:', cvData);
+          }
+          
+          // Монгол нэрийн формат: "Нэр Овог" (2 хэсэг) эсвэл "Нэр Эцэг/эхийн нэр Овог" (3 хэсэг)
+          let firstName = '';
+          let lastName = '';
+          let middleName = cvData?.middleName || '';
+          
+          if (nameParts.length >= 3) {
+            // 3 хэсэгтэй: Нэр Эцэг/эхийн нэр Овог
+            firstName = nameParts[0] || '';
+            middleName = middleName || nameParts[1] || '';
+            lastName = nameParts[2] || '';
+          } else if (nameParts.length === 2) {
+            // 2 хэсэгтэй: Нэр Овог
+            firstName = nameParts[0] || '';
+            lastName = nameParts[1] || '';
+          } else if (nameParts.length === 1) {
+            // 1 хэсэгтэй: зөвхөн нэр
+            firstName = nameParts[0] || '';
           }
           
           setFormData(prev => ({
             ...prev,
-            firstName: nameParts.length > 1 ? nameParts[1] : nameParts[0] || '', // Нэр
-            lastName: nameParts.length > 1 ? nameParts[0] : '', // Овог
-            middleName: cvData?.middleName || '', // Эцэг/эхийн нэр
+            firstName: firstName,
+            lastName: lastName,
+            middleName: middleName,
             email: user.email || '',
             phoneNumber: user.phoneNumber || '',
-            birthDate: cvData?.birthDate || '', // Төрсөн огноо
-            gender: cvData?.gender || '', // Хүйс
-            address: cvData?.address || '', // Хаяг
-            emergencyContact: cvData?.emergencyContact || '', // Яаралтай холбоо барих
-            emergencyPhone: cvData?.emergencyPhone || '', // Яаралтай утасны дугаар
-            // Ажлын байрны мэдээлэл
-            hireDate: new Date().toISOString().split('T')[0], // Өнөөдөр
+            birthDate: cvData?.birthDate || '',
+            gender: cvData?.gender || '',
+            address: cvData?.address || '',
+            emergencyContact: cvData?.emergencyContact || '',
+            emergencyPhone: cvData?.emergencyPhone || '',
+            hireDate: new Date().toISOString().split('T')[0],
           }));
           
-          // Ажлын байрны мэдээлэл байвал хэлтэс сонгох
           if (application.job) {
-            // Ажлын байрны хэлтэс олох
             const jobDepartment = departments.find(dept => 
               dept.name.toLowerCase().includes(application.job.title.toLowerCase()) ||
               application.job.title.toLowerCase().includes(dept.name.toLowerCase())
@@ -211,8 +256,6 @@ export default function NewEmployeePage() {
             }
           }
         }
-      } else {
-        console.error('Application мэдээлэл авахад алдаа:', response.statusText);
       }
     } catch (error) {
       console.error('Application мэдээлэл авахад алдаа гарлаа:', error);
@@ -225,29 +268,44 @@ export default function NewEmployeePage() {
       if (response.ok) {
         const user = await response.json();
         
-        // Хэрэглэгчийн мэдээллийг form-д бөглөх
         if (user) {
-          const nameParts = user.name?.split(' ') || [];
+          const nameParts = user.name?.trim().split(/\s+/) || [];
+          
+          // Монгол нэрийн формат: "Нэр Овог" (2 хэсэг) эсвэл "Нэр Эцэг/эхийн нэр Овог" (3 хэсэг)
+          let firstName = '';
+          let lastName = '';
+          let middleName = '';
+          
+          if (nameParts.length >= 3) {
+            // 3 хэсэгтэй: Нэр Эцэг/эхийн нэр Овог
+            firstName = nameParts[0] || '';
+            middleName = nameParts[1] || '';
+            lastName = nameParts[2] || '';
+          } else if (nameParts.length === 2) {
+            // 2 хэсэгтэй: Нэр Овог
+            firstName = nameParts[0] || '';
+            lastName = nameParts[1] || '';
+          } else if (nameParts.length === 1) {
+            // 1 хэсэгтэй: зөвхөн нэр
+            firstName = nameParts[0] || '';
+          }
           
           setFormData(prev => ({
             ...prev,
-            middleName: nameParts.length > 1 ? nameParts[1] : nameParts[0] || '', // Нэр
-            firstName: nameParts.length > 1 ? nameParts[0] : '', // Овог
+            firstName: firstName,
+            lastName: lastName,
+            middleName: middleName,
             email: user.email || '',
             phoneNumber: user.phoneNumber || '',
-            // Ажлын байрны мэдээлэл
-            hireDate: new Date().toISOString().split('T')[0], // Өнөөдөр
+            hireDate: new Date().toISOString().split('T')[0],
           }));
           
-          // Application мэдээллийг хадгалах
           setApplicationInfo({
             jobTitle: user.position || '',
             userName: user.name,
             userEmail: user.email,
           });
         }
-      } else {
-        console.error('User мэдээлэл авахад алдаа:', response.statusText);
       }
     } catch (error) {
       console.error('User мэдээлэл авахад алдаа гарлаа:', error);
@@ -255,18 +313,11 @@ export default function NewEmployeePage() {
   }, []);
 
   useEffect(() => {
-    loadDepartments();
-    loadManagers();
-  }, []);
-
-  useEffect(() => {
-    // Application ID байвал тухайн хэрэглэгчийн мэдээллийг ачаалах
     const applicationId = searchParams.get('applicationId');
     if (applicationId) {
       fetchApplicationData(applicationId);
     }
     
-    // User ID байвал тухайн хэрэглэгчийн мэдээллийг ачаалах
     const userId = searchParams.get('userId');
     if (userId) {
       fetchUserData(userId);
@@ -302,7 +353,6 @@ export default function NewEmployeePage() {
     const { name, value } = e.target;
     let processedValue = value;
     
-    // Регистерийн дугаар: эхний 2 үсэг (том), дараагийн 8 тоо
     if (name === 'employeeId' && value) {
       const upperValue = value.toUpperCase();
       
@@ -324,7 +374,6 @@ export default function NewEmployeePage() {
       }
     }
     
-    // Нэр, овог хэсэгт зөвхөн үсэг
     if ((name === 'lastName' || name === 'firstName' || name === 'middleName' || name === 'emergencyContact') && value) {
       if (!validateLettersOnly(value)) {
         return;
@@ -332,7 +381,6 @@ export default function NewEmployeePage() {
       processedValue = capitalizeFirstLetter(value);
     }
     
-    // Утасны дугаар, дансны дугаарт зөвхөн тоо
     if ((name === 'phoneNumber' || name === 'emergencyPhone' || name === 'bankAccountNumber') && value) {
       if (!validateNumbersOnly(value)) {
         return;
@@ -358,15 +406,24 @@ export default function NewEmployeePage() {
     setLoading(true);
 
     try {
+      // lastName-ийг middleName-ээс авна (UI-д lastName талбар байхгүй)
+      const submitData = {
+        ...formData,
+        lastName: formData.middleName || '',
+      };
+      
       const response = await fetch('/api/hr/employees', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       });
 
       if (response.ok) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        }
         alert('Ажилтны бүртгэл амжилттай нэмэгдлээ!');
         router.push('/employer/hr/employees');
       } else {
@@ -408,326 +465,329 @@ export default function NewEmployeePage() {
               Хэвлэсэн огноо: {currentDate}
             </div>
           )}
-        {(searchParams.get('applicationId') || searchParams.get('userId')) && (
-          <div className="mt-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 text-sm">💡</span>
-                </div>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-900">
-                  {searchParams.get('applicationId') 
-                    ? 'CV-г зөвшөөрсөн хэрэглэгчийн мэдээлэл'
-                    : 'Сонгосон хэрэглэгчийн мэдээлэл'
-                  }
-                </h3>
-                <p className="mt-1 text-sm text-blue-700">
-                  Хэрэглэгчийн үндсэн мэдээлэл автоматаар бөглөгдсөн байна. 
-                  Шаардлагатай талбаруудыг нэмж бөглөнө үү.
-                </p>
-                <div className="mt-2 text-xs text-blue-600">
-                  {searchParams.get('applicationId') 
-                    ? `Application ID: ${searchParams.get('applicationId')}`
-                    : `User ID: ${searchParams.get('userId')}`
-                  }
-                </div>
-                {applicationInfo && (
-                  <div className="mt-3 p-3 bg-white rounded border border-blue-200">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <span className="font-medium text-gray-700">Хэрэглэгч:</span>
-                        <span className="ml-2 text-gray-900">{applicationInfo.userName}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">Имэйл:</span>
-                        <span className="ml-2 text-gray-900">{applicationInfo.userEmail}</span>
-                      </div>
-                      {applicationInfo.jobTitle && (
-                        <div className="md:col-span-2">
-                          <span className="font-medium text-gray-700">Ажлын байр:</span>
-                          <span className="ml-2 text-gray-900">{applicationInfo.jobTitle}</span>
-                        </div>
-                      )}
-                    </div>
+          {(searchParams.get('applicationId') || searchParams.get('userId')) && (
+            <div className="mt-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 text-sm">💡</span>
                   </div>
-                )}
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-900">
+                    {searchParams.get('applicationId') 
+                      ? 'CV-г зөвшөөрсөн хэрэглэгчийн мэдээлэл'
+                      : 'Сонгосон хэрэглэгчийн мэдээлэл'
+                    }
+                  </h3>
+                  <p className="mt-1 text-sm text-blue-700">
+                    Хэрэглэгчийн үндсэн мэдээлэл автоматаар бөглөгдсөн байна. 
+                    Шаардлагатай талбаруудыг нэмж бөглөнө үү.
+                  </p>
+                  {applicationInfo && (
+                    <div className="mt-3 p-3 bg-white rounded border border-blue-200">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-700">Хэрэглэгч:</span>
+                          <span className="ml-2 text-gray-900">{applicationInfo.userName}</span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">Имэйл:</span>
+                          <span className="ml-2 text-gray-900">{applicationInfo.userEmail}</span>
+                        </div>
+                        {applicationInfo.jobTitle && (
+                          <div className="md:col-span-2">
+                            <span className="font-medium text-gray-700">Ажлын байр:</span>
+                            <span className="ml-2 text-gray-900">{applicationInfo.jobTitle}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      <div className="bg-white rounded-lg shadow">
-        <form onSubmit={handleSubmit} className="p-6 space-y-8">
-          <div>
-            <div className="flex items-center mb-4">
-              <UserIcon className="h-6 w-6 text-blue-500 mr-2" />
-              <h2 className="text-xl font-semibold text-gray-900">Үндсэн мэдээлэл</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Регистерийн дугаар *</label>
-                <input
-                  type="text"
-                  name="employeeId"
-                  value={formData.employeeId}
-                  onChange={handleInputChange}
-                  maxLength={10}
-                  placeholder="AA12345678"
-                  title="Эхний 2 үсэг, дараа нь 8 тоо (жишээ: AA12345678)"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                />
+        <div className="bg-white rounded-lg shadow">
+          <form onSubmit={handleSubmit} className="p-6 space-y-8">
+            <div>
+              <div className="flex items-center mb-4">
+                <UserIcon className="h-6 w-6 text-blue-500 mr-2" />
+                <h2 className="text-xl font-semibold text-gray-900">Үндсэн мэдээлэл</h2>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Овог *</label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Регистерийн дугаар *</label>
+                  <input
+                    type="text"
+                    name="employeeId"
+                    value={formData.employeeId}
+                    onChange={handleInputChange}
+                    maxLength={10}
+                    placeholder="AA12345678"
+                    title="Эхний 2 үсэг, дараа нь 8 тоо (жишээ: AA12345678)"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Эцэг/эхийн нэр *</label>
+                  <input
+                    type="text"
+                    name="middleName"
+                    value={formData.middleName}
+                    onChange={handleInputChange}
+                    pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Нэр *</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Имэйл *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Утасны дугаар *</label>
+                  <input
+                    type="tel"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange}
+                    pattern="[0-9]+"
+                    maxLength={8}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Төрсөн огноо *</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <CalendarIcon className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <DatePicker
+                      selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+                      onChange={(date: Date | null) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          dateOfBirth: date ? formatDateToLocalString(date) : ''
+                        }));
+                      }}
+                      dateFormat="yyyy-MM-dd"
+                      maxDate={new Date()}
+                      showYearDropdown
+                      scrollableYearDropdown
+                      yearDropdownItemNumber={100}
+                      showMonthDropdown
+                      dropdownMode="select"
+                      placeholderText="(YYYY-MM-DD)"
+                      required
+                      isClearable
+                      allowSameDay={false}
+                      className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                      wrapperClassName="w-full"
+                      calendarClassName="react-datepicker-custom"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Хүйс *</label>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                  >
+                    <option value="">Сонгоно уу</option>
+                    <option value="male">Эрэгтэй</option>
+                    <option value="female">Эмэгтэй</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Нэр *</label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Эцэг/эхийн нэр</label>
-                <input
-                  type="text"
-                  name="middleName"
-                  value={formData.middleName}
-                  onChange={handleInputChange}
-                  pattern="[A-Za-zА-Яа-яЁёӨөҮү\s]+"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Имэйл *</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Утасны дугаар *</label>
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleInputChange}
-                  pattern="[0-9]+"
-                  maxLength={8}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Төрсөн огноо *</label>
-                <DatePicker
-                  selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
-                  onChange={(date: Date | null) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      dateOfBirth: date ? date.toISOString().split('T')[0] : ''
-                    }));
-                  }}
-                  dateFormat="yyyy-MM-dd"
-                  maxDate={new Date()}
-                  showYearDropdown
-                  scrollableYearDropdown
-                  yearDropdownItemNumber={100}
-                  placeholderText="Огноо сонгох"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Хүйс *</label>
-                <select
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                >
-                  <option value="">Сонгоно уу</option>
-                  <option value="male">Эрэгтэй</option>
-                  <option value="female">Эмэгтэй</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Хаяг *</label>
-              <textarea
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                required
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-              />
-            </div>
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-1">Яаралтай холбоо барих</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Таны хэн болох</label>
-                <input
-                  type="text"
-                  name="emergencyContact"
-                  value={formData.emergencyContact}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Утасны дугаар</label>
-                <input
-                  type="tel"
-                  name="emergencyPhone"
-                  value={formData.emergencyPhone}
-                  onChange={handleInputChange}
-                  pattern="[0-9]+"
-                  maxLength={8}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                />
-              </div>
-            </div>
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-1">Ажлын мэдээлэл</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Ажилд орсон огноо *</label>
-                <DatePicker
-                  selected={formData.hireDate ? new Date(formData.hireDate) : null}
-                  onChange={(date: Date | null) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      hireDate: date ? date.toISOString().split('T')[0] : ''
-                    }));
-                  }}
-                  dateFormat="yyyy-MM-dd"
-                  showYearDropdown
-                  scrollableYearDropdown
-                  yearDropdownItemNumber={15}
-                  placeholderText="Огноо сонгох"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Хэлтэс *</label>
-                <select
-                  name="departmentId"
-                  value={formData.departmentId}
+              <div className="mt-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Хаяг *</label>
+                <textarea
+                  name="address"
+                  value={formData.address}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                >
-                  <option value="">Сонгоно уу</option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Албан тушаал *</label>
-                <select
-                  name="positionId"
-                  value={formData.positionId}
-                  onChange={handleInputChange}
-                  required
-                  disabled={!selectedDepartment}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 disabled:bg-gray-100"
-                >
-                  <option value="">Сонгоно уу</option>
-                  {positions.map((pos) => (
-                    <option key={pos.id} value={pos.id}>
-                      {pos.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-1">Санхүүгийн мэдээлэл</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Банк *</label>
-                <select
-                  name="bankName"
-                  value={formData.bankName}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                >
-                  <option value="">Сонгоно уу</option>
-                  <option value="Хаан банк">Хаан банк</option>
-                  <option value="Голомт банк">Голомт банк</option>
-                  <option value="Худалдаа хөгжлийн банк">Худалдаа хөгжлийн банк</option>
-                  <option value="Хас банк">Хас банк</option>
-                  <option value="Төрийн банк">Төрийн банк</option>
-                  <option value="Капитрон банк">Капитрон банк</option>
-                  <option value="Арилжааны банк бусад">Бусад</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Дансны дугаар *</label>
-                <input
-                  type="text"
-                  name="bankAccountNumber"
-                  value={formData.bankAccountNumber}
-                  onChange={handleInputChange}
-                  required
-                  inputMode="numeric"
-                  pattern="[0-9]{6,20}"
-                  maxLength={20}
-                  placeholder="Дугаар"
+                  rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
                 />
               </div>
             </div>
-          </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">Ажлын мэдээлэл</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Ажилд орсон огноо *</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <CalendarIcon className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <DatePicker
+                      selected={formData.hireDate ? new Date(formData.hireDate) : null}
+                      onChange={(date: Date | null) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          hireDate: date ? formatDateToLocalString(date) : ''
+                        }));
+                      }}
+                      dateFormat="yyyy-MM-dd"
+                      maxDate={new Date(new Date().setFullYear(new Date().getFullYear() + 1))}
+                      showYearDropdown
+                      scrollableYearDropdown
+                      yearDropdownItemNumber={20}
+                      showMonthDropdown
+                      dropdownMode="select"
+                      placeholderText="(YYYY-MM-DD)"
+                      required
+                      isClearable
+                      allowSameDay={true}
+                      className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                      wrapperClassName="w-full"
+                      calendarClassName="react-datepicker-custom"
+                    />
+                  </div>
+                </div>
 
-          {/* Товчнууд */}
-          <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Хэлтэс *</label>
+                  <select
+                    name="departmentId"
+                    value={formData.departmentId}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                  >
+                    <option value="">Сонгоно уу</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Албан тушаал *</label>
+                  <select
+                    name="positionId"
+                    value={formData.positionId}
+                    onChange={handleInputChange}
+                    required
+                    disabled={!selectedDepartment}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 disabled:bg-gray-100"
+                  >
+                    <option value="">Сонгоно уу</option>
+                    {positions.map((pos) => (
+                      <option key={pos.id} value={pos.id}>
+                        {pos.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">Санхүүгийн мэдээлэл</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Банк *</label>
+                  <select
+                    name="bankName"
+                    value={formData.bankName}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                  >
+                    <option value="">Сонгоно уу</option>
+                    <option value="Хаан банк">Хаан банк</option>
+                    <option value="Голомт банк">Голомт банк</option>
+                    <option value="Худалдаа хөгжлийн банк">Худалдаа хөгжлийн банк</option>
+                    <option value="Хас банк">Хас банк</option>
+                    <option value="Төрийн банк">Төрийн банк</option>
+                    <option value="Капитрон банк">Капитрон банк</option>
+                    <option value="Арилжааны банк бусад">Бусад</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Дансны дугаар *</label>
+                  <input
+                    type="text"
+                    name="bankAccountNumber"
+                    value={formData.bankAccountNumber}
+                    onChange={handleInputChange}
+                    required
+                    inputMode="numeric"
+                    pattern="[0-9]{6,20}"
+                    maxLength={20}
+                    placeholder="Дугаар"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                  />
+                </div>
+              </div>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">Яаралтай холбоо барих</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Таны хэн болох</label>
+                  <input
+                    type="text"
+                    name="emergencyContact"
+                    value={formData.emergencyContact}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Утасны дугаар</label>
+                  <input
+                    type="tel"
+                    name="emergencyPhone"
+                    value={formData.emergencyPhone}
+                    onChange={handleInputChange}
+                    pattern="[0-9]+"
+                    maxLength={8}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
+                  />
+                </div>
+              </div>
+            </div>
+           <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
             <Link
               href="/employer/hr/employees"
               className="px-6 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
@@ -742,8 +802,8 @@ export default function NewEmployeePage() {
               {loading ? 'Хадгалж байна...' : 'Хадгалах'}
             </button>
           </div>
-        </form>
-      </div>
+          </form>
+        </div>
       </div>
     </>
   );

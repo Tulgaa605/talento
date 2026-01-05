@@ -209,8 +209,35 @@ body {
   color: white;
 }
 
+.react-datepicker__input-container {
+  width: 100%;
+  position: relative;
+}
+
 .react-datepicker__input-container input {
   width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #374151;
+  background-color: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.react-datepicker__input-container input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.react-datepicker__input-container input:hover {
+  border-color: #9ca3af;
+}
+
+.react-datepicker__input-container input::placeholder {
+  color: #9ca3af;
 }
 
 /* Instagram Story Style Slider */

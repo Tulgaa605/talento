@@ -16,7 +16,6 @@ export default function Chat() {
   }, [messages]);
 
 
-
   return (
     <div className="flex flex-col h-[600px] bg-white rounded-lg shadow-lg">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

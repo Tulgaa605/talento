@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
                     <div>
                       <h3 className="text-green-800 font-medium">Нууц үг солигдлоо!</h3>
                       <p className="text-green-700 text-sm mt-1">
-                        Таны нууц үг амжилттай солигдлоо. Одоо шинэ нууц үгээрээ нэвтэрч болно.
+                        Таны нууц үг амжилттай солигдлоо.
                       </p>
                     </div>
                   </div>
