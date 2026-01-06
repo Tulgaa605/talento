@@ -95,6 +95,9 @@ importers:
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
+      prisma:
+        specifier: 6.8.2
+        version: 6.8.2(typescript@5.9.3)
       react:
         specifier: ^19.1.0
         version: 19.2.0
@@ -141,9 +144,6 @@ importers:
       eslint-config-next:
         specifier: 15.3.1
         version: 15.3.1(eslint@9.38.0(jiti@2.6.1))(typescript@5.9.3)
-      prisma:
-        specifier: 6.8.2
-        version: 6.8.2(typescript@5.9.3)
       tailwindcss:
         specifier: ^4.1.4
         version: 4.1.16

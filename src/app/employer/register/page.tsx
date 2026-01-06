@@ -61,7 +61,6 @@ export default function EmployerRegister() {
       return;
     }
 
-    // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError("Имэйл хаяг буруу байна");
@@ -69,7 +68,6 @@ export default function EmployerRegister() {
       return;
     }
 
-    // Password length validation
     if (password.length < 6) {
       setError("Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой");
       setIsLoading(false);
