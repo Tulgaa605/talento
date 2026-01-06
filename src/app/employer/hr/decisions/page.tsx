@@ -3,9 +3,9 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { TableSkeleton, PageHeaderSkeleton, SearchBarSkeleton } from '@/components/Skeletons';
+import DecisionModal from '@/components/DecisionModal';
 
 interface Decision {
   id: string;
@@ -18,11 +18,19 @@ interface Decision {
     firstName: string;
     lastName: string;
     employeeId: string;
+    position?: {
+      title: string;
+      department?: {
+        name: string;
+      };
+    };
   };
   decisionDate: string;
-  effectiveDate: string;
+  effectiveDate?: string;
   status: string;
   createdAt: string;
+  updatedAt?: string;
+  reason?: string;
 }
 
 export default function DecisionsPage() {
@@ -31,6 +39,11 @@ export default function DecisionsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingDecisionId, setEditingDecisionId] = useState<string | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   useEffect(() => {
     fetchDecisions();
@@ -121,6 +134,51 @@ export default function DecisionsPage() {
     }
   };
 
+  const handleOpenNewModal = () => {
+    setEditingDecisionId(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (decisionId: string) => {
+    setEditingDecisionId(decisionId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingDecisionId(null);
+  };
+
+  const handleModalSuccess = () => {
+    fetchDecisions();
+  };
+
+  const handleOpenDetailModal = async (decisionId: string) => {
+    setLoadingDetail(true);
+    setShowDetailModal(true);
+    try {
+      const response = await fetch(`/api/hr/decisions/${decisionId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedDecision(data);
+      } else {
+        alert('Шийдвэрийн мэдээлэл авахад алдаа гарлаа');
+        setShowDetailModal(false);
+      }
+    } catch (error) {
+      console.error('Error fetching decision:', error);
+      alert('Шийдвэрийн мэдээлэл авахад алдаа гарлаа');
+      setShowDetailModal(false);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedDecision(null);
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
@@ -149,8 +207,8 @@ export default function DecisionsPage() {
             </div>
           </div>
           <div className="flex gap-2 print:hidden">
-            <Link
-              href="/employer/hr/decisions/new"
+            <button
+              onClick={handleOpenNewModal}
               className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
               <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +216,7 @@ export default function DecisionsPage() {
               </svg>
               <span className="hidden sm:inline">Шинэ шийдвэр үүсгэх</span>
               <span className="sm:hidden">Шинэ шийдвэр</span>
-            </Link>
+            </button>
           </div>
         </div>
       <div className="bg-white rounded-lg shadow">
@@ -285,7 +343,7 @@ export default function DecisionsPage() {
                     {formatDate(decision.decisionDate)}
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                    {formatDate(decision.effectiveDate)}
+                    {decision.effectiveDate ? formatDate(decision.effectiveDate) : '-'}
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(decision.status)}`}>
@@ -296,20 +354,20 @@ export default function DecisionsPage() {
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
                     <div className="flex space-x-1 sm:space-x-2">
-                      <Link
-                        href={`/employer/hr/decisions/${decision.id}`}
+                      <button
+                        onClick={() => handleOpenDetailModal(decision.id)}
                         className="text-blue-600 hover:text-blue-900 p-1"
                       >
                         <span className="hidden sm:inline">Харах</span>
                         <span className="sm:hidden">👁️</span>
-                      </Link>
-                      <Link
-                        href={`/employer/hr/decisions/${decision.id}/edit`}
+                      </button>
+                      <button
+                        onClick={() => handleOpenEditModal(decision.id)}
                         className="text-green-600 hover:text-green-900 p-1"
                       >
                         <span className="hidden sm:inline">Засах</span>
                         <span className="sm:hidden">✏️</span>
-                      </Link>
+                      </button>
                       <button
                         onClick={() => handleDelete(decision.id)}
                         className="text-red-600 hover:text-red-900 p-1"
@@ -339,6 +397,175 @@ export default function DecisionsPage() {
         )}
       </div>
     </div>
+
+    <DecisionModal
+      isOpen={isModalOpen}
+      onClose={handleCloseModal}
+      onSuccess={handleModalSuccess}
+      decisionId={editingDecisionId}
+    />
+
+    {showDetailModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-white w-full max-w-4xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+            <h3 className="text-lg font-semibold text-[#0C213A]">
+              {selectedDecision ? selectedDecision.title : 'Шийдвэрийн дэлгэрэнгүй'}
+            </h3>
+            <button
+              onClick={handleCloseDetailModal}
+              className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="overflow-y-auto flex-1 p-6">
+            {loadingDetail ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : selectedDecision ? (
+              <div className="space-y-6">
+                <div>
+                  <p className="text-sm text-gray-500">Шийдвэрийн дугаар</p>
+                  <p className="text-base font-medium text-gray-900">{selectedDecision.decisionNumber}</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Шийдвэрийн төрөл</p>
+                    <p className="text-base font-medium text-gray-900">
+                      {getDecisionTypeLabel(selectedDecision.type)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Төлөв</p>
+                    <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(selectedDecision.status)}`}>
+                      {selectedDecision.status === 'ACTIVE' ? 'Идэвхтэй' : 
+                       selectedDecision.status === 'PENDING' ? 'Хүлээгдэж буй' : 
+                       selectedDecision.status === 'CANCELLED' ? 'Цуцлагдсан' : selectedDecision.status}
+                    </span>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Шийдвэр гарсан огноо</p>
+                    <p className="text-base font-medium text-gray-900">
+                      {formatDate(selectedDecision.decisionDate)}
+                    </p>
+                  </div>
+
+                  {selectedDecision.effectiveDate && (
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Хэрэгжих огноо</p>
+                      <p className="text-base font-medium text-gray-900">
+                        {formatDate(selectedDecision.effectiveDate)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t pt-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Ажилтны мэдээлэл</h4>
+                  <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Нэр</p>
+                      <p className="text-base font-medium text-gray-900">
+                        {selectedDecision.employee.firstName} {selectedDecision.employee.lastName}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Ажилтны дугаар</p>
+                      <p className="text-base font-medium text-gray-900">
+                        {selectedDecision.employee.employeeId}
+                      </p>
+                    </div>
+                    {selectedDecision.employee.position && (
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Албан тушаал</p>
+                        <p className="text-base font-medium text-gray-900">
+                          {selectedDecision.employee.position.title}
+                        </p>
+                      </div>
+                    )}
+                    {selectedDecision.employee.position?.department && (
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Хэлтэс</p>
+                        <p className="text-base font-medium text-gray-900">
+                          {selectedDecision.employee.position.department.name}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t pt-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Тайлбар</h4>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-gray-700 whitespace-pre-wrap">{selectedDecision.description}</p>
+                  </div>
+                </div>
+
+                {selectedDecision.reason && (
+                  <div className="border-t pt-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Шалтгаан</h4>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-gray-700 whitespace-pre-wrap">{selectedDecision.reason}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedDecision.createdAt && (
+                  <div className="border-t pt-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Систем мэдээлэл</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Үүсгэсэн огноо</p>
+                        <p className="text-gray-700">
+                          {new Date(selectedDecision.createdAt).toLocaleString('mn-MN')}
+                        </p>
+                      </div>
+                      {selectedDecision.updatedAt && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Сүүлд шинэчилсэн</p>
+                          <p className="text-gray-700">
+                            {new Date(selectedDecision.updatedAt).toLocaleString('mn-MN')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500">Шийдвэр олдсонгүй</p>
+              </div>
+            )}
+          </div>
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">
+            <button
+              onClick={handleCloseDetailModal}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+            >
+              Хаах
+            </button>
+            {selectedDecision && (
+              <button
+                onClick={() => {
+                  handleCloseDetailModal();
+                  handleOpenEditModal(selectedDecision.id);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Засах
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }

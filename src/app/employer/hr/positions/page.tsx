@@ -22,7 +22,8 @@ interface Position {
   employees: {
     id: string;
     firstName: string;
-    lastName: string;
+    lastName?: string;
+    middleName?: string;
     employeeId: string;
   }[];
   createdAt: string;
@@ -232,7 +233,7 @@ export default function PositionsPage() {
                         {position.department.name}
                       </div>
                       <div className="text-xs sm:text-sm text-gray-500">
-                        {position.department.code}
+                        {position.department.name}
                       </div>
                     </div>
                   </td>
@@ -245,7 +246,7 @@ export default function PositionsPage() {
                     </div>
                     {position.employees.length > 0 && (
                       <div className="text-xs text-gray-500">
-                        {position.employees.slice(0, 2).map(emp => `${emp.firstName} ${emp.lastName}`).join(', ')}
+                        {position.employees.slice(0, 2).map(emp => `${emp.firstName} ${emp.middleName || emp.lastName || ''}`).join(', ')}
                         {position.employees.length > 2 && ` +${position.employees.length - 2}`}
                       </div>
                     )}

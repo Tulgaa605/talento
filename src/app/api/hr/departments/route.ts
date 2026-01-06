@@ -25,6 +25,7 @@ export async function GET() {
             id: true,
             firstName: true,
             lastName: true,
+            middleName: true,
             employeeId: true,
           },
           take: 50,

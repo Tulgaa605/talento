@@ -3,9 +3,9 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { TableSkeleton, PageHeaderSkeleton, SearchBarSkeleton } from '@/components/Skeletons';
+import ContractModal from '@/components/ContractModal';
 
 interface Contract {
   id: string;
@@ -13,8 +13,17 @@ interface Contract {
   employee: {
     id: string;
     firstName: string;
-    lastName: string;
+    middleName: string;
     employeeId: string;
+    position?: {
+      title: string;
+      department?: {
+        name: string;
+      };
+    };
+    department?: {
+      name: string;
+    };
   };
   contractType: string;
   startDate: string;
@@ -23,6 +32,11 @@ interface Contract {
   currency: string;
   status: string;
   createdAt: string;
+  probationPeriod?: number | null;
+  workSchedule?: string | null;
+  benefits?: string | null;
+  terms?: string | null;
+  workConditions?: string;
 }
 
 export default function ContractsPage() {
@@ -32,6 +46,12 @@ export default function ContractsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [contractTypeFilter, setContractTypeFilter] = useState('');
   const [currentDate, setCurrentDate] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingContractId, setEditingContractId] = useState<string | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     fetchContracts();
@@ -62,7 +82,7 @@ export default function ContractsPage() {
     const matchesSearch = 
       contract.contractNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contract.employee.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contract.employee.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contract.employee.middleName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contract.employee.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === '' || contract.status === statusFilter;
@@ -89,6 +109,77 @@ export default function ContractsPage() {
         console.error('Гэрээ устгахад алдаа гарлаа:', error);
         alert('Алдаа гарлаа');
       }
+    }
+  };
+
+  const handleOpenNewModal = () => {
+    setEditingContractId(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (contractId: string) => {
+    setEditingContractId(contractId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingContractId(null);
+  };
+
+  const handleModalSuccess = () => {
+    fetchContracts();
+  };
+
+  const handleOpenDetailModal = async (contractId: string) => {
+    setLoadingDetail(true);
+    setShowDetailModal(true);
+    try {
+      const response = await fetch(`/api/hr/contracts/${contractId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedContract(data);
+      } else {
+        alert('Гэрээний мэдээлэл авахад алдаа гарлаа');
+        setShowDetailModal(false);
+      }
+    } catch (error) {
+      console.error('Error fetching contract:', error);
+      alert('Гэрээний мэдээлэл авахад алдаа гарлаа');
+      setShowDetailModal(false);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedContract(null);
+  };
+
+  const handleDownloadWord = async () => {
+    if (!selectedContract) return;
+    
+    setDownloading(true);
+    try {
+      const response = await fetch(`/api/hr/contracts/${selectedContract.id}/generate-word`);
+      if (!response.ok) {
+        throw new Error('Word файл үүсгэхэд алдаа гарлаа');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedContract.contractNumber}_Хөдөлмөрийн_гэрээ.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Word татахад алдаа:', error);
+      alert('Word файл татахад алдаа гарлаа');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -136,9 +227,8 @@ export default function ContractsPage() {
             )}
           </div>
           <div className="flex gap-2 print:hidden">
-            
-            <Link
-              href="/employer/hr/contracts/new"
+            <button
+              onClick={handleOpenNewModal}
               className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
               <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,7 +236,7 @@ export default function ContractsPage() {
               </svg>
               <span className="hidden sm:inline">Шинэ гэрээ үүсгэх</span>
               <span className="sm:hidden">Шинэ гэрээ</span>
-            </Link>
+            </button>
           </div>
         </div>
       <div className="bg-white rounded-lg shadow">
@@ -232,7 +322,7 @@ export default function ContractsPage() {
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-xs sm:text-sm font-medium text-gray-900">
-                        {contract.employee.firstName} {contract.employee.lastName}
+                        {contract.employee.firstName} {contract.employee.middleName}
                       </div>
                       <div className="text-xs sm:text-sm text-gray-500">
                         {contract.employee.employeeId}
@@ -253,20 +343,20 @@ export default function ContractsPage() {
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
                     <div className="flex space-x-1 sm:space-x-2">
-                      <Link
-                        href={`/employer/hr/contracts/${contract.id}`}
+                      <button
+                        onClick={() => handleOpenDetailModal(contract.id)}
                         className="text-blue-600 hover:text-blue-900 p-1"
                       >
                         <span className="hidden sm:inline">Харах</span>
                         <span className="sm:hidden">👁️</span>
-                      </Link>
-                      <Link
-                        href={`/employer/hr/contracts/${contract.id}/edit`}
+                      </button>
+                      <button
+                        onClick={() => handleOpenEditModal(contract.id)}
                         className="text-green-600 hover:text-green-900 p-1"
                       >
                         <span className="hidden sm:inline">Засах</span>
                         <span className="sm:hidden">✏️</span>
-                      </Link>
+                      </button>
                       <button
                         onClick={async () => {
                           try {
@@ -324,6 +414,175 @@ export default function ContractsPage() {
         )}
       </div>
     </div>
+
+    <ContractModal
+      isOpen={isModalOpen}
+      onClose={handleCloseModal}
+      onSuccess={handleModalSuccess}
+      contractId={editingContractId}
+    />
+
+    {showDetailModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-white w-full max-w-4xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+            <h3 className="text-lg font-semibold text-[#0C213A]">
+              {selectedContract ? `Хөдөлмөрийн гэрээ: ${selectedContract.contractNumber}` : 'Гэрээний дэлгэрэнгүй'}
+            </h3>
+            <button
+              onClick={handleCloseDetailModal}
+              className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="overflow-y-auto flex-1 p-6">
+            {loadingDetail ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : selectedContract ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-lg font-semibold text-[#0C213A] mb-4">Ажилтны мэдээлэл</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-500">Нэр</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {selectedContract.employee.middleName} {selectedContract.employee.firstName}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Ажилтны код</p>
+                        <p className="text-sm font-medium text-gray-900">{selectedContract.employee.employeeId}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Албан тушаал</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {selectedContract.employee.position?.title || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Хэлтэс</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {selectedContract.employee.department?.name || selectedContract.employee.position?.department?.name || '-'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-lg font-semibold text-[#0C213A] mb-4">Гэрээний мэдээлэл</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-500">Гэрээний төрөл</p>
+                        <p className="text-sm font-medium text-gray-900">{getContractTypeLabel(selectedContract.contractType)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Эхлэх огноо</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {formatDate(selectedContract.startDate)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Дуусах огноо</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {selectedContract.endDate ? formatDate(selectedContract.endDate) : 'Тодорхойгүй'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Цалин</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {selectedContract.salary.toLocaleString()} {selectedContract.currency}
+                        </p>
+                      </div>
+                      {selectedContract.probationPeriod && (
+                        <div>
+                          <p className="text-sm text-gray-500">Туршилтын хугацаа</p>
+                          <p className="text-sm font-medium text-gray-900">{selectedContract.probationPeriod} өдөр</p>
+                        </div>
+                      )}
+                      {selectedContract.workSchedule && (
+                        <div>
+                          <p className="text-sm text-gray-500">Ажлын цагийн хуваарь</p>
+                          <p className="text-sm font-medium text-gray-900">{selectedContract.workSchedule}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm text-gray-500">Төлөв</p>
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            selectedContract.status === 'ACTIVE'
+                              ? 'bg-green-100 text-green-800'
+                              : selectedContract.status === 'EXPIRED'
+                              ? 'bg-gray-100 text-gray-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {selectedContract.status === 'ACTIVE' ? 'Идэвхтэй' : 
+                           selectedContract.status === 'EXPIRED' ? 'Дууссан' : 
+                           selectedContract.status === 'TERMINATED' ? 'Цуцалсан' : selectedContract.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedContract.benefits && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-[#0C213A] mb-2">Хангамж</h4>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedContract.benefits}</p>
+                  </div>
+                )}
+
+                {selectedContract.terms && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-[#0C213A] mb-2">Нөхцөл</h4>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedContract.terms}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500">Гэрээ олдсонгүй</p>
+              </div>
+            )}
+          </div>
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">
+            <button
+              onClick={handleCloseDetailModal}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+            >
+              Хаах
+            </button>
+            <button
+              onClick={handleDownloadWord}
+              disabled={downloading}
+              className={`px-4 py-2 rounded-lg text-white ${
+                downloading
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-purple-600 hover:bg-purple-700'
+              }`}
+            >
+              {downloading ? 'Татаж байна...' : 'Word татах'}
+            </button>
+            {selectedContract && (
+              <button
+                onClick={() => {
+                  handleCloseDetailModal();
+                  handleOpenEditModal(selectedContract.id);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Засах
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }

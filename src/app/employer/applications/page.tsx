@@ -41,7 +41,7 @@ export default function EmployerApplicationsPage() {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const { addNotification } = useNotification();
-  const hasShownNotification = useRef(false);
+  const hasShownNotification = useRef(false); 
 
   const fetchApplications = useCallback(async () => {
     try {

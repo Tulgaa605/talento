@@ -3,7 +3,6 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon,
@@ -13,6 +12,18 @@ import {
   UsersIcon
 } from '@heroicons/react/24/outline';
 import { CardSkeleton, PageHeaderSkeleton, SearchBarSkeleton } from '@/components/Skeletons';
+import DepartmentModal from '@/components/DepartmentModal';
+
+interface DepartmentEmployee {
+  id: string;
+  firstName: string;
+  lastName?: string;
+  middleName?: string;
+  employeeId: string;
+  position?: {
+    title: string;
+  };
+}
 
 interface Department {
   id: string;
@@ -25,18 +36,18 @@ interface Department {
     title: string;
     code: string;
   }>;
-  employees: Array<{
-    id: string;
-    firstName: string;
-    lastName: string;
-    employeeId: string;
-  }>;
+  employees: DepartmentEmployee[];
 }
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingDepartmentId, setEditingDepartmentId] = useState<string | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const loadDepartments = async () => {
     const response = await fetch('/api/hr/departments');
@@ -78,6 +89,51 @@ export default function DepartmentsPage() {
     }
   };
 
+  const handleOpenNewModal = () => {
+    setEditingDepartmentId(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (departmentId: string) => {
+    setEditingDepartmentId(departmentId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingDepartmentId(null);
+  };
+
+  const handleModalSuccess = () => {
+    loadDepartments();
+  };
+
+  const handleOpenDetailModal = async (departmentId: string) => {
+    setLoadingDetail(true);
+    setShowDetailModal(true);
+    try {
+      const response = await fetch(`/api/hr/departments/${departmentId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedDepartment(data);
+      } else {
+        alert('Хэлтсийн мэдээлэл авахад алдаа гарлаа');
+        setShowDetailModal(false);
+      }
+    } catch (error) {
+      console.error('Error fetching department:', error);
+      alert('Хэлтсийн мэдээлэл авахад алдаа гарлаа');
+      setShowDetailModal(false);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedDepartment(null);
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
@@ -109,14 +165,14 @@ export default function DepartmentsPage() {
                 </div>
               </div>
               <div className="flex gap-2 print:hidden">
-                <Link
-                  href="/employer/hr/departments/new"
+                <button
+                  onClick={handleOpenNewModal}
                   className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
                 >
                   <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Шинэ хэлтэс</span>
                   <span className="sm:hidden">Шинэ</span>
-                </Link>
+                </button>
               </div>
             </div>
           </div>
@@ -156,8 +212,8 @@ export default function DepartmentsPage() {
                     </div>
                   </div>
                   <div className="flex space-x-1 sm:space-x-2 ml-2">
-                    <Link
-                      href={`/employer/hr/departments/${department.id}`}
+                    <button
+                      onClick={() => handleOpenDetailModal(department.id)}
                       className="text-blue-600 hover:text-blue-900 p-1"
                       title="Үзэх"
                     >
@@ -165,14 +221,14 @@ export default function DepartmentsPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
-                    </Link>
-                    <Link
-                      href={`/employer/hr/departments/${department.id}/edit`}
+                    </button>
+                    <button
+                      onClick={() => handleOpenEditModal(department.id)}
                       className="text-green-600 hover:text-green-900 p-1"
                       title="Засах"
                     >
                       <PencilIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </Link>
+                    </button>
                     <button
                       onClick={() => handleDelete(department.id)}
                       className="text-red-600 hover:text-red-900 p-1"
@@ -236,9 +292,9 @@ export default function DepartmentsPage() {
                   <div>
                     <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Ажилтнууд:</h4>
                     <div className="space-y-1">
-                      {department.employees.slice(0, 3).map((employee: { id: string; firstName: string; lastName: string; employeeId: string }) => (
+                      {department.employees.slice(0, 3).map((employee) => (
                         <div key={employee.id} className="text-xs sm:text-sm text-gray-600 truncate">
-                          • {employee.firstName} {employee.lastName} ({employee.employeeId})
+                          • {employee.firstName} {employee.middleName || employee.lastName || ''} ({employee.employeeId})
                         </div>
                       ))}
                       {department.employees.length > 3 && (
@@ -255,12 +311,12 @@ export default function DepartmentsPage() {
                     <span className="text-xs text-gray-500">
                       Үүсгэсэн: {new Date(department.createdAt).toLocaleDateString('mn-MN')}
                     </span>
-                    <Link
-                      href={`/employer/hr/departments/${department.id}`}
+                    <button
+                      onClick={() => handleOpenDetailModal(department.id)}
                       className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium"
                     >
                       Дэлгэрэнгүй харах →
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -277,6 +333,147 @@ export default function DepartmentsPage() {
           </div>
         )}
     </div>
+
+    <DepartmentModal
+      isOpen={isModalOpen}
+      onClose={handleCloseModal}
+      onSuccess={handleModalSuccess}
+      departmentId={editingDepartmentId}
+    />
+
+    {showDetailModal && selectedDepartment && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-white w-full max-w-4xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+            <h3 className="text-lg font-semibold text-[#0C213A]">
+              {selectedDepartment.name}
+            </h3>
+            <button
+              onClick={handleCloseDetailModal}
+              className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="overflow-y-auto flex-1 p-6">
+            {loadingDetail ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <UsersIcon className="h-5 w-5 text-gray-600" />
+                      <span className="text-gray-600 text-sm">Ажилтнууд</span>
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900">{selectedDepartment.employees?.length || 0}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <BuildingOfficeIcon className="h-5 w-5 text-gray-600" />
+                      <span className="text-gray-600 text-sm">Албан тушаал</span>
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900">{selectedDepartment.positions?.length || 0}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Үндсэн мэдээлэл</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Хэлтсийн нэр</p>
+                      <p className="text-lg font-medium text-gray-900">{selectedDepartment.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Код</p>
+                      <p className="text-lg font-mono font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-lg inline-block">{selectedDepartment.code}</p>
+                    </div>
+                    {selectedDepartment.description && (
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Тайлбар</p>
+                        <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg border border-gray-200">{selectedDepartment.description}</p>
+                      </div>
+                    )}
+                    {selectedDepartment.createdAt && (
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Үүсгэсэн огноо</p>
+                        <p className="text-gray-900 font-medium">
+                          {new Date(selectedDepartment.createdAt).toLocaleDateString('mn-MN', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {selectedDepartment.positions && selectedDepartment.positions.length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Албан тушаалууд ({selectedDepartment.positions.length})</h4>
+                    <div className="space-y-2">
+                      {selectedDepartment.positions.map((position) => (
+                        <div key={position.id} className="p-4 border border-gray-200 rounded-lg">
+                          <p className="font-semibold text-gray-900">{position.title}</p>
+                          <p className="text-sm text-gray-500 font-mono">{position.code}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedDepartment.employees && selectedDepartment.employees.length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Ажилтнууд ({selectedDepartment.employees.length})</h4>
+                    <div className="space-y-2">
+                      {selectedDepartment.employees.map((employee) => (
+                        <div key={employee.id} className="p-4 border border-gray-200 rounded-lg">
+                          <p className="font-semibold text-gray-900">
+                            {employee.firstName} {employee.middleName || employee.lastName || ''}
+                          </p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded">{employee.employeeId}</span>
+                            {employee.position && (
+                              <>
+                                <span className="text-xs text-gray-500">•</span>
+                                <span className="text-xs text-gray-600">{employee.position.title}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">
+            <button
+              onClick={handleCloseDetailModal}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+            >
+              Хаах
+            </button>
+            {selectedDepartment && (
+              <button
+                onClick={() => {
+                  handleCloseDetailModal();
+                  handleOpenEditModal(selectedDepartment.id);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Засах
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }

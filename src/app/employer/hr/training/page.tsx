@@ -29,12 +29,12 @@ export default function TrainingPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTraining, setEditingTraining] = useState<Training | null>(null);
-  const componentRef = useRef<HTMLDivElement>(null);
+  const componentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setCurrentDate(new Date().toLocaleString('mn-MN', { 
-      year: 'numeric', 
-      month: 'long', 
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'

@@ -21,7 +21,7 @@ interface Position {
   employees: {
     id: string;
     firstName: string;
-    lastName: string;
+    middleName: string;
     employeeId: string;
     email: string;
     phoneNumber: string;
@@ -221,7 +221,7 @@ export default function PositionDetailPage() {
                         {employee.employeeId}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.firstName} {employee.lastName}
+                        {employee.firstName} {employee.middleName}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {employee.email}

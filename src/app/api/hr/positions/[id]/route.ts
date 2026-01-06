@@ -31,6 +31,7 @@ export async function GET(
             id: true,
             firstName: true,
             lastName: true,
+            middleName: true,
             employeeId: true,
             email: true,
             phoneNumber: true,

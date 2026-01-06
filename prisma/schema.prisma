@@ -10,7 +10,7 @@ datasource db {
 enum UserRole {
   USER
   EMPLOYER
-  ADMIN
+  ADMIN 
 }
 
 enum UserStatus {

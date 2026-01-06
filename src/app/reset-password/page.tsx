@@ -231,7 +231,7 @@ export default function ResetPasswordPage() {
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2"
+                        className = "absolute right-4 top-1/2 -translate-y-1/2"
                       >
                         {showConfirmPassword ? (
                           <svg width="20" height="20" className="sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none">
