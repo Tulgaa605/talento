@@ -160,6 +160,7 @@ export async function POST(request: NextRequest) {
         data: {
           employeeId: newEmployeeId,
           firstName,
+          lastName: middleName || '', // lastName is required in schema, use middleName or empty string
           middleName,
           email: employeeEmail,
           phoneNumber: user.phoneNumber || '',
