@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             firstName: true,
-            lastName: true,
+            middleName: true,
             employeeId: true,
           },
         },
@@ -114,8 +114,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const [firstName, ...lastNameParts] = (user.name || 'Хэрэглэгч').split(' ');
-      const lastName = lastNameParts.join(' ') || '';
+      const nameParts = (user.name || 'Хэрэглэгч').split(' ');
+      const firstName = nameParts[0] || 'Хэрэглэгч';
+      const middleName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
       const date = new Date();
       const year = date.getFullYear();
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest) {
         data: {
           employeeId: newEmployeeId,
           firstName,
-          lastName,
+          middleName,
           email: employeeEmail,
           phoneNumber: user.phoneNumber || '',
           status: 'ACTIVE',

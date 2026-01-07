@@ -4,6 +4,8 @@ import { readFile, unlink, mkdir, readdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { generateContractWordAdvanced } from '@/utils/generateContractWord';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
@@ -44,6 +46,35 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    // Get current user's company information
+    const session = await getServerSession(authOptions);
+    let companyName = ''; // No default fallback
+    
+    if (session?.user?.email) {
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        include: { company: true },
+      });
+      
+      console.log('User found:', user?.email);
+      console.log('User company:', user?.company);
+      console.log('User companyName field:', user?.companyName);
+      
+      if (user?.company?.name) {
+        companyName = user.company.name;
+        console.log('Using company.name:', companyName);
+      } else if (user?.companyName) {
+        companyName = user.companyName;
+        console.log('Using user.companyName:', companyName);
+      } else {
+        console.warn('No company information found for user:', session.user.email);
+      }
+    } else {
+      console.warn('No session found');
+    }
+    
+    console.log('Final companyName:', companyName);
 
     const contract = await prisma.employmentContract.findUnique({
       where: { id },
@@ -95,7 +126,7 @@ export async function GET(
     const contractData = {
       contractNumber: contract.contractNumber,
       employeeName: contract.employee.firstName || '',
-      employeeLastName: contract.employee.lastName || '',
+      employeeLastName: contract.employee.middleName || '',
       employeeId: contract.employee.employeeId || '',
       registrationNumber: contract.employee.employeeId || '',
       position: contract.employee.position?.title || '',
@@ -108,7 +139,7 @@ export async function GET(
       workConditions: (contract as { workConditions?: string }).workConditions || 'NORMAL',
       workSchedule: workSchedule,
       contractDuration: contractDuration,
-      companyName: 'Эрдэнэс-Тавантолгой ХК',
+      companyName: companyName,
       directorName: 'Гүйцэтгэх захирал',
       city: 'Улаанбаатар хот',
       benefits: contract.benefits || contract.terms || undefined,

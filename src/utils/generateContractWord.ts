@@ -96,7 +96,7 @@ export function generateContractWordSimple(
       ['___CONTRACT_NUMBER___', contractData.contractNumber || ''],
       ['___EMPLOYEE_NAME___', `${contractData.employeeLastName || ''} овогтой ${contractData.employeeName || ''}`],
       ['___REGISTRATION_NUMBER___', contractData.registrationNumber || contractData.employeeId || ''],
-      ['___COMPANY_NAME___', contractData.companyName || 'Эрдэнэс-Тавантолгой'],
+      ['___COMPANY_NAME___', contractData.companyName || ''],
       ['___DIRECTOR_NAME___', contractData.directorName || ''],
       ['___POSITION___', contractData.position || ''],
       ['___DEPARTMENT___', contractData.department || ''],
@@ -110,8 +110,40 @@ export function generateContractWordSimple(
     ];
     
     for (const [placeholder, value] of simplePlaceholders) {
-      documentXml = documentXml.replace(new RegExp(placeholder, 'g'), value);
+      // Escape special regex characters in placeholder
+      const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      documentXml = documentXml.replace(new RegExp(escapedPlaceholder, 'g'), value);
     }
+    
+    // Replace "Гүйцэтгэх захирал …..………………." patterns (dots and spaces after "Гүйцэтгэх захирал")
+    documentXml = documentXml.replace(
+      /Гүйцэтгэх захирал[\s\.]+\.+[\s\.]*/g,
+      contractData.directorName ? `Гүйцэтгэх захирал ${contractData.directorName}` : 'Гүйцэтгэх захирал'
+    );
+    
+    // Replace "Гүйцэтгэх захирал …..………………." with various dot patterns
+    documentXml = documentXml.replace(
+      /Гүйцэтгэх захирал[\s]*\.+[\s]*/g,
+      contractData.directorName ? `Гүйцэтгэх захирал ${contractData.directorName}` : 'Гүйцэтгэх захирал'
+    );
+    
+    // Replace "Нэг талаас ___COMPANY_NAME___ ХХК" if placeholder wasn't replaced (fallback)
+    if (documentXml.includes('___COMPANY_NAME___')) {
+      documentXml = documentXml.replace(
+        /___COMPANY_NAME___/g,
+        contractData.companyName || ''
+      );
+    }
+    
+    // Replace "Нэг талаас [company name] ХХК" pattern to ensure "ХК" is correct
+    documentXml = documentXml.replace(
+      /Нэг талаас[\s]+([^Х]+)[\s]*ХХК/g,
+      (match, companyName) => {
+        const name = companyName.trim();
+        return name ? `Нэг талаас ${name} ХК` : 'Нэг талаас'
+      }
+    );
+    
     zip.file('word/document.xml', documentXml);
     const outputBuffer = zip.generate({
       type: 'nodebuffer',
@@ -151,8 +183,12 @@ export function generateContractWordAdvanced(
     const replacements: Array<[string, string]> = [
       ["№ .............", `№ ${contractData.contractNumber || ''}`],
       ["№ .........", `№ ${contractData.contractNumber || ''}`],
-      ['"Эрдэнэс-Тавантолгой" ХК', `"${contractData.companyName || 'Эрдэнэс-Тавантолгой'}" ХК`],
-      ["Эрдэнэс-Тавантолгой ХК", contractData.companyName || 'Эрдэнэс-Тавантолгой ХК'],
+      ['"Эрдэнэс-Тавантолгой" ХК', contractData.companyName ? `"${contractData.companyName}" ХК` : ''],
+      ["Эрдэнэс-Тавантолгой ХК", contractData.companyName || ''],
+      ["Нэг талаас Эрдэнэс-Тавантолгой ХК", contractData.companyName ? `Нэг талаас ${contractData.companyName} ХК` : ''],
+      ["Нэг талаас Эрдэнэс-Тавантолгой ХК ХХК", contractData.companyName ? `Нэг талаас ${contractData.companyName} ХК` : ''],
+      ["нэг талаас Эрдэнэс-Тавантолгой ХК", contractData.companyName ? `нэг талаас ${contractData.companyName} ХК` : ''],
+      ["нэг талаас Эрдэнэс-Тавантолгой ХК ХХК", contractData.companyName ? `нэг талаас ${contractData.companyName} ХК` : ''],
       ["Регистрийн дугаар: ..................", `Регистрийн дугаар: ${contractData.registrationNumber || contractData.employeeId || ''}`],
       ["Регистрийн дугаар: ................./", `Регистрийн дугаар: ${contractData.registrationNumber || contractData.employeeId || ''}`],
       ["Регистрийн дугаар: .................", `Регистрийн дугаар: ${contractData.registrationNumber || contractData.employeeId || ''}`],
@@ -209,7 +245,18 @@ export function generateContractWordAdvanced(
     
     documentXml = documentXml.replace(
       /"[\s\.]+ХХК-/g,
-      `"${contractData.companyName || 'Эрдэнэс-Тавантолгой'}" ХХК-`
+      contractData.companyName ? `"${contractData.companyName}" ХХК-` : ''
+    );
+    
+    // Replace "Нэг талаас Эрдэнэс-Тавантолгой ХК" patterns
+    documentXml = documentXml.replace(
+      /Нэг талаас[\s]*Эрдэнэс-Тавантолгой[\s]*ХК[\s]*ХХК?/gi,
+      contractData.companyName ? `Нэг талаас ${contractData.companyName} ХК` : ''
+    );
+    
+    documentXml = documentXml.replace(
+      /нэг талаас[\s]*Эрдэнэс-Тавантолгой[\s]*ХК[\s]*ХХК?/gi,
+      contractData.companyName ? `нэг талаас ${contractData.companyName} ХК` : ''
     );
     
     zip.file('word/document.xml', documentXml);

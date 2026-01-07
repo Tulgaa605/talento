@@ -283,16 +283,35 @@ export default function EmployerProfile() {
       }
       const companyData: Company = JSON.parse(text);
       setCompany(companyData);
+      
       const jobsRes = await fetch("/api/employer/jobs");
+      if (!jobsRes.ok) {
+        console.error("Jobs API error:", jobsRes.status, jobsRes.statusText);
+        setJobs([]);
+        return;
+      }
+      
       const textJobs = await jobsRes.text();
       if (!textJobs) {
         setJobs([]);
       } else {
-        const jobsData: Job[] = JSON.parse(textJobs);
-        setJobs(jobsData);
+        try {
+          const jobsData = JSON.parse(textJobs);
+          // Ensure jobsData is an array
+          if (Array.isArray(jobsData)) {
+            setJobs(jobsData);
+          } else {
+            console.error("Jobs data is not an array:", jobsData);
+            setJobs([]);
+          }
+        } catch (parseError) {
+          console.error("Error parsing jobs JSON:", parseError);
+          setJobs([]);
+        }
       }
     } catch (error) {
       console.error("Error fetching data:", error);
+      setJobs([]); // Ensure jobs is always an array
     } finally {
       setLoading(false);
     }
@@ -1452,7 +1471,8 @@ export default function EmployerProfile() {
               Нээлттэй ажлын байрууд
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {jobs?.map((job) => (
+              {Array.isArray(jobs) && jobs.length > 0 ? (
+                jobs.map((job) => (
                 <div
                   key={job.id}
                   className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 flex flex-col gap-3 relative group hover:shadow-lg transition-shadow"
@@ -1533,7 +1553,12 @@ export default function EmployerProfile() {
                     </div>
                   </div>
                 </div>
-              ))}
+                ))
+              ) : (
+                <div className="col-span-full text-center py-8 text-gray-500">
+                  Нээлттэй ажлын байр байхгүй байна
+                </div>
+              )}
             </div>
           </>
         )}
