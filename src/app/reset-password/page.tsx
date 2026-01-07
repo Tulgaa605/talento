@@ -35,12 +35,15 @@ export default function ResetPasswordPage() {
     }
 
     try {
+      // Normalize email to lowercase
+      const normalizedEmail = email.toLowerCase().trim();
+      
       const response = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, code, newPassword }),
+        body: JSON.stringify({ email: normalizedEmail, code: code.trim(), newPassword }),
       });
 
       const data = await response.json();

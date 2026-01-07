@@ -1,13 +1,20 @@
 import nodemailer from 'nodemailer';
 
-// Gmail SMTP configuration
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD, // Gmail App Password
-  },
-});
+// Gmail SMTP configuration - only create if credentials are available
+let transporter: nodemailer.Transporter | null = null;
+
+function getTransporter() {
+  if (!transporter && process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD, // Gmail App Password (not regular password!)
+      },
+    });
+  }
+  return transporter;
+}
 
 export interface EmailOptions {
   to: string;
@@ -47,12 +54,30 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions) {
 
     console.log('Attempting to send email:', { to, subject, from: process.env.GMAIL_USER });
     
-    const result = await transporter.sendMail(mailOptions);
+    const emailTransporter = getTransporter();
+    if (!emailTransporter) {
+      throw new Error('Email transporter not configured. Please set GMAIL_USER and GMAIL_APP_PASSWORD environment variables.');
+    }
+    
+    const result = await emailTransporter.sendMail(mailOptions);
     console.log('Email sent successfully:', result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Error sending email:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    
+    let errorMessage = 'Unknown error';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Provide helpful error message for Gmail App Password issues
+      if (errorMessage.includes('Application-specific password required') || 
+          errorMessage.includes('Invalid login') ||
+          errorMessage.includes('EAUTH')) {
+        errorMessage = 'Gmail authentication failed. Please ensure you are using an App Password (not your regular password). Go to your Google Account settings > Security > 2-Step Verification > App passwords to generate one.';
+      }
+    }
+    
+    return { success: false, error: errorMessage };
   }
 }
 

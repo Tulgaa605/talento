@@ -16,7 +16,8 @@ interface Decision {
   employee: {
     id: string;
     firstName: string;
-    lastName: string;
+    middleName?: string;
+    lastName?: string;
     employeeId: string;
     position?: {
       title: string;
@@ -64,11 +65,16 @@ export default function DecisionsPage() {
   };
 
   const filteredDecisions = decisions.filter(decision => {
+    const employeeName = [
+      decision.employee.firstName,
+      decision.employee.middleName,
+      decision.employee.lastName
+    ].filter(Boolean).join(' ').toLowerCase();
+    
     const matchesSearch = 
       decision.decisionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       decision.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      decision.employee.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      decision.employee.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employeeName.includes(searchTerm.toLowerCase()) ||
       decision.employee.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === '' || decision.status === statusFilter;
@@ -329,7 +335,9 @@ export default function DecisionsPage() {
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-xs sm:text-sm font-medium text-gray-900">
-                        {decision.employee.firstName} {decision.employee.lastName}
+                        {decision.employee.firstName && decision.employee.middleName
+                          ? `${decision.employee.firstName} ${decision.employee.middleName}`
+                          : decision.employee.lastName || decision.employee.firstName}
                       </div>
                       <div className="text-xs sm:text-sm text-gray-500">
                         {decision.employee.employeeId}
@@ -472,7 +480,9 @@ export default function DecisionsPage() {
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Нэр</p>
                       <p className="text-base font-medium text-gray-900">
-                        {selectedDecision.employee.firstName} {selectedDecision.employee.lastName}
+                        {selectedDecision.employee.firstName && selectedDecision.employee.middleName
+                          ? `${selectedDecision.employee.firstName} ${selectedDecision.employee.middleName}`
+                          : selectedDecision.employee.lastName || selectedDecision.employee.firstName}
                       </p>
                     </div>
                     <div>

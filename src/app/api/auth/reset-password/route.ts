@@ -6,6 +6,11 @@ export async function POST(request: NextRequest) {
   try {
     const { email, code, newPassword } = await request.json();
 
+    console.log('=== RESET PASSWORD API CALLED ===');
+    console.log('Email received:', email);
+    console.log('Code received:', code);
+    console.log('Code type:', typeof code);
+
     if (!email || !code || !newPassword) {
       return NextResponse.json(
         { error: "Бүх талбарыг бөглөнө үү" },
@@ -13,11 +18,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Normalize email to lowercase
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedCode = code.toString().trim();
+
+    console.log('Normalized email:', normalizedEmail);
+    console.log('Normalized code:', normalizedCode);
+
     // Find the password reset request
     const passwordReset = await prisma.passwordReset.findFirst({
       where: {
-        email,
-        token: code,
+        email: normalizedEmail,
+        token: normalizedCode,
         used: false,
         expires: {
           gt: new Date(), // Not expired
@@ -27,6 +39,54 @@ export async function POST(request: NextRequest) {
         user: true,
       },
     });
+
+    console.log('Password reset record found:', passwordReset ? 'YES' : 'NO');
+    if (passwordReset) {
+      console.log('Password reset details:', {
+        id: passwordReset.id,
+        email: passwordReset.email,
+        token: passwordReset.token,
+        expires: passwordReset.expires,
+        used: passwordReset.used,
+      });
+    } else {
+      // Debug: Check if there are any records for this email
+      const allRecords = await prisma.passwordReset.findMany({
+        where: { 
+          email: normalizedEmail,
+        },
+      });
+      console.log('All password reset records for this email:', allRecords.map(r => ({
+        id: r.id,
+        email: r.email,
+        token: r.token,
+        expires: r.expires,
+        used: r.used,
+        expired: r.expires < new Date(),
+        tokenMatch: r.token === normalizedCode,
+      })));
+      
+      // Also check all recent records (last 30 minutes) to help debug
+      const recentRecords = await prisma.passwordReset.findMany({
+        where: {
+          createdAt: {
+            gte: new Date(Date.now() - 30 * 60 * 1000), // Last 30 minutes
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 5,
+      });
+      console.log('Recent password reset records (last 30 min):', recentRecords.map(r => ({
+        id: r.id,
+        email: r.email,
+        token: r.token,
+        expires: r.expires,
+        used: r.used,
+        createdAt: r.createdAt,
+      })));
+    }
 
     if (!passwordReset) {
       return NextResponse.json(

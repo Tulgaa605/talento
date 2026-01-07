@@ -7,7 +7,8 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 interface Employee {
   id: string;
   firstName: string;
-  lastName: string;
+  middleName?: string;
+  lastName?: string;
   employeeId: string;
   position?: {
     title: string;
@@ -333,11 +334,16 @@ export default function DecisionModal({ isOpen, onClose, onSuccess, decisionId }
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
                               >
                                 <option value="">Ажилтан сонгох</option>
-                                {employees.map((employee) => (
-                                  <option key={employee.id} value={employee.id}>
-                                    {employee.firstName} {employee.lastName} ({employee.employeeId}) - {employee.position?.title || 'Ажилтан'}
-                                  </option>
-                                ))}
+                                {employees.map((employee) => {
+                                  const fullName = employee.middleName 
+                                    ? `${employee.firstName} ${employee.middleName}`
+                                    : employee.firstName;
+                                  return (
+                                    <option key={employee.id} value={employee.id}>
+                                      {fullName} ({employee.employeeId}) - {employee.position?.title || 'Ажилтан'}
+                                    </option>
+                                  );
+                                })}
                               </select>
                             </div>
                           )}

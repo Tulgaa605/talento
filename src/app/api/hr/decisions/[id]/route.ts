@@ -19,6 +19,7 @@ export async function GET(
           select: {
             id: true,
             firstName: true,
+            middleName: true,
             lastName: true,
             employeeId: true,
             email: true,
@@ -100,6 +101,7 @@ export async function PUT(
           select: {
             id: true,
             firstName: true,
+            middleName: true,
             lastName: true,
             employeeId: true,
             email: true,

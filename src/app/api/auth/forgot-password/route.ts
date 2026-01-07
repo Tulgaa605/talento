@@ -17,14 +17,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user exists
-    console.log('Looking for user with email:', email);
-    const user = await prisma.user.findUnique({
-      where: { email },
+    // Normalize email to lowercase
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log('Normalized email:', normalizedEmail);
+
+    // Check if user exists - try exact match first, then case-insensitive
+    console.log('Looking for user with email:', normalizedEmail);
+    let user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
     });
 
+    // If not found, try case-insensitive search (for MongoDB)
     if (!user) {
-      console.log('User not found:', email);
+      console.log('Exact match not found, trying case-insensitive search...');
+      const users = await prisma.user.findMany({
+        where: {
+          email: {
+            not: null,
+          },
+        },
+      });
+      user = users.find(u => u.email?.toLowerCase().trim() === normalizedEmail) || null;
+    }
+
+    if (!user) {
+      console.log('User not found with email:', normalizedEmail);
       return NextResponse.json(
         { error: "Энэ имэйл хаягтай хэрэглэгч олдсонгүй" },
         { status: 404 }
@@ -43,9 +60,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Create new password reset request
+    // Use normalized email to ensure consistency
     const passwordReset = await prisma.passwordReset.create({
       data: {
-        email: user.email!,
+        email: normalizedEmail, // Use normalized email instead of user.email
         token: verificationCode,
         expires: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
         userId: user.id,
@@ -68,7 +86,24 @@ export async function POST(request: NextRequest) {
     console.log('Email result:', emailResult);
 
     if (!emailResult.success) {
-      // If email fails, delete the password reset record
+      // In development mode, keep the record even if email fails
+      // User can see the code in console logs
+      if (emailResult.devMode) {
+        console.log('=== DEVELOPMENT MODE ===');
+        console.log('Email not sent, but password reset record is kept for testing');
+        console.log('Verification code:', verificationCode);
+        console.log('Password reset ID:', passwordReset.id);
+        console.log('========================');
+        
+        return NextResponse.json({
+          success: true,
+          message: `Баталгаажуулах код: ${verificationCode} (Development mode - код console дээр харагдана)`,
+          devMode: true,
+          code: verificationCode, // Include code in response for development
+        });
+      }
+      
+      // In production, delete the record if email fails
       await prisma.passwordReset.delete({
         where: { id: passwordReset.id },
       });
