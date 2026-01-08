@@ -23,8 +23,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
-    // Зургийг base64 data URL болгон буцаана (serverless-friendly)
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const base64 = buffer.toString('base64');
