@@ -323,6 +323,7 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
           </svg>
         </button>
       </div>
+      <div className="text-2xl font-bold text-gray-900">Ажлын байрууд</div>
 
       <div className="h-[calc(100vh-16rem)] sm:h-[calc(100vh-18rem)] overflow-y-auto pr-2 sm:pr-4 scrollbar-hide">
         {filteredJobs.length === 0 ? (

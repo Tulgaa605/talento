@@ -113,7 +113,7 @@ export default function ApplyJobModal({
                             name="cv"
                             value={selectedCV}
                             onChange={(e) => setSelectedCV(e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-sm sm:text-base focus:border-[#0C213A] focus:outline-none focus:ring-[#0C213A] text-[#0C213A]"
+                            className="mt-1 block w-full rounded-md border-gray-400 border-1 py-2 pl-3 pr-10 text-sm sm:text-base focus:border-gray-900 focus:outline-none focus:ring-[#0C213A] text-[#0C213A]"
                           >
                             <option value="">CV сонгох</option>
                             {cvs.map((cv) => (
@@ -138,7 +138,7 @@ export default function ApplyJobModal({
                           rows={4}
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm sm:text-base text-[#0C213A] p-2"
+                          className="mt-1 block w-full rounded-md border-gray-400 border-1 shadow-sm text-sm sm:text-base text-[#0C213A] p-2 focus:border-gray-900 focus:outline-none focus:ring-[#0C213A]"
                           placeholder="Өөрийн тухай товч танилцуулга..."
                         />
                       </div>
