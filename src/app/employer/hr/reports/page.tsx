@@ -51,6 +51,11 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const componentRef = useRef<HTMLDivElement>(null);
 
+  const [showStatisticsModal, setShowStatisticsModal] = useState(false);
+  const [statistics, setStatistics] = useState<any>(null);
+  const [loadingStatistics, setLoadingStatistics] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
     documentTitle: `Тайлан_статистик_${new Date().getTime()}`,
@@ -143,8 +148,105 @@ export default function ReportsPage() {
     closeEditTemplateModal();
   };
 
-  const handleDownload = (report: Report) => {
-    alert(`${report.name} татаж байна...`);
+  const handleDownload = async (report: Report) => {
+    try {
+      // Generate report based on report type - more specific matching
+      let type = 'all';
+      const reportTypeLower = report.type?.toLowerCase() || '';
+      
+      if (reportTypeLower.includes('ажилтны') || reportTypeLower.includes('ажилтан') || reportTypeLower === 'ажилтны') {
+        type = 'employees';
+      } else if (reportTypeLower.includes('цалин') || reportTypeLower.includes('гэрээ') || reportTypeLower === 'цалин') {
+        type = 'contracts';
+      } else if (reportTypeLower.includes('хэлтэс') || reportTypeLower === 'хэлтэс') {
+        type = 'departments';
+      } else {
+        // Default to summary report if type doesn't match
+        type = 'all';
+      }
+
+      const format = report.format?.toLowerCase() === 'excel' || report.format?.toLowerCase() === 'csv' ? 'excel' : 
+                     report.format?.toLowerCase() === 'json' ? 'json' : 'excel';
+      
+      const url = `/api/hr/reports/download?type=${type}&format=${format}&reportName=${encodeURIComponent(report.name)}&period=${encodeURIComponent(report.period || '')}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      
+      // Use report name and period for filename
+      const fileExtension = format === 'excel' ? 'csv' : format;
+      const safeReportName = report.name.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\s]/g, '_').replace(/\s+/g, '_');
+      const filename = `${safeReportName}_${report.period || new Date().toISOString().split('T')[0]}.${fileExtension}`;
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      alert('Тайлан татахад алдаа гарлаа');
+    }
+  };
+
+  const openStatisticsModal = async () => {
+    setShowStatisticsModal(true);
+    setLoadingStatistics(true);
+    try {
+      const res = await fetch('/api/hr/reports/statistics');
+      if (res.ok) {
+        const data = await res.json();
+        setStatistics(data);
+      }
+    } catch (error) {
+      console.error('Error loading statistics:', error);
+    } finally {
+      setLoadingStatistics(false);
+    }
+  };
+
+  const closeStatisticsModal = () => {
+    setShowStatisticsModal(false);
+    setStatistics(null);
+  };
+
+  const openDownloadModal = () => {
+    setShowDownloadModal(true);
+  };
+
+  const closeDownloadModal = () => {
+    setShowDownloadModal(false);
+  };
+
+  const handleDownloadReport = async (type: string, format: string) => {
+    try {
+      const url = `/api/hr/reports/download?type=${type}&format=${format}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = response.headers.get('Content-Disposition')?.split("filename*=UTF-8''")[1] || `report.${format === 'excel' ? 'csv' : format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+      closeDownloadModal();
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      alert('Тайлан татахад алдаа гарлаа');
+    }
   };
 
   const handleEditReport = (e: React.FormEvent<HTMLFormElement>) => {
@@ -497,7 +599,10 @@ export default function ReportsPage() {
                     <p className="text-sm text-gray-600">Загвар сонгоод тайлан үүсгэх</p>
                   </div>
                 </button>
-                <button className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                <button 
+                  onClick={openStatisticsModal}
+                  className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                >
                   <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-4">
                     <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -508,7 +613,10 @@ export default function ReportsPage() {
                     <p className="text-sm text-gray-600">Дэлгэрэнгүй аналитик мэдээлэл</p>
                   </div>
                 </button>
-                <button className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                <button 
+                  onClick={openDownloadModal}
+                  className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+                >
                   <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
                     <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -726,7 +834,12 @@ export default function ReportsPage() {
                 <button onClick={closeDetailModal} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
                   Хаах
                 </button>
-                <button className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90 transition-colors">Татах</button>
+                <button 
+                  onClick={() => selectedReport && handleDownload(selectedReport)}
+                  className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90 transition-colors"
+                >
+                  Татах
+                </button>
               </div>
             </div>
           </div>
@@ -960,6 +1073,180 @@ export default function ReportsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showStatisticsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-[#0C213A]">Статистик мэдээлэл</h3>
+              <button onClick={closeStatisticsModal} className="p-2 rounded-md hover:bg-gray-100">
+                ✕
+              </button>
+            </div>
+            <div className="p-6">
+              {loadingStatistics ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0C213A]"></div>
+                </div>
+              ) : statistics ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                      <p className="text-sm text-gray-600 mb-1">Нийт ажилтан</p>
+                      <p className="text-2xl font-bold text-[#0C213A]">{statistics.overview?.totalEmployees || 0}</p>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                      <p className="text-sm text-gray-600 mb-1">Идэвхтэй</p>
+                      <p className="text-2xl font-bold text-[#0C213A]">{statistics.overview?.activeEmployees || 0}</p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                      <p className="text-sm text-gray-600 mb-1">Идэвхгүй</p>
+                      <p className="text-2xl font-bold text-[#0C213A]">{statistics.overview?.inactiveEmployees || 0}</p>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                      <p className="text-sm text-gray-600 mb-1">Хэлтэс</p>
+                      <p className="text-2xl font-bold text-[#0C213A]">{statistics.overview?.totalDepartments || 0}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-[#0C213A] mb-3">Гэрээний статистик</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Идэвхтэй:</span>
+                          <span className="font-medium">{statistics.contracts?.active || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Хугацаа дууссан:</span>
+                          <span className="font-medium">{statistics.contracts?.expired || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Цуцлагдсан:</span>
+                          <span className="font-medium">{statistics.contracts?.terminated || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-[#0C213A] mb-3">Шидвэрийн статистик</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Ноорог:</span>
+                          <span className="font-medium">{statistics.decisions?.draft || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Идэвхтэй:</span>
+                          <span className="font-medium">{statistics.decisions?.active || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Цуцлагдсан:</span>
+                          <span className="font-medium">{statistics.decisions?.revoked || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {statistics.employeesByDepartment && statistics.employeesByDepartment.length > 0 && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-[#0C213A] mb-3">Хэлтэсээр ажилтнууд</h4>
+                      <div className="space-y-2">
+                        {statistics.employeesByDepartment.map((item: any, index: number) => (
+                          <div key={index} className="flex justify-between">
+                            <span className="text-gray-600">{item.departmentName}</span>
+                            <span className="font-medium">{item.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {statistics.recentHires && statistics.recentHires.length > 0 && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-[#0C213A] mb-3">Сүүлийн 3 сард ажилд орсон</h4>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {statistics.recentHires.map((emp: any, index: number) => (
+                          <div key={index} className="flex justify-between text-sm">
+                            <span className="text-gray-600">{emp.name} ({emp.employeeId})</span>
+                            <span className="text-gray-500">{emp.hireDate}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">Статистик мэдээлэл олдсонгүй</div>
+              )}
+              <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
+                <button
+                  onClick={closeStatisticsModal}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Хаах
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDownloadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-[#0C213A]">Тайлан татах</h3>
+              <button onClick={closeDownloadModal} className="p-2 rounded-md hover:bg-gray-100">
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Тайлангийн төрөл</label>
+                <select
+                  id="reportType"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C213A]"
+                  defaultValue="all"
+                >
+                  <option value="all">Бүх тайлан</option>
+                  <option value="employees">Ажилтнууд</option>
+                  <option value="departments">Хэлтэс</option>
+                  <option value="contracts">Гэрээ</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Формат</label>
+                <select
+                  id="reportFormat"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C213A]"
+                  defaultValue="excel"
+                >
+                  <option value="excel">Excel (CSV)</option>
+                  <option value="json">JSON</option>
+                </select>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={closeDownloadModal}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Цуцлах
+                </button>
+                <button
+                  onClick={() => {
+                    const type = (document.getElementById('reportType') as HTMLSelectElement)?.value || 'all';
+                    const format = (document.getElementById('reportFormat') as HTMLSelectElement)?.value || 'excel';
+                    handleDownloadReport(type, format);
+                  }}
+                  className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90 transition-colors"
+                >
+                  Татах
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

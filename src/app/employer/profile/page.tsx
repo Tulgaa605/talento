@@ -299,7 +299,7 @@ export default function EmployerProfile() {
           const jobsData = JSON.parse(textJobs);
           // Ensure jobsData is an array
           if (Array.isArray(jobsData)) {
-            setJobs(jobsData);
+        setJobs(jobsData);
           } else {
             console.error("Jobs data is not an array:", jobsData);
             setJobs([]);
