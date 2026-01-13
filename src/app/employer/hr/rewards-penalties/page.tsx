@@ -56,15 +56,15 @@ export default function RewardsPenaltiesPage() {
 
   // Dynamic stats
   const now = new Date();
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const monthRewards = rewards.filter((r) => String(r.date).startsWith(monthKey)).length;
-  const monthPenalties = penalties.filter((p) => String(p.date).startsWith(monthKey)).length;
-  const stats = [
-    { label: "Нийт шагнал", value: String(rewards.length), change: "", color: "text-green-600", icon: "🏆" },
-    { label: "Нийт шийтгэл", value: String(penalties.length), change: "", color: "text-red-600", icon: "⚠️" },
-    { label: "Энэ сар шагнал", value: String(monthRewards), change: "", color: "text-blue-600", icon: "⭐" },
-    { label: "Энэ сар шийтгэл", value: String(monthPenalties), change: "", color: "text-orange-600", icon: "📋" }
-  ];
+  // const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  // const monthRewards = rewards.filter((r) => String(r.date).startsWith(monthKey)).length;
+  // const monthPenalties = penalties.filter((p) => String(p.date).startsWith(monthKey)).length;
+  // const stats = [
+  //   { label: "Нийт шагнал", value: String(rewards.length), change: "", color: "text-green-600", icon: "🏆" },
+  //   { label: "Нийт шийтгэл", value: String(penalties.length), change: "", color: "text-red-600", icon: "⚠️" },
+  //   { label: "Энэ сар шагнал", value: String(monthRewards), change: "", color: "text-blue-600", icon: "⭐" },
+  //   { label: "Энэ сар шийтгэл", value: String(monthPenalties), change: "", color: "text-orange-600", icon: "📋" }
+  // ];
 
   useEffect(() => {
     const load = async () => {
@@ -188,6 +188,98 @@ export default function RewardsPenaltiesPage() {
     setActiveTab("penalties");
   };
 
+  const handleDownloadRewardsReport = () => {
+    try {
+      if (rewards.length === 0) {
+        alert('Татах шагнал байхгүй байна');
+        return;
+      }
+
+      // Create CSV content
+      const csvRows = [
+        'Ажилтны ID,Ажилтан,Шагналын төрөл,Шалтгаан,Дүн,Олгосон,Огноо,Төлөв,Дугаар'
+      ];
+
+      rewards.forEach((reward) => {
+        const row = [
+          reward.employeeId,
+          reward.employee,
+          reward.type,
+          `"${(reward.reason || '').replace(/"/g, '""')}"`,
+          reward.amount,
+          reward.issuedBy,
+          reward.date,
+          reward.status,
+          reward.orderNumber
+        ].join(',');
+        csvRows.push(row);
+      });
+
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      
+      const dateStr = new Date().toISOString().split('T')[0];
+      a.download = `Шагналын_тайлан_${dateStr}.csv`;
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error downloading rewards report:', error);
+      alert('Шагналын тайлан татахад алдаа гарлаа');
+    }
+  };
+
+  const handleDownloadPenaltiesReport = () => {
+    try {
+      if (penalties.length === 0) {
+        alert('Татах шийтгэл байхгүй байна');
+        return;
+      }
+
+      // Create CSV content
+      const csvRows = [
+        'Ажилтны ID,Ажилтан,Шийтгэлийн төрөл,Шалтгаан,Хэмжээ,Шийдвэрлэсэн,Огноо,Төлөв,Дугаар'
+      ];
+
+      penalties.forEach((penalty) => {
+        const row = [
+          penalty.employeeId,
+          penalty.employee,
+          penalty.type,
+          `"${(penalty.reason || '').replace(/"/g, '""')}"`,
+          penalty.amount,
+          penalty.decidedBy,
+          penalty.date,
+          penalty.status,
+          penalty.orderNumber
+        ].join(',');
+        csvRows.push(row);
+      });
+
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      
+      const dateStr = new Date().toISOString().split('T')[0];
+      a.download = `Шийтгэлийн_тайлан_${dateStr}.csv`;
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error downloading penalties report:', error);
+      alert('Шийтгэлийн тайлан татахад алдаа гарлаа');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -256,8 +348,7 @@ export default function RewardsPenaltiesPage() {
           </div>
         </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         {stats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -274,7 +365,7 @@ export default function RewardsPenaltiesPage() {
             </div>
           </div>
         ))}
-      </div>
+      </div> */}
 
       {/* Tabs */}
       <div className="mb-6">
@@ -545,13 +636,19 @@ export default function RewardsPenaltiesPage() {
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                <button className="w-full flex items-center justify-center  p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0C213A] hover:bg-[#0C213A]/5 transition-colors">
+                <button 
+                  onClick={handleDownloadRewardsReport}
+                  className="w-full flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0C213A] hover:bg-[#0C213A]/5 transition-colors"
+                >
                   <svg className="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   <span className="text-gray-600">Шагналын тайлан татах</span>
                 </button>
-                <button className="w-full flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0C213A] hover:bg-[#0C213A]/5 transition-colors">
+                <button 
+                  onClick={handleDownloadPenaltiesReport}
+                  className="w-full flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0C213A] hover:bg-[#0C213A]/5 transition-colors"
+                >
                   <svg className="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                   </svg>

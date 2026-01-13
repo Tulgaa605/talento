@@ -141,13 +141,13 @@ export default function PerformancePage() {
     }
     closeAddModal();
   };
-  const totalEvaluations = evaluations.length;
-  const averageScore =
-    totalEvaluations > 0
-      ? evaluations.reduce((s, e) => s + (e.score ?? 0), 0) / totalEvaluations
-      : 0;
+  // const totalEvaluations = evaluations.length;
+  // const averageScore =
+  //   totalEvaluations > 0
+  //     ? evaluations.reduce((s, e) => s + (e.score ?? 0), 0) / totalEvaluations
+  //     : 0;
 
-  const needsImprovement = evaluations.filter((e) => (e.score ?? 0) < 3).length;
+  // const needsImprovement = evaluations.filter((e) => (e.score ?? 0) < 3).length;
 
   const derivedTopPerformers: TopPerformer[] = [...evaluations]
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
@@ -160,12 +160,12 @@ export default function PerformancePage() {
       trend: e.trend ?? "up",
     }));
 
-  const performanceStats = [
-    { label: "Нийт үнэлгээ", value: String(totalEvaluations), change: "", color: "text-blue-600", icon: "📊" },
-    { label: "Дундаж оноо", value: averageScore.toFixed(1), change: "", color: "text-green-600", icon: "⭐" },
-    { label: "Шилдэг ажилтнууд", value: String(Math.min(derivedTopPerformers.length, 24)), change: "", color: "text-purple-600", icon: "🏆" },
-    { label: "Хөгжүүлэх шаардлагатай", value: String(needsImprovement), change: "", color: "text-orange-600", icon: "📈" },
-  ] as const;
+  // const performanceStats = [
+  //   { label: "Нийт үнэлгээ", value: String(totalEvaluations), change: "", color: "text-blue-600", icon: "📊" },
+  //   { label: "Дундаж оноо", value: averageScore.toFixed(1), change: "", color: "text-green-600", icon: "⭐" },
+  //   { label: "Шилдэг ажилтнууд", value: String(Math.min(derivedTopPerformers.length, 24)), change: "", color: "text-purple-600", icon: "🏆" },
+  //   { label: "Хөгжүүлэх шаардлагатай", value: String(needsImprovement), change: "", color: "text-orange-600", icon: "📈" },
+  // ] as const;
 
   const evaluationCriteria = [
     {
@@ -253,7 +253,7 @@ export default function PerformancePage() {
             </div>
           </div>
         </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         {performanceStats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -268,7 +268,7 @@ export default function PerformancePage() {
             </div>
           </div>
         ))}
-      </div>
+      </div> */}
       <div className="mb-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">

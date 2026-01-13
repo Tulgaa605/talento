@@ -259,12 +259,12 @@ export default function RecruitmentPage() {
     );
   }
 
-  const recruitmentStats = [
-    { label: "Нийт анкет", value: recruitmentData.stats.totalApplications.toString(), change: "+" + recruitmentData.stats.newApplications, color: "text-blue-600", icon: "📋" },
-    { label: "Шинэ анкет", value: recruitmentData.stats.newApplications.toString(), change: "+" + Math.floor(recruitmentData.stats.newApplications * 0.3), color: "text-green-600", icon: "🆕" },
-    { label: "Ярилцлага", value: recruitmentData.stats.interviewApplications.toString(), change: "+" + Math.floor(recruitmentData.stats.interviewApplications * 0.2), color: "text-purple-600", icon: "💬" },
-    { label: "Амжилттай", value: recruitmentData.stats.successfulApplications.toString(), change: "+" + Math.floor(recruitmentData.stats.successfulApplications * 0.1), color: "text-orange-600", icon: "✅" }
-  ];
+  // const recruitmentStats = [
+  //   { label: "Нийт анкет", value: recruitmentData.stats.totalApplications.toString(), change: "+" + recruitmentData.stats.newApplications, color: "text-blue-600", icon: "📋" },
+  //   { label: "Шинэ анкет", value: recruitmentData.stats.newApplications.toString(), change: "+" + Math.floor(recruitmentData.stats.newApplications * 0.3), color: "text-green-600", icon: "🆕" },
+  //   { label: "Ярилцлага", value: recruitmentData.stats.interviewApplications.toString(), change: "+" + Math.floor(recruitmentData.stats.interviewApplications * 0.2), color: "text-purple-600", icon: "💬" },
+  //   { label: "Амжилттай", value: recruitmentData.stats.successfulApplications.toString(), change: "+" + Math.floor(recruitmentData.stats.successfulApplications * 0.1), color: "text-orange-600", icon: "✅" }
+  // ];
 
   return (
     <>
@@ -287,7 +287,7 @@ export default function RecruitmentPage() {
           </div>
         </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {recruitmentStats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">s
@@ -304,7 +304,7 @@ export default function RecruitmentPage() {
             </div>
           </div>
         ))}
-      </div>
+      </div> */}
 
       <div className="mb-6">
         <div className="border-b border-gray-200">

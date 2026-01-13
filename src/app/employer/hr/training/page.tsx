@@ -179,17 +179,17 @@ export default function TrainingPage() {
     };
     fetchParticipants();
   }, []);
-  const totalTrainings = trainings.length;
-  const activeTrainings = trainings.filter((t) => t.status === "Идэвхтэй").length;
-  const completedTrainings = trainings.filter((t) => t.status === "Дууссан").length;
-  const totalParticipants = participants.length;
+  // const totalTrainings = trainings.length;
+  // const activeTrainings = trainings.filter((t) => t.status === "Идэвхтэй").length;
+  // const completedTrainings = trainings.filter((t) => t.status === "Дууссан").length;
+  // const totalParticipants = participants.length;
 
-  const trainingStats = [
-    { label: "Нийт сургалт", value: String(totalTrainings), change: "", color: "text-blue-600" },
-    { label: "Идэвхтэй сургалт", value: String(activeTrainings), change: "", color: "text-green-600" },
-    { label: "Дууссан сургалт", value: String(completedTrainings), change: "", color: "text-purple-600" },
-    { label: "Оролцогч", value: String(totalParticipants), change: "", color: "text-orange-600" }
-  ];
+  // const trainingStats = [
+  //   { label: "Нийт сургалт", value: String(totalTrainings), change: "", color: "text-blue-600" },
+  //   { label: "Идэвхтэй сургалт", value: String(activeTrainings), change: "", color: "text-green-600" },
+  //   { label: "Дууссан сургалт", value: String(completedTrainings), change: "", color: "text-purple-600" },
+  //   { label: "Оролцогч", value: String(totalParticipants), change: "", color: "text-orange-600" }
+  // ];
 
   const openAddParticipant = () => setShowAddParticipant(true);
   const closeAddParticipant = () => setShowAddParticipant(false);
@@ -260,6 +260,114 @@ export default function TrainingPage() {
     closeEditParticipant();
   };
 
+  const handleDeleteTraining = async (trainingId: number) => {
+    if (!confirm('Энэ сургалтыг устгахдаа итгэлтэй байна уу?')) return;
+    
+    try {
+      const response = await fetch(`/api/hr/training/${trainingId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setTrainings((prev) => prev.filter(t => t.id !== trainingId));
+        if (selectedTraining?.id === trainingId) {
+          closeDetail();
+        }
+      } else {
+        alert('Сургалт устгахад алдаа гарлаа');
+      }
+    } catch (error) {
+      console.error('Error deleting training:', error);
+      alert('Сургалт устгахад алдаа гарлаа');
+    }
+  };
+
+  const handleDeleteParticipant = async (participant: Participant) => {
+    if (!confirm('Энэ оролцогчийг устгахдаа итгэлтэй байна уу?')) return;
+    
+    try {
+      const response = await fetch(`/api/hr/training/participants`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId: participant.employeeId,
+          trainingId: participant.trainingId
+        })
+      });
+      
+      if (response.ok) {
+        setParticipants((prev) => prev.filter(p => 
+          !(p.employeeId === participant.employeeId && p.trainingId === participant.trainingId)
+        ));
+        if (selectedParticipant?.employeeId === participant.employeeId && 
+            selectedParticipant?.trainingId === participant.trainingId) {
+          closeParticipant();
+        }
+      } else {
+        alert('Оролцогч устгахад алдаа гарлаа');
+      }
+    } catch (error) {
+      console.error('Error deleting participant:', error);
+      alert('Оролцогч устгахад алдаа гарлаа');
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      if (trainings.length === 0) {
+        alert('Татах сургалт байхгүй байна');
+        return;
+      }
+
+      const data = trainings.map(t => ({
+        'Сургалтын нэр': t.name,
+        'Төрөл': t.type,
+        'Зорилго': t.objective || '',
+        'Агуулга': t.content || '',
+        'Эхлэх огноо': t.startDate,
+        'Дуусах огноо': t.endDate,
+        'Байршил': t.location || '',
+        'Багш': t.instructor || '',
+        'Оролцогчдын тоо': t.participants,
+        'Төлөв': t.status,
+        'Явц (%)': t.progress,
+      }));
+
+      const headers = Object.keys(data[0] || {});
+      const csvRows = [
+        headers.join(','),
+        ...data.map((row) =>
+          headers
+            .map((header) => {
+              const value = row[header as keyof typeof row];
+              return typeof value === 'string' && value.includes(',')
+                ? `"${value.replace(/"/g, '""')}"`
+                : value || '';
+            })
+            .join(',')
+        ),
+      ];
+
+      const csv = csvRows.join('\n');
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `Сургалтууд_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      alert('Excel файл татахад алдаа гарлаа');
+    }
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -314,7 +422,7 @@ export default function TrainingPage() {
             </div>
           </div>
         </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         {trainingStats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -328,7 +436,7 @@ export default function TrainingPage() {
             </div>
           </div>
         ))}
-      </div>
+      </div> */}
       <div className="mb-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
@@ -478,6 +586,12 @@ export default function TrainingPage() {
                     >
                       Засах
                     </button>
+                    <button 
+                      onClick={() => handleDeleteTraining(training.id)}
+                      className="px-3 py-2 border border-red-300 text-red-700 rounded text-sm hover:bg-red-50 transition-colors"
+                    >
+                      Устгах
+                    </button>
                   </div>
                 </div>
               ))}
@@ -535,6 +649,12 @@ export default function TrainingPage() {
                         className="text-gray-500 hover:text-gray-700"
                       >
                         Засах
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteParticipant(participant as unknown as Participant)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Устгах
                       </button>
                     </td>
                   </tr>
@@ -616,13 +736,19 @@ export default function TrainingPage() {
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                <button className="w-full flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0C213A] hover:bg-[#0C213A]/5 transition-colors">
+                <button 
+                  onClick={handleExportExcel}
+                  className="w-full flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0C213A] hover:bg-[#0C213A]/5 transition-colors"
+                >
                   <svg className="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   <span className="text-gray-600">Excel файл татах</span>
                 </button>
-                <button className="w-full flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0C213A] hover:bg-[#0C213A]/5 transition-colors">
+                <button 
+                  onClick={handleExportPDF}
+                  className="w-full flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0C213A] hover:bg-[#0C213A]/5 transition-colors"
+                >
                   <svg className="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                   </svg>

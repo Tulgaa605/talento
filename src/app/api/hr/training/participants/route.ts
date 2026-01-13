@@ -101,4 +101,31 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    
+    // Find the participant by employeeId and trainingId
+    const participant = await prisma.trainingParticipant.findFirst({
+      where: {
+        employeeId: body.employeeId,
+        trainingLegacyId: Number(body.trainingId),
+      },
+    });
+
+    if (!participant) {
+      return NextResponse.json({ error: 'Participant not found' }, { status: 404 });
+    }
+
+    await prisma.trainingParticipant.delete({
+      where: { id: participant.id },
+    });
+
+    return NextResponse.json({ message: 'Participant deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting participant:', error);
+    return NextResponse.json({ error: 'Failed to delete participant' }, { status: 500 });
+  }
+}
+
 

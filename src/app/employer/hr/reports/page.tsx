@@ -71,19 +71,19 @@ export default function ReportsPage() {
     }));
   }, []);
 
-  const now = new Date();
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const totalReports = reports.length;
-  const thisMonthReports = reports.filter((r) => String(r.createdAt).startsWith(monthKey)).length;
-  const doneReports = reports.filter((r) => r.status === "Дууссан").length;
-  const pendingReports = reports.filter((r) => r.status === "Хүлээгдэж буй").length;
+  // const now = new Date();
+  // const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  // const totalReports = reports.length;
+  // const thisMonthReports = reports.filter((r) => String(r.createdAt).startsWith(monthKey)).length;
+  // const doneReports = reports.filter((r) => r.status === "Дууссан").length;
+  // const pendingReports = reports.filter((r) => r.status === "Хүлээгдэж буй").length;
 
-  const reportStats = [
-    { label: "Нийт тайлан", value: String(totalReports), change: "", color: "text-blue-600", icon: "📊" },
-    { label: "Энэ сар тайлан", value: String(thisMonthReports), change: "", color: "text-green-600", icon: "📈" },
-    { label: "Экспорт хийсэн", value: String(doneReports), change: "", color: "text-purple-600", icon: "💾" },
-    { label: "Хүлээгдэж буй", value: String(pendingReports), change: "", color: "text-orange-600", icon: "⏳" },
-  ] as const;
+  // const reportStats = [
+  //   { label: "Нийт тайлан", value: String(totalReports), change: "", color: "text-blue-600", icon: "📊" },
+  //   { label: "Энэ сар тайлан", value: String(thisMonthReports), change: "", color: "text-green-600", icon: "📈" },
+  //   { label: "Экспорт хийсэн", value: String(doneReports), change: "", color: "text-purple-600", icon: "💾" },
+  //   { label: "Хүлээгдэж буй", value: String(pendingReports), change: "", color: "text-orange-600", icon: "⏳" },
+  // ] as const;
 
   useEffect(() => {
     const load = async () => {
@@ -193,6 +193,89 @@ export default function ReportsPage() {
     } catch (error) {
       console.error('Error downloading report:', error);
       alert('Тайлан татахад алдаа гарлаа');
+    }
+  };
+
+  const handleDownloadReportDetails = async (report: Report) => {
+    try {
+      console.log('Downloading report details for:', report.name);
+      
+      // Download as Word document
+      const response = await fetch(`/api/hr/reports/${report.id}/download-word`);
+      
+      if (!response.ok) {
+        throw new Error('Word файл татахад алдаа гарлаа');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      
+      const safeReportName = (report.name || 'Тайлан')
+        .replace(/[^a-zA-Z0-9а-яА-ЯёЁ\s]/g, '_')
+        .replace(/\s+/g, '_')
+        .substring(0, 50);
+      const dateStr = new Date().toISOString().split('T')[0];
+      a.download = `${safeReportName}_дэлгэрэнгүй_${dateStr}.docx`;
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      console.log('Report details downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading report details:', error);
+      alert('Тайлангийн дэлгэрэнгүй татахад алдаа гарлаа');
+    }
+  };
+
+  const handleDownloadAllReportsDetails = () => {
+    try {
+      if (reports.length === 0) {
+        alert('Татах тайлан байхгүй байна');
+        return;
+      }
+
+      const csvRows = [
+        'Тайлангийн нэр,Төрөл,Хугацаа,Төлөв,Хэмжээ,Формат,Хэлтэс,Үүсгэсэн,Үүсгэсэн огноо,Сүүлд засварласан,Тайлбар'
+      ];
+
+      reports.forEach((report) => {
+        const row = [
+          report.name,
+          report.type,
+          report.period,
+          report.status,
+          report.size,
+          report.format,
+          report.department,
+          report.createdBy,
+          report.createdAt,
+          report.lastModified,
+          `"${(report.description || '').replace(/"/g, '""')}"`
+        ].join(',');
+        csvRows.push(row);
+      });
+
+      const csvContent = csvRows.join('\n');
+
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      
+      const filename = `Бүх_тайлангийн_дэлгэрэнгүй_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = filename;
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error downloading all reports details:', error);
+      alert('Бүх тайлангийн дэлгэрэнгүй татахад алдаа гарлаа');
     }
   };
 
@@ -327,52 +410,6 @@ export default function ReportsPage() {
     }
   };
 
-  const initialTemplates: ReportTemplate[] = [
-    {
-      name: "Ажилтны ерөнхий тайлан",
-      description: "Нийт ажилтны тоо, хэлтсээр, бүтэц, нас, хүйс, боловсролын бүтэц",
-      icon: "👥",
-      category: "Ажилтны тайлан",
-      fields: ["Нийт ажилтны тоо", "Хэлтэс бүрийн ажилтны тоо", "Шинээр ажилд орсон", "Чөлөөлөгдсөн", "Нас, хүйс, боловсролын бүтэц"],
-    },
-    {
-      name: "Цалингийн дэлгэрэнгүй тайлан",
-      description: "Сарын нийт цалин, хэлтэс бүрийн дундаж цалин, НДШ, татварын тайлан",
-      icon: "💰",
-      category: "Цалингийн тайлан",
-      fields: ["Сарын нийт цалин", "Хэлтэс бүрийн дундаж цалин", "НДШ, татварын тайлан", "Нэмэгдэл, урамшууллын тайлан"],
-    },
-    {
-      name: "Гүйцэтгэлийн тайлан",
-      description: "Нэг ажилтны гүйцэтгэлийн үнэлгээний дундаж оноо, харьцуулалт",
-      icon: "📊",
-      category: "Ажлын гүйцэтгэлийн тайлан",
-      fields: ["Нэг ажилтны гүйцэтгэлийн үнэлгээний дундаж оноо", "Хэлтэс, багийн гүйцэтгэлийн харьцуулалт", "Шилдэг 10 ажилтан", "Хамгийн сул үнэлгээтэй ажилтан"],
-    },
-    {
-      name: "Сургалт, хөгжлийн тайлан",
-      description: "Сургалтад хамрагдсан ажилтны тоо, зардлын тайлан, сертификат",
-      icon: "🎓",
-      category: "Сургалт, хөгжлийн тайлан",
-      fields: ["Сургалтад хамрагдсан ажилтны тоо", "Сургалтын зардлын тайлан", "Сертификат авсан ажилтнуудын жагсаалт", "Хөгжлийн төлөвлөгөөний биелэлт"],
-    },
-    {
-      name: "Шагнал, шийтгэлийн тайлан",
-      description: "Шагнал авсан ажилтнуудын жагсаалт, шийтгэлийн статистик",
-      icon: "🏆",
-      category: "Шагнал, шийтгэлийн тайлан",
-      fields: ["Шагнал авсан ажилтнуудын жагсаалт", "Шийтгэл авсан ажилтнуудын тоо, шалтгаан", "Хэлтэс тус бүрийн шагнал/шийтгэлийн харьцуулалт"],
-    },
-    {
-      name: "Ажлын байрны тайлан",
-      description: "Нээлттэй байр, анкет, сонголт, ажилд авах процесс",
-      icon: "💼",
-      category: "Ажлын байрны тайлан",
-      fields: ["Нээлттэй ажлын байрны тоо", "Ирсэн анкетуудын тоо", "Ярилцлага хийсэн тоо", "Амжилттай сонгогдсон тоо"],
-    },
-  ];
-
-  const [reportTemplates] = useState<ReportTemplate[]>(initialTemplates);
 
   if (loading) {
     return (
@@ -481,19 +518,10 @@ export default function ReportsPage() {
                 </div>
               )}
             </div>
-            <div className="flex gap-2 print:hidden">
-              <button
-                onClick={handlePrint}
-                className="inline-flex items-center px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
-              >
-                <PrinterIcon className="w-5 h-5 mr-2" />
-                Хэвлэх
-              </button>
-            </div>
           </div>
         </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {reportStats.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -508,7 +536,7 @@ export default function ReportsPage() {
             </div>
           </div>
         ))}
-      </div>
+      </div> */}
 
       <div className="mb-6">
         <div className="border-b border-gray-200">
@@ -516,7 +544,6 @@ export default function ReportsPage() {
             {[
               { id: "overview", name: "Хянах самбар" },
               { id: "reports", name: "Тайланууд" },
-              { id: "templates", name: "Загварууд" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -692,7 +719,7 @@ export default function ReportsPage() {
                       <button onClick={() => openEditModal(report)} className="text-gray-500 hover:text-gray-700">
                         Засах
                       </button>
-                      <button onClick={() => handleDownload(report)} className="text-blue-500 hover:text-blue-700">
+                      <button onClick={() => handleDownloadReportDetails(report)} className="text-blue-500 hover:text-blue-700" title="Тайлангийн дэлгэрэнгүй татах">
                         Татах
                       </button>
                       <button onClick={() => handleDeleteReport(report.id)} className="text-red-500 hover:text-red-700">
@@ -707,65 +734,7 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {activeTab === "templates" && (
-        <div className="space-y-6">
-          {reportTemplates.map((template, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-start mb-4">
-                <div className="w-12 h-12 bg-[#0C213A]/10 rounded-lg flex items-center justify-center mr-4">
-                  <span className="text-2xl">{template.icon}</span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-[#0C213A]">{template.name}</h4>
-                      <p className="text-sm text-gray-500 mt-1">{template.category}</p>
-                    </div>
-                    <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                      {template.fields.length} талбар
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-2">{template.description}</p>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <h5 className="text-sm font-medium text-gray-700 mb-2">Тайлангийн талбарууд:</h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {template.fields.map((field, fieldIndex) => (
-                    <div key={fieldIndex} className="flex items-center text-sm text-gray-600">
-                      <span className="w-2 h-2 bg-[#0C213A] rounded-full mr-2"></span>
-                      {field}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex space-x-2 text-gray-700">
-                <button
-                  onClick={() => handleCreateFromTemplate(template)}
-                  className="flex-1 bg-[#0C213A] text-white py-2 px-3 rounded text-sm hover:bg-[#0C213A]/90 transition-colors"
-                >
-                  Үүсгэх
-                </button>
-                <button
-                  onClick={() => openTemplateModal(template)}
-                  className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors"
-                >
-                  Урьдчилан харах
-                </button>
-                <button
-                  onClick={() => openEditTemplateModal(template)}
-                  className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors"
-                >
-                  Засах
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
+      
       
 
       {showDetailModal && selectedReport && (
@@ -835,7 +804,7 @@ export default function ReportsPage() {
                   Хаах
                 </button>
                 <button 
-                  onClick={() => selectedReport && handleDownload(selectedReport)}
+                  onClick={() => selectedReport && handleDownloadReportDetails(selectedReport)}
                   className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90 transition-colors"
                 >
                   Татах
@@ -857,11 +826,11 @@ export default function ReportsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Тайлангийн нэр</label>
-                  <input name="name" defaultValue={selectedReport.name} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
+                  <input name="name" defaultValue={selectedReport.name} className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Төрөл</label>
-                  <select name="type" defaultValue={selectedReport.type} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
+                  <select name="type" defaultValue={selectedReport.type} className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required>
                     <option value="Ажилтны">Ажилтны</option>
                     <option value="Цалин">Цалин</option>
                     <option value="Гүйцэтгэл">Гүйцэтгэл</option>
@@ -871,11 +840,11 @@ export default function ReportsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Хугацаа</label>
-                  <input name="period" defaultValue={selectedReport.period} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
+                  <input name="period" defaultValue={selectedReport.period} className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Төлөв</label>
-                  <select name="status" defaultValue={selectedReport.status} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
+                  <select name="status" defaultValue={selectedReport.status} className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required>
                     <option value="Дууссан">Дууссан</option>
                     <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
                     <option value="Эхлээгүй">Эхлээгүй</option>
@@ -883,7 +852,7 @@ export default function ReportsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Формат</label>
-                  <select name="format" defaultValue={selectedReport.format} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
+                  <select name="format" defaultValue={selectedReport.format} className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required>
                     <option value="PDF">PDF</option>
                     <option value="Excel">Excel</option>
                     <option value="Word">Word</option>
@@ -891,7 +860,7 @@ export default function ReportsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Хэлтэс</label>
-                  <select name="department" defaultValue={selectedReport.department} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
+                  <select name="department" defaultValue={selectedReport.department} className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required>
                     <option value="HR">HR</option>
                     <option value="Санхүү">Санхүү</option>
                     <option value="IT">IT</option>
@@ -901,7 +870,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Тайлбар</label>
-                <textarea name="description" defaultValue={selectedReport.description} rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
+                <textarea name="description" defaultValue={selectedReport.description} rows={3} className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm" required />
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
@@ -1118,15 +1087,15 @@ export default function ReportsPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Идэвхтэй:</span>
-                          <span className="font-medium">{statistics.contracts?.active || 0}</span>
+                          <span className="font-medium text-gray-900">{statistics.contracts?.active || 0}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Хугацаа дууссан:</span>
-                          <span className="font-medium">{statistics.contracts?.expired || 0}</span>
+                          <span className="font-medium text-gray-900">{statistics.contracts?.expired || 0}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Цуцлагдсан:</span>
-                          <span className="font-medium">{statistics.contracts?.terminated || 0}</span>
+                          <span className="font-medium text-gray-900">{statistics.contracts?.terminated || 0}</span>
                         </div>
                       </div>
                     </div>
@@ -1136,15 +1105,15 @@ export default function ReportsPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Ноорог:</span>
-                          <span className="font-medium">{statistics.decisions?.draft || 0}</span>
+                          <span className="font-medium text-gray-900">{statistics.decisions?.draft || 0}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Идэвхтэй:</span>
-                          <span className="font-medium">{statistics.decisions?.active || 0}</span>
+                          <span className="font-medium text-gray-900">{statistics.decisions?.active || 0}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Цуцлагдсан:</span>
-                          <span className="font-medium">{statistics.decisions?.revoked || 0}</span>
+                          <span className="font-medium text-gray-900">{statistics.decisions?.revoked || 0}</span>
                         </div>
                       </div>
                     </div>
@@ -1157,7 +1126,7 @@ export default function ReportsPage() {
                         {statistics.employeesByDepartment.map((item: any, index: number) => (
                           <div key={index} className="flex justify-between">
                             <span className="text-gray-600">{item.departmentName}</span>
-                            <span className="font-medium">{item.count}</span>
+                            <span className="font-medium text-gray-900">{item.count}</span>
                           </div>
                         ))}
                       </div>
@@ -1196,54 +1165,66 @@ export default function ReportsPage() {
 
       {showDownloadModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-6 border-b border-gray-200">
               <h3 className="text-xl font-semibold text-[#0C213A]">Тайлан татах</h3>
               <button onClick={closeDownloadModal} className="p-2 rounded-md hover:bg-gray-100">
                 ✕
               </button>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Тайлангийн төрөл</label>
-                <select
-                  id="reportType"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C213A]"
-                  defaultValue="all"
-                >
-                  <option value="all">Бүх тайлан</option>
-                  <option value="employees">Ажилтнууд</option>
-                  <option value="departments">Хэлтэс</option>
-                  <option value="contracts">Гэрээ</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Формат</label>
-                <select
-                  id="reportFormat"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C213A]"
-                  defaultValue="excel"
-                >
-                  <option value="excel">Excel (CSV)</option>
-                  <option value="json">JSON</option>
-                </select>
-              </div>
-              <div className="flex justify-end space-x-3 pt-4">
+            <div className="p-6">
+              {reports.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>Үүсгэсэн тайлан байхгүй байна</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600 mb-4">Татах тайлангаа сонгоно уу:</p>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {reports.map((report) => (
+                      <div
+                        key={report.id}
+                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <h4 className="font-medium text-[#0C213A]">{report.name}</h4>
+                          <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                            <span>{report.type}</span>
+                            <span>•</span>
+                            <span>{report.period}</span>
+                            <span>•</span>
+                            <span
+                              className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                                report.status === "Дууссан" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {report.status}
+                            </span>
+                          </div>
+                          {report.description && (
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-1">{report.description}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            handleDownloadReportDetails(report);
+                            closeDownloadModal();
+                          }}
+                          className="ml-4 px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90 transition-colors text-sm whitespace-nowrap"
+                        >
+                          Татах
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
                 <button
                   onClick={closeDownloadModal}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                 >
-                  Цуцлах
-                </button>
-                <button
-                  onClick={() => {
-                    const type = (document.getElementById('reportType') as HTMLSelectElement)?.value || 'all';
-                    const format = (document.getElementById('reportFormat') as HTMLSelectElement)?.value || 'excel';
-                    handleDownloadReport(type, format);
-                  }}
-                  className="px-4 py-2 bg-[#0C213A] text-white rounded-lg hover:bg-[#0C213A]/90 transition-colors"
-                >
-                  Татах
+                  Хаах
                 </button>
               </div>
             </div>

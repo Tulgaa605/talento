@@ -54,8 +54,7 @@ export async function POST(request: NextRequest, { params }: RouteCtx) {
     });
     
     let response;
-    if (existingResponse) {
-      // Update existing response
+    if (existingResponse) {1
       response = await prisma.questionnaireResponse.update({
         where: { id: existingResponse.id },
         data: {
