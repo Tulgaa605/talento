@@ -113,8 +113,10 @@ export async function POST(request: NextRequest) {
     
     // Get all existing codes for this company only
     const existingPositions = await prisma.position.findMany({
-      where: {
+      where: companyId ? {
         companyId: companyId,
+      } : {
+        companyId: null,
       },
       select: { code: true },
     });
