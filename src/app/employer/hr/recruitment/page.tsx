@@ -85,7 +85,13 @@ export default function RecruitmentPage() {
       const response = await fetch('/api/hr/recruitment');
       
       if (!response.ok) {
-        throw new Error('Өгөгдөл авахад алдаа гарлаа');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Recruitment API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        throw new Error(errorData.error || errorData.details || 'Өгөгдөл авахад алдаа гарлаа');
       }
       
       const data = await response.json();

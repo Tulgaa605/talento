@@ -36,150 +36,29 @@ export async function GET() {
       });
     }
 
-    const [
-      totalApplications,
-      newApplications,
-      interviewApplications,
-      successfulApplications,
-      applications,
-      jobs,
-      departments,
-      governmentQuestionnaires,
-      governmentResponses
-    ] = await Promise.all([
-      prisma.jobApplication.count({
-        where: {
-          job: {
-            companyId: companyId,
-          },
-        },
-      }),
-      prisma.jobApplication.count({
-        where: {
-          status: 'PENDING',
-          createdAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-          },
-          job: {
-            companyId: companyId,
-          },
-        }
-      }),
-      prisma.jobApplication.count({
-        where: { 
-          status: 'EMPLOYER_APPROVED',
-          job: {
-            companyId: companyId,
-          },
-        }
-      }),
-      prisma.jobApplication.count({
-        where: { 
-          status: 'APPROVED',
-          job: {
-            companyId: companyId,
-          },
-        }
-      }),
-      prisma.jobApplication.findMany({
-        where: {
-          job: {
-            companyId: companyId,
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-        include: {
-          job: {
-            select: {
-              id: true,
-              title: true,
-              company: {
-                select: {
-                  name: true
-                }
-              }
-            }
-          },
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          cv: {
-            select: {
-              id: true,
-              matchScore: true
-            }
-          }
-        },
-      }),
-      prisma.job.findMany({
-        where: { 
-          status: 'ACTIVE',
-          companyId: companyId,
-        },
-        select: {
-          id: true,
-          title: true,
-          status: true,
-          createdAt: true,
-          company: {
-            select: {
-              name: true
-            }
-          },
-          _count: {
-            select: {
-              applications: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 10
-      }),
-      prisma.department.findMany({
-        where: {
-          companyId: companyId,
-        },
-        select: {
-          id: true,
-          name: true,
-          code: true
-        },
-        take: 50
-      }),
-      prisma.questionnaire.findMany({
-        where: { 
-          type: 'GOVERNMENT_EMPLOYEE',
-          companyId: companyId,
-        },
-        select: {
-          id: true,
-          title: true,
-          type: true,
-          _count: {
-            select: {
-              responses: true
-            }
-          }
-        },
-        take: 5
-      }),
-      prisma.questionnaireResponse.findMany({
+    // Fetch government responses separately to handle potential errors
+    let governmentResponses: Array<{
+      id: string;
+      questionnaireId: string;
+      formData: any;
+      createdAt: Date;
+      userId: string;
+      user: {
+        id: string;
+        name: string | null;
+        email: string | null;
+      } | null;
+      questionnaire: {
+        title: string;
+        type: string;
+      } | null;
+    }> = [];
+    try {
+      governmentResponses = await prisma.questionnaireResponse.findMany({
         where: {
           questionnaire: { 
             type: 'GOVERNMENT_EMPLOYEE',
             companyId: companyId,
-          },
-          // Include responses from users in this company OR jobseekers (companyId: null)
-          user: {
-            OR: [
-              { companyId: companyId },
-              { companyId: null }, // Jobseekers who submitted questionnaires
-            ],
           },
         },
         select: {
@@ -187,6 +66,7 @@ export async function GET() {
           questionnaireId: true,
           formData: true,
           createdAt: true,
+          userId: true,
           user: {
             select: {
               id: true,
@@ -203,8 +83,162 @@ export async function GET() {
         },
         orderBy: { createdAt: 'desc' },
         take: 20
-      })
-    ]);
+      });
+    } catch (govResponseError) {
+      console.error('Error fetching government responses:', govResponseError);
+      // Continue with empty array
+      governmentResponses = [];
+    }
+
+    let totalApplications = 0;
+    let newApplications = 0;
+    let interviewApplications = 0;
+    let successfulApplications = 0;
+    let applications: any[] = [];
+    let jobs: any[] = [];
+    let departments: any[] = [];
+    let governmentQuestionnaires: any[] = [];
+
+    try {
+      [
+        totalApplications,
+        newApplications,
+        interviewApplications,
+        successfulApplications,
+        applications,
+        jobs,
+        departments,
+        governmentQuestionnaires
+      ] = await Promise.all([
+        prisma.jobApplication.count({
+          where: {
+            job: {
+              companyId: companyId,
+            },
+          },
+        }),
+        prisma.jobApplication.count({
+          where: {
+            status: 'PENDING',
+            createdAt: {
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+            },
+            job: {
+              companyId: companyId,
+            },
+          }
+        }),
+        prisma.jobApplication.count({
+          where: { 
+            status: 'EMPLOYER_APPROVED',
+            job: {
+              companyId: companyId,
+            },
+          }
+        }),
+        prisma.jobApplication.count({
+          where: { 
+            status: 'APPROVED',
+            job: {
+              companyId: companyId,
+            },
+          }
+        }),
+        prisma.jobApplication.findMany({
+          where: {
+            job: {
+              companyId: companyId,
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: {
+            job: {
+              select: {
+                id: true,
+                title: true,
+                company: {
+                  select: {
+                    name: true
+                  }
+                }
+              }
+            },
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            },
+            cv: {
+              select: {
+                id: true,
+                matchScore: true
+              }
+            }
+          },
+        }),
+        prisma.job.findMany({
+          where: { 
+            status: 'ACTIVE',
+            companyId: companyId,
+          },
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            createdAt: true,
+            company: {
+              select: {
+                name: true
+              }
+            },
+            _count: {
+              select: {
+                applications: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10
+        }),
+        prisma.department.findMany({
+          where: {
+            companyId: companyId,
+          },
+          select: {
+            id: true,
+            name: true,
+            code: true
+          },
+          take: 50
+        }),
+        prisma.questionnaire.findMany({
+          where: { 
+            type: 'GOVERNMENT_EMPLOYEE',
+            companyId: companyId,
+          },
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            _count: {
+              select: {
+                responses: true
+              }
+            }
+          },
+          take: 5
+        })
+      ]);
+    } catch (queryError) {
+      console.error('Error in Promise.all queries:', queryError);
+      const queryErrorMessage = queryError instanceof Error ? queryError.message : 'Unknown query error';
+      const queryErrorStack = queryError instanceof Error ? queryError.stack : undefined;
+      console.error('Query error details:', { message: queryErrorMessage, stack: queryErrorStack });
+      // Continue with default values
+    }
 
     const stats = {
       totalApplications,
@@ -237,7 +271,7 @@ export async function GET() {
     }));
 
     const processedGovernmentResponses = governmentResponses
-      .filter(response => response.user)
+      .filter(response => response.user && response.userId) // Ensure both user and userId exist
       .map((response) => {
         let formData = null;
         try {
@@ -276,8 +310,21 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Recruitment data fetch error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorName = error instanceof Error ? error.name : 'Error';
+    console.error('Error details:', { 
+      name: errorName,
+      message: errorMessage, 
+      stack: errorStack,
+      error: error
+    });
     return NextResponse.json(
-      { error: 'Серверийн алдаа гарлаа' },
+      { 
+        error: 'Серверийн алдаа гарлаа', 
+        details: errorMessage,
+        name: errorName
+      },
       { status: 500 }
     );
   }
