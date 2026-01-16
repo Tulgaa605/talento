@@ -49,7 +49,7 @@ export async function PATCH(
       data: { status },
       include: {
         user: { select: { id: true, name: true, email: true, phoneNumber: true } },
-        job: { include: { company: { select: { name: true } } } },
+        job: { include: { company: { select: { id: true, name: true } } } },
       },
     });
 
@@ -73,22 +73,32 @@ export async function PATCH(
         const existingEmployee = await prisma.employee.findUnique({ where: { email: userEmail } }).catch(() => null);
 
         if (!existingEmployee) {
+          const companyId = updatedApplication.job?.company?.id || null;
           const department = await prisma.department.upsert({
             where: { code: 'UNASSIGNED' },
             update: {},
-            create: { name: 'Тодорхойгүй', description: 'Анхны автоматаар үүсгэсэн хэлтэс', code: 'UNASSIGNED' },
+            create: { name: 'Тодорхойгүй', description: 'Анхны автоматаар үүсгэсэн хэлтэс', code: 'UNASSIGNED', companyId },
           });
 
-          const position = await prisma.position.upsert({
-            where: { code: 'UNASSIGNED' },
-            update: {},
-            create: {
-              title: 'Тодорхойгүй',
-              description: 'Анхны автоматаар үүсгэсэн албан тушаал',
+          // Find or create position with code and companyId
+          let position = await prisma.position.findFirst({
+            where: {
               code: 'UNASSIGNED',
-              departmentId: department.id,
+              companyId: companyId,
             },
           });
+
+          if (!position) {
+            position = await prisma.position.create({
+              data: {
+                title: 'Тодорхойгүй',
+                description: 'Анхны автоматаар үүсгэсэн албан тушаал',
+                code: 'UNASSIGNED',
+                departmentId: department.id,
+                companyId: companyId,
+              },
+            });
+          }
 
           const fullName = updatedApplication.user?.name ?? '';
           const [firstName = 'Нэргүй', ...rest] = fullName.trim().split(/\s+/).filter(Boolean);

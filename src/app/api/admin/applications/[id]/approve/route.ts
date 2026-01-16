@@ -71,16 +71,32 @@ export async function POST(
     if (userEmail) {
       const existingEmployee = await prisma.employee.findUnique({ where: { email: userEmail }, select: { id: true } });
       if (!existingEmployee) {
+        const companyId = application.job?.company?.id || null;
         const department = await prisma.department.upsert({
           where: { code: 'UNASSIGNED' },
           update: {},
-          create: { name: 'Тодорхойгүй', description: 'Анхны автоматаар үүсгэсэн хэлтэс', code: 'UNASSIGNED' },
+          create: { name: 'Тодорхойгүй', description: 'Анхны автоматаар үүсгэсэн хэлтэс', code: 'UNASSIGNED', companyId },
         });
-        const position = await prisma.position.upsert({
-          where: { code: 'UNASSIGNED' },
-          update: {},
-          create: { title: 'Тодорхойгүй', description: 'Анхны автоматаар үүсгэсэн албан тушаал', code: 'UNASSIGNED', departmentId: department.id },
+        
+        // Find or create position with code and companyId
+        let position = await prisma.position.findFirst({
+          where: {
+            code: 'UNASSIGNED',
+            companyId: companyId,
+          },
         });
+        
+        if (!position) {
+          position = await prisma.position.create({
+            data: {
+              title: 'Тодорхойгүй',
+              description: 'Анхны автоматаар үүсгэсэн албан тушаал',
+              code: 'UNASSIGNED',
+              departmentId: department.id,
+              companyId: companyId,
+            },
+          });
+        }
 
         const fullName = application.user?.name ?? '';
         const parts = fullName.trim().split(/\s+/).filter(Boolean);
