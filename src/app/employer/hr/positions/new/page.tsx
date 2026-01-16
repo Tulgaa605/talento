@@ -351,7 +351,7 @@ export default function NewPositionPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Шаардлага
                 </label>
-                <textarea
+                <textarea odoo employeriin erh bolo
                   value={formData.requirements}
                   onChange={(e) => {
                     const value = e.target.value;

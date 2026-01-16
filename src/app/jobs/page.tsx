@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import JobsList from '@/components/JobsList';
 import JobDetails from '@/components/JobDetails';
 
@@ -30,21 +30,6 @@ interface Job {
 
 export default function JobsPage() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [, setJobs] = useState<Job[]>([]);
-
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const response = await fetch('/api/jobs');
-        if (!response.ok) throw new Error('Failed to fetch jobs');
-        const data = await response.json();
-        setJobs(data);
-      } catch (error) {
-        console.error('Error fetching jobs:', error);
-      }
-    };
-    fetchJobs();
-  }, []);
 
   return (
     <div className="min-h-screen pt-16 bg-white px-4 sm:px-8 md:px-16 lg:px-32">

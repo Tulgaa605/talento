@@ -95,9 +95,11 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
     try {
       setLoading(true);
       const response = await fetch("/api/jobs");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to fetch jobs" }));
+        throw new Error(errorData.error || errorData.details || "Failed to fetch jobs");
+      }
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to fetch jobs");
-
       setJobs(data);
 
       const selectedJobQuery = searchParams.get("selectedJob");
