@@ -114,9 +114,7 @@ export async function POST(request: NextRequest) {
     // Get all existing codes for this company only
     const existingPositions = await prisma.position.findMany({
       where: {
-        department: {
-          companyId: companyId,
-        },
+        companyId: companyId,
       },
       select: { code: true },
     });
@@ -224,8 +222,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(position, { status: 201 });
   } catch (error) {
     console.error('Албан тушаал нэмэхэд алдаа гарлаа:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Error details:', { message: errorMessage, stack: errorStack, error });
     return NextResponse.json(
-      { error: 'Албан тушаал нэмэхэд алдаа гарлаа' },
+      { 
+        error: 'Албан тушаал нэмэхэд алдаа гарлаа',
+        details: errorMessage
+      },
       { status: 500 }
     );
   }

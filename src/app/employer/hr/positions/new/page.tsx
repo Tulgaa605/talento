@@ -332,44 +332,6 @@ export default function NewPositionPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Хэлтэс *
-                </label>
-                <select
-                  required
-                  value={formData.departmentId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, departmentId: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                >
-                  <option value="">Хэлтэс сонгох...</option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.name} ({dept.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Код
-                </label>
-                <input
-                  type="text"
-                  value={formData.code}
-                  onChange={(e) => {
-                    const value = e.target.value.toUpperCase();
-                    if (/^[A-Z0-9]*$/.test(value)) {
-                      setFormData(prev => ({ ...prev, code: value }));
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Код оруулах (хоосон үлдээвэл автоматаар үүсгэнэ)"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Код хоосон үлдээвэл автоматаар санамсаргүй код үүсгэнэ
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Цалин хязгаар
                 </label>
                 <input
