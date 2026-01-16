@@ -50,12 +50,21 @@ export default function DepartmentsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   const loadDepartments = async () => {
-    const response = await fetch('/api/hr/departments');
-    if (response.ok) {
-      const data = await response.json();
-      setDepartments(data);
+    try {
+      const response = await fetch('/api/hr/departments');
+      if (response.ok) {
+        const data = await response.json();
+        setDepartments(data);
+      } else {
+        console.error('Failed to load departments:', response.status, response.statusText);
+        setDepartments([]);
+      }
+    } catch (error) {
+      console.error('Error loading departments:', error);
+      setDepartments([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -104,8 +113,10 @@ export default function DepartmentsPage() {
     setEditingDepartmentId(null);
   };
 
-  const handleModalSuccess = () => {
-    loadDepartments();
+  const handleModalSuccess = async () => {
+    // Small delay to ensure database transaction is committed
+    await new Promise(resolve => setTimeout(resolve, 300));
+    await loadDepartments();
   };
 
   const handleOpenDetailModal = async (departmentId: string) => {

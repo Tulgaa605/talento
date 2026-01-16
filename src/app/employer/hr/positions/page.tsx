@@ -4,7 +4,15 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { TrashIcon } from '@heroicons/react/24/outline';
+import { 
+  TrashIcon, 
+  BriefcaseIcon,
+  PencilIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  UsersIcon,
+  BuildingOfficeIcon
+} from '@heroicons/react/24/outline';
 import { ListSkeleton, PageHeaderSkeleton, SearchBarSkeleton } from '@/components/Skeletons';
 
 interface Position {
@@ -111,52 +119,56 @@ export default function PositionsPage() {
 
   return (
     <>
-      <div className="max-w-7xl px-1 mx-auto sm:py-6 lg:py-8">
-        <div className="flex justify-between items-center sm:mt-10">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Албан тушаалууд</h1>
-            <p className="mt-1 text-sm sm:text-base text-gray-600">Бүх албан тушаалуудын жагсаалт</p>
-            <div className="hidden-on-screen mt-2 text-sm text-gray-500">
-              Хэвлэсэн огноо: {new Date().toLocaleString('mn-MN', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="mb-6 sm:mb-8 sm:mt-10">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Албан тушаалууд</h1>
+              <p className="mt-2 text-sm sm:text-base text-gray-600">
+                Албан тушаалуудын жагсаалт болон удирдлага
+              </p>
+              <div className="hidden-on-screen mt-2 text-sm text-gray-500">
+                Хэвлэсэн огноо: {new Date().toLocaleString('mn-MN', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
             </div>
-          </div>
-          <div className="flex gap-2 print:hidden">
-            <Link
-              href="/employer/hr/positions/new"
-              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="hidden sm:inline">Шинэ тушаал үүсгэх</span>
-              <span className="sm:hidden">Шинэ тушаал</span>
-            </Link>
+            <div className="flex gap-2 print:hidden">
+              <Link
+                href="/employer/hr/positions/new"
+                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+              >
+                <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Шинэ тушаал</span>
+                <span className="sm:hidden">Шинэ</span>
+              </Link>
+            </div>
           </div>
         </div>
 
-      <div className="bg-white rounded-lg shadow mt-5">
-        <div className="p-4 sm:p-6 border-b border-gray-200">
+        <div className="bg-white rounded-lg shadow mb-6 p-4 sm:p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div className="sm:col-span-2 lg:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Хайх
               </label>
-              <input
-                type="text"
-                placeholder="Тушаалын нэр, код, тайлбар..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Тушаалын нэр, код..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 sm:pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 text-gray-700 focus:border-blue-500 w-full text-sm"
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Хэлтэс
               </label>
               <select
@@ -186,119 +198,133 @@ export default function PositionsPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Тушаалын код
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Тушаалын нэр
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Хэлтэс
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Цалин хязгаар
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ажилтны тоо
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Үүсгэсэн огноо
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Үйлдэл
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredPositions.map((position) => (
-                <tr key={position.id} className="hover:bg-gray-50">
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
-                    {position.code}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4">
-                    <div className="text-xs sm:text-sm font-medium text-gray-900">
-                      {position.title}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {filteredPositions.map((position) => (
+            <div key={position.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-200">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className="flex items-center min-w-0 flex-1">
+                    <BriefcaseIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 mr-2 sm:mr-3 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                        {position.title}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-gray-500">
+                        Код: {position.code}
+                      </p>
                     </div>
-                    <div className="text-xs sm:text-sm text-gray-500 truncate max-w-xs">
-                      {position.description}
-                    </div>
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-xs sm:text-sm font-medium text-gray-900">
-                        {position.department.name}
+                  </div>
+                  <div className="flex space-x-1 sm:space-x-2 ml-2">
+                    <Link
+                      href={`/employer/hr/positions/${position.id}`}
+                      className="text-blue-600 hover:text-blue-900 p-1"
+                      title="Үзэх"
+                    >
+                      <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </Link>
+                    <Link
+                      href={`/employer/hr/positions/${position.id}/edit`}
+                      className="text-green-600 hover:text-green-900 p-1"
+                      title="Засах"
+                    >
+                      <PencilIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(position.id)}
+                      className="text-red-600 hover:text-red-900 p-1"
+                      title="Устгах"
+                    >
+                      <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {position.description && (
+                  <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 line-clamp-2">
+                    {position.description}
+                  </p>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                    <div className="flex items-center">
+                      <UsersIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 mr-1 sm:mr-2 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {position.employees?.length || 0}
+                        </p>
+                        <p className="text-xs text-gray-500">Ажилтны</p>
                       </div>
-                      <div className="text-xs sm:text-sm text-gray-500">
-                        {position.department.name}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                    <div className="flex items-center">
+                      <BuildingOfficeIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 mr-1 sm:mr-2 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {position.department?.name || '-'}
+                        </p>
+                        <p className="text-xs text-gray-500">Хэлтэс</p>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                    {position.salaryRange || '-'}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    <div className="text-xs sm:text-sm text-gray-900">
-                      {position.employees.length} ажилтан
+                  </div>
+                </div>
+
+                {position.salaryRange && (
+                  <div className="mb-3 sm:mb-4">
+                    <p className="text-xs sm:text-sm text-gray-500 mb-1">Цалин хязгаар</p>
+                    <p className="text-xs sm:text-sm font-medium text-gray-900">{position.salaryRange}</p>
+                  </div>
+                )}
+
+                {position.employees && position.employees.length > 0 && (
+                  <div className="mb-3 sm:mb-4">
+                    <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Ажилтнууд:</h4>
+                    <div className="space-y-1">
+                      {position.employees.slice(0, 3).map((employee) => (
+                        <div key={employee.id} className="text-xs sm:text-sm text-gray-600 truncate">
+                          • {employee.firstName} {employee.middleName || employee.lastName || ''} ({employee.employeeId})
+                        </div>
+                      ))}
+                      {position.employees.length > 3 && (
+                        <div className="text-xs sm:text-sm text-gray-500">
+                          +{position.employees.length - 3} нэмэгдэл
+                        </div>
+                      )}
                     </div>
-                    {position.employees.length > 0 && (
-                      <div className="text-xs text-gray-500">
-                        {position.employees.slice(0, 2).map(emp => `${emp.firstName} ${emp.middleName || emp.lastName || ''}`).join(', ')}
-                        {position.employees.length > 2 && ` +${position.employees.length - 2}`}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                    {formatDate(position.createdAt)}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
-                    <div className="flex space-x-1 sm:space-x-2">
-                      <Link
-                        href={`/employer/hr/positions/${position.id}`}
-                        className="text-blue-600 hover:text-blue-900 p-1"
-                      >
-                        <span className="hidden sm:inline">Харах</span>
-                        <span className="sm:hidden">👁️</span>
-                      </Link>
-                      <Link
-                        href={`/employer/hr/positions/${position.id}/edit`}
-                        className="text-green-600 hover:text-green-900 p-1"
-                      >
-                        <span className="hidden sm:inline">Засах</span>
-                        <span className="sm:hidden">✏️</span>
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(position.id)}
-                        className="text-red-600 hover:text-red-900 p-1"
-                      >
-                        <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                )}
+
+                <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500">
+                      Үүсгэсэн: {formatDate(position.createdAt)}
+                    </span>
+                    <Link
+                      href={`/employer/hr/positions/${position.id}`}
+                      className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Дэлгэрэнгүй харах →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {filteredPositions.length === 0 && (
           <div className="text-center py-8 sm:py-12">
-            <svg className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
-            </svg>
-            <h3 className="mt-2 text-sm sm:text-base font-medium text-gray-900">Тушаал олдсонгүй</h3>
-            <p className="mt-1 text-xs sm:text-sm text-gray-500">
-              {searchTerm || departmentFilter 
-                ? 'Хайлтын нөхцөлд тохирох тушаал байхгүй байна.' 
-                : 'Одоогоор бүртгэгдсэн тушаал байхгүй байна.'}
-            </p>
+            <BriefcaseIcon className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+            <div className="text-sm sm:text-base text-gray-500">
+              {searchTerm || departmentFilter ? 'Хайлтын үр дүн олдсонгүй' : 'Тушаал олдсонгүй'}
+            </div>
           </div>
         )}
       </div>
-    </div>
     </>
   );
 }

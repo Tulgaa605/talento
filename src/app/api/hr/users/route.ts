@@ -1,10 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getCompanyId } from '@/lib/hr-utils';
 
 const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Нэвтрээгүй байна' },
+        { status: 401 }
+      );
+    }
+
+    // Get current user's companyId
+    const companyId = await getCompanyId(session.user.id);
+    
+    if (!companyId) {
+      return NextResponse.json([]);
+    }
+
     const { searchParams } = new URL(request.url);
     const contractFilter = searchParams.get('contract');
     const approvalFilter = searchParams.get('approval');
@@ -13,6 +32,7 @@ export async function GET(request: NextRequest) {
     const users = await prisma.user.findMany({
       where: { 
         role: 'USER',
+        companyId: companyId, // Filter by companyId
         ...(statusFilter === 'APPROVED' && { status: 'APPROVED' })
       },
       select: {
@@ -35,6 +55,7 @@ export async function GET(request: NextRequest) {
 
     const employeesWithAnyContract = await prisma.employee.findMany({
       where: {
+        companyId: companyId,
         contracts: {
           some: {},
         },

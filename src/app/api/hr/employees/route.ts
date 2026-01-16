@@ -5,17 +5,39 @@ import {
   EmployeeStatus,
   EmploymentContractStatus,
 } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getCompanyId } from '@/lib/hr-utils';
 
 const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Нэвтрээгүй байна' },
+        { status: 401 }
+      );
+    }
+
+    // Get current user's companyId
+    const companyId = await getCompanyId(session.user.id);
+    
+    if (!companyId) {
+      return NextResponse.json([]);
+    }
+
     const { searchParams } = new URL(request.url);
     const statusParam = searchParams.get('status');
     const departmentId = searchParams.get('departmentId');
     const positionId = searchParams.get('positionId');
 
-    const where: Prisma.EmployeeWhereInput = {};
+    const where: Prisma.EmployeeWhereInput = {
+      // Filter employees by companyId directly
+      companyId: companyId,
+    };
 
     if (statusParam && Object.values(EmployeeStatus).includes(statusParam as EmployeeStatus)) {
       where.status = statusParam as EmployeeStatus;
@@ -82,6 +104,25 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Нэвтрээгүй байна' },
+        { status: 401 }
+      );
+    }
+
+    // Get current user's companyId
+    const companyId = await getCompanyId(session.user.id);
+    
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Компанийн мэдээлэл олдсонгүй' },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
     const {
       employeeId,
@@ -134,11 +175,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const department = await prisma.department.findUnique({ where: { id: departmentId } });
+    const department = await prisma.department.findUnique({ 
+      where: { id: departmentId },
+      select: { id: true, companyId: true }
+    });
     if (!department) return NextResponse.json({ error: 'Хэлтэс олдсонгүй' }, { status: 404 });
 
-    const position = await prisma.position.findUnique({ where: { id: positionId } });
+    // Check if department belongs to companyId = 1
+    if (department.companyId && department.companyId !== companyId) {
+      return NextResponse.json(
+        { error: 'Энэ хэлтэс танай компанид хамаарахгүй байна' },
+        { status: 403 }
+      );
+    }
+
+    const position = await prisma.position.findUnique({ 
+      where: { id: positionId },
+      include: { department: { select: { companyId: true } } }
+    });
     if (!position) return NextResponse.json({ error: 'Албан тушаал олдсонгүй' }, { status: 404 });
+
+    // Check if position's department belongs to companyId = 1
+    if (position.department.companyId && position.department.companyId !== companyId) {
+      return NextResponse.json(
+        { error: 'Энэ албан тушаал танай компанид хамаарахгүй байна' },
+        { status: 403 }
+      );
+    }
 
     if (managerId) {
       const manager = await prisma.employee.findUnique({ where: { id: managerId } });
@@ -162,6 +225,7 @@ export async function POST(request: NextRequest) {
       terminationDate: null,
       positionId,
       departmentId,
+      companyId: companyId,
       managerId: managerId && managerId.trim() !== '' ? managerId : null,
       jobClassificationId: null,
       createdAt: new Date(),

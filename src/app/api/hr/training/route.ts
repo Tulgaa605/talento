@@ -1,13 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getCompanyId } from '@/lib/hr-utils';
 
 const prisma = new PrismaClient();
 
 export async function GET() {
-  const rows = await prisma.training.findMany({ 
-    orderBy: { startDate: 'desc' },
-    take: 100
-  });
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Нэвтрээгүй байна' },
+        { status: 401 }
+      );
+    }
+
+    // Get current user's companyId
+    const companyId = await getCompanyId(session.user.id);
+    
+    if (!companyId) {
+      return NextResponse.json([]);
+    }
+
+    // Get employees directly by companyId
+    const companyEmployees = await prisma.employee.findMany({
+      where: {
+        companyId: companyId,
+      },
+      select: { employeeId: true },
+    });
+    const companyEmployeeIds = companyEmployees.map(e => e.employeeId);
+
+    // Get training participants with matching employeeIds
+    const companyTrainingParticipants = await prisma.trainingParticipant.findMany({
+      where: {
+        employeeId: {
+          in: companyEmployeeIds,
+        },
+      },
+      select: { trainingLegacyId: true },
+    });
+    const companyTrainingIds = new Set(companyTrainingParticipants.map(tp => tp.trainingLegacyId));
+
+    // Get trainings that have participants from this company
+    const rows = await prisma.training.findMany({ 
+      where: {
+        legacyId: {
+          in: Array.from(companyTrainingIds),
+        },
+      },
+      orderBy: { startDate: 'desc' },
+      take: 100
+    });
   const data = rows.map((t) => ({
     id: t.legacyId,
     name: t.name,
@@ -22,11 +68,34 @@ export async function GET() {
     status: t.status,
     progress: t.progress,
   }));
-  return NextResponse.json(data);
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Сургалтуудыг авахад алдаа гарлаа:', error);
+    return NextResponse.json(
+      { error: 'Сургалтуудыг авахад алдаа гарлаа' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Нэвтрээгүй байна' },
+        { status: 401 }
+      );
+    }
+
+    // Get current user's companyId
+    const companyId = await getCompanyId(session.user.id);
+    
+    if (!companyId) {
+      return NextResponse.json([]);
+    }
+
     const body = await request.json();
     const created = await prisma.training.create({
       data: {

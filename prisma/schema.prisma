@@ -108,18 +108,21 @@ model User {
 }
 
 model Company {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  description   String?
-  location      String?
-  website       String?
-  logoUrl       String?
-  coverImageUrl String?  @db.String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  users         User[]
-  jobs          Job[]
-  questionnaires Questionnaire[]
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  description       String?
+  location          String?
+  website           String?
+  logoUrl           String?
+  coverImageUrl     String?  @db.String
+  registrationNumber String?  @unique
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  users             User[]
+  jobs              Job[]
+  questionnaires   Questionnaire[]
+  departments      Department[]
+  employees         Employee[]
 
   @@index([name])
 }
@@ -318,12 +321,15 @@ model Department {
   name        String
   description String?
   code        String   @unique
+  company     Company? @relation(fields: [companyId], references: [id])
+  companyId   String?  @db.ObjectId
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   employees   Employee[]
   positions   Position[]
 
   @@index([name])
+  @@index([companyId])
 }
 
 model Position {
@@ -365,6 +371,8 @@ model Employee {
   positionId      String         @db.ObjectId
   department      Department     @relation(fields: [departmentId], references: [id])
   departmentId    String         @db.ObjectId
+  company         Company?       @relation(fields: [companyId], references: [id])
+  companyId       String?       @db.ObjectId
   jobClassification JobClassification? @relation(fields: [jobClassificationId], references: [id])
   jobClassificationId String?    @db.ObjectId
   manager         Employee?      @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -388,6 +396,7 @@ model Employee {
   @@index([positionId])
   @@index([status])
   @@index([managerId])
+  @@index([companyId])
 }
 
 enum EmploymentContractStatus {
@@ -434,7 +443,7 @@ model Decision {
   reason        String?
   details       String?
   documentUrl   String?
-  status        DecisionStatus @default(ACTIVE) // changed from String -> enum
+  status        DecisionStatus @default(ACTIVE)
   createdBy     String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

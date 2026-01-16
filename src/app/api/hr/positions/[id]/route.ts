@@ -72,10 +72,10 @@ export async function PUT(
     const body = await req.json();
     const { title, code, description, departmentId, salaryRange, requirements } = body;
 
-    // Validation
-    if (!title || !code || !description || !departmentId) {
+    // Validation - only title is required
+    if (!title) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Тушаалын нэр заавал оруулах шаардлагатай' },
         { status: 400 }
       );
     }
@@ -95,23 +95,30 @@ export async function PUT(
       );
     }
 
-    // Check if code is unique (excluding current position)
-    const positionWithSameCode = await prisma.position.findFirst({
-      where: {
-        code,
-        id: { not: id },
-      },
-    });
+    // Use existing values if not provided
+    const finalCode = code || existingPosition.code;
+    const finalDepartmentId = departmentId || existingPosition.departmentId;
+    const finalDescription = description !== undefined ? description : existingPosition.description;
 
-    if (positionWithSameCode) {
-      return NextResponse.json(
-        { error: 'Position code already exists' },
-        { status: 400 }
-      );
+    // Check if code is unique (excluding current position) - only if code is provided
+    if (code && code !== existingPosition.code) {
+      const positionWithSameCode = await prisma.position.findFirst({
+        where: {
+          code,
+          id: { not: id },
+        },
+      });
+
+      if (positionWithSameCode) {
+        return NextResponse.json(
+          { error: 'Энэ код өмнө нь ашиглагдсан байна' },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if department changed
-    const departmentChanged = existingPosition.departmentId !== departmentId;
+    const departmentChanged = existingPosition.departmentId !== finalDepartmentId;
 
     // Update position and employees in a transaction
     const updatedPosition = await prisma.$transaction(async (tx) => {
@@ -120,11 +127,11 @@ export async function PUT(
         where: { id },
         data: {
           title,
-          code,
-          description,
-          departmentId,
-          salaryRange,
-          requirements,
+          code: finalCode,
+          description: finalDescription,
+          departmentId: finalDepartmentId,
+          salaryRange: salaryRange !== undefined ? salaryRange : existingPosition.salaryRange,
+          requirements: requirements !== undefined ? requirements : existingPosition.requirements,
         },
         include: {
           department: true,
@@ -139,7 +146,7 @@ export async function PUT(
             positionId: id,
           },
           data: {
-            departmentId: departmentId,
+            departmentId: finalDepartmentId,
           },
         });
       }

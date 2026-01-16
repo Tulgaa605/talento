@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getCompanyId } from '@/lib/hr-utils';
 
 const prisma = new PrismaClient();
 
@@ -16,6 +17,25 @@ export async function GET() {
       );
     }
 
+    // Get current user's companyId
+    const companyId = await getCompanyId(session.user.id);
+    
+    if (!companyId) {
+      return NextResponse.json({
+        stats: {
+          totalApplications: 0,
+          newApplications: 0,
+          interviewApplications: 0,
+          successfulApplications: 0
+        },
+        applications: [],
+        jobs: [],
+        departments: [],
+        governmentQuestionnaires: [],
+        governmentResponses: []
+      });
+    }
+
     const [
       totalApplications,
       newApplications,
@@ -27,22 +47,46 @@ export async function GET() {
       governmentQuestionnaires,
       governmentResponses
     ] = await Promise.all([
-      prisma.jobApplication.count(),
+      prisma.jobApplication.count({
+        where: {
+          job: {
+            companyId: companyId,
+          },
+        },
+      }),
       prisma.jobApplication.count({
         where: {
           status: 'PENDING',
           createdAt: {
             gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-          }
+          },
+          job: {
+            companyId: companyId,
+          },
         }
       }),
       prisma.jobApplication.count({
-        where: { status: 'EMPLOYER_APPROVED' }
+        where: { 
+          status: 'EMPLOYER_APPROVED',
+          job: {
+            companyId: companyId,
+          },
+        }
       }),
       prisma.jobApplication.count({
-        where: { status: 'APPROVED' }
+        where: { 
+          status: 'APPROVED',
+          job: {
+            companyId: companyId,
+          },
+        }
       }),
       prisma.jobApplication.findMany({
+        where: {
+          job: {
+            companyId: companyId,
+          },
+        },
         orderBy: { createdAt: 'desc' },
         take: 10,
         include: {
@@ -73,7 +117,10 @@ export async function GET() {
         },
       }),
       prisma.job.findMany({
-        where: { status: 'ACTIVE' },
+        where: { 
+          status: 'ACTIVE',
+          companyId: companyId,
+        },
         select: {
           id: true,
           title: true,
@@ -94,6 +141,9 @@ export async function GET() {
         take: 10
       }),
       prisma.department.findMany({
+        where: {
+          companyId: companyId,
+        },
         select: {
           id: true,
           name: true,
@@ -102,7 +152,10 @@ export async function GET() {
         take: 50
       }),
       prisma.questionnaire.findMany({
-        where: { type: 'GOVERNMENT_EMPLOYEE' },
+        where: { 
+          type: 'GOVERNMENT_EMPLOYEE',
+          companyId: companyId,
+        },
         select: {
           id: true,
           title: true,
@@ -117,7 +170,17 @@ export async function GET() {
       }),
       prisma.questionnaireResponse.findMany({
         where: {
-          questionnaire: { type: 'GOVERNMENT_EMPLOYEE' }
+          questionnaire: { 
+            type: 'GOVERNMENT_EMPLOYEE',
+            companyId: companyId,
+          },
+          // Include responses from users in this company OR jobseekers (companyId: null)
+          user: {
+            OR: [
+              { companyId: companyId },
+              { companyId: null }, // Jobseekers who submitted questionnaires
+            ],
+          },
         },
         select: {
           id: true,

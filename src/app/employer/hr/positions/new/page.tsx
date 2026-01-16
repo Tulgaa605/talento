@@ -74,7 +74,6 @@ export default function NewPositionPage() {
 
   useEffect(() => {
     fetchDepartments();
-    generateCode();
     setCurrentDate(new Date().toLocaleString('mn-MN', { 
       year: 'numeric', 
       month: 'long', 
@@ -82,7 +81,7 @@ export default function NewPositionPage() {
       hour: '2-digit',
       minute: '2-digit'
     }));
-  }, [generateCode]);
+  }, []);
 
   useEffect(() => {
     if (occupationSearch.trim()) {
@@ -338,47 +337,6 @@ export default function NewPositionPage() {
                     </div>
                   </div>
                 )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Код *
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    required
-                    value={formData.code}
-                    onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Жишээ: DD00001"
-                  />
-                  <button
-                    type="button"
-                    onClick={generateCode}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-                  >
-                    Авто
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Хэлтэс *
-                </label>
-                <select
-                  required
-                  value={formData.departmentId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, departmentId: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Хэлтэс сонгох</option>
-                  {departments.map((department) => (
-                    <option key={department.id} value={department.id}>
-                      {department.name} ({department.code})
-                    </option>
-                  ))}
-                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

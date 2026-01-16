@@ -20,6 +20,7 @@ export async function POST(
     });
 
     if (!user || user.role !== "ADMIN") {
+      return NextResponse.json({})
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 

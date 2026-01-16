@@ -1,13 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getCompanyId } from '@/lib/hr-utils';
 
 const prisma = new PrismaClient();
 
 export async function GET() {
-  const rows = await prisma.penalty.findMany({ 
-    orderBy: { date: 'desc' },
-    take: 100
-  });
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Нэвтрээгүй байна' },
+        { status: 401 }
+      );
+    }
+
+    // Get current user's companyId
+    const companyId = await getCompanyId(session.user.id);
+    
+    if (!companyId) {
+      return NextResponse.json([]);
+    }
+
+    // Get employees directly by companyId
+    const companyEmployees = await prisma.employee.findMany({
+      where: {
+        companyId: companyId,
+      },
+      select: { employeeId: true },
+    });
+    const companyEmployeeIds = companyEmployees.map(e => e.employeeId);
+
+    // Get penalties for employees from this company
+    const rows = await prisma.penalty.findMany({ 
+      where: {
+        employeeId: {
+          in: companyEmployeeIds,
+        },
+      },
+      orderBy: { date: 'desc' },
+      take: 100
+    });
   const data = rows.map((p) => ({
     id: p.legacyId,
     employeeId: p.employeeId,
@@ -20,12 +55,60 @@ export async function GET() {
     decidedBy: p.decidedBy ?? '',
     orderNumber: p.orderNumber ?? '',
   }));
-  return NextResponse.json(data);
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Шийтгэлүүдийг авахад алдаа гарлаа:', error);
+    return NextResponse.json(
+      { error: 'Шийтгэлүүдийг авахад алдаа гарлаа' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Нэвтрээгүй байна' },
+        { status: 401 }
+      );
+    }
+
+    // Get current user's companyId
+    const companyId = await getCompanyId(session.user.id);
+    
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Компанийн мэдээлэл олдсонгүй' },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
+    
+    // Validate employee belongs to this company
+    if (body.employeeId) {
+      const employee = await prisma.employee.findUnique({
+        where: { employeeId: body.employeeId },
+        select: { companyId: true },
+      });
+      
+      if (!employee) {
+        return NextResponse.json(
+          { error: 'Ажилтан олдсонгүй' },
+          { status: 404 }
+        );
+      }
+      
+      if (employee.companyId !== companyId) {
+        return NextResponse.json(
+          { error: 'Энэ ажилтан танай компанид хамаарахгүй байна' },
+          { status: 403 }
+        );
+      }
+    }
     const created = await prisma.penalty.create({
       data: {
         legacyId: typeof body.id === 'number' ? body.id : Date.now(),

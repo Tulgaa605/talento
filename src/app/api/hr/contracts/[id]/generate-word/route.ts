@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { readFile, unlink, mkdir, readdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { generateContractWordAdvanced } from '@/utils/generateContractWord';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 type Params = { id: string };
 

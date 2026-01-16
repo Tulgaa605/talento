@@ -2,15 +2,16 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 import { TableSkeleton, PageHeaderSkeleton, SearchBarSkeleton, ListSkeleton } from '@/components/Skeletons';
 
@@ -65,12 +66,18 @@ interface UserItem {
 
 export default function EmployeesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'EMPLOYEES' | 'USERS'>('EMPLOYEES');
+  const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userDetails, setUserDetails] = useState<any>(null);
+  const [loadingUserDetails, setLoadingUserDetails] = useState(false);
+  const hasOpenedModalRef = useRef(false);
 
   // --- Fetchers wrapped in useCallback to satisfy exhaustive-deps ---
   const fetchEmployees = useCallback(async () => {
@@ -138,6 +145,95 @@ export default function EmployeesPage() {
     }
   }, [viewMode, users.length, usersLoading, fetchUsers]);
 
+  const handleUserClick = useCallback(async (user: UserItem) => {
+    setSelectedUser(user);
+    setShowUserModal(true);
+    setLoadingUserDetails(true);
+    
+    try {
+      // Fetch user details including questionnaire responses
+      const [userResponse, questionnaireResponsesResponse] = await Promise.all([
+        fetch(`/api/hr/users/${user.id}`),
+        fetch(`/api/hr/users/${user.id}/questionnaires`).catch((err) => {
+          console.error('Questionnaire responses fetch error:', err);
+          return null;
+        }),
+      ]);
+      
+      if (!userResponse.ok) {
+        const errorData = await userResponse.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('User fetch error:', errorData);
+        setUserDetails(null);
+        return;
+      }
+      
+      const userData = await userResponse.json();
+      const questionnaireData = questionnaireResponsesResponse?.ok 
+        ? await questionnaireResponsesResponse.json() 
+        : [];
+      
+      console.log('User data:', userData);
+      console.log('Questionnaire data:', questionnaireData);
+      
+      setUserDetails({
+        ...userData,
+        questionnaireResponses: questionnaireData || [],
+      });
+    } catch (error) {
+      console.error('Хэрэглэгчийн мэдээлэл авахад алдаа гарлаа:', error);
+      setUserDetails(null);
+    } finally {
+      setLoadingUserDetails(false);
+    }
+  }, []);
+
+  // Handle query parameters to open user modal
+  useEffect(() => {
+    const userId = searchParams.get('userId');
+    const openModal = searchParams.get('openModal');
+    const viewParam = searchParams.get('view');
+
+    if (viewParam === 'USERS') {
+      setViewMode('USERS');
+    }
+
+    if (userId && openModal === 'true' && !hasOpenedModalRef.current) {
+      hasOpenedModalRef.current = true;
+      
+      // If users are loaded, find and open modal
+      if (users.length > 0) {
+        const user = users.find(u => u.id === userId);
+        if (user) {
+          handleUserClick(user);
+          // Clean up URL
+          router.replace('/employer/hr/employees?view=USERS', { scroll: false });
+        }
+      } else if (!usersLoading && viewParam === 'USERS') {
+        // If users are not loaded yet, fetch them first
+        fetchUsers();
+      }
+    }
+
+    // Reset ref when userId changes
+    if (!userId || !openModal) {
+      hasOpenedModalRef.current = false;
+    }
+  }, [searchParams, users, usersLoading, fetchUsers, router, handleUserClick]);
+
+  // Open modal after users are loaded
+  useEffect(() => {
+    const userId = searchParams.get('userId');
+    const openModal = searchParams.get('openModal');
+    
+    if (userId && openModal === 'true' && users.length > 0 && hasOpenedModalRef.current && !showUserModal) {
+      const user = users.find(u => u.id === userId);
+      if (user) {
+        handleUserClick(user);
+        router.replace('/employer/hr/employees?view=USERS', { scroll: false });
+      }
+    }
+  }, [users, searchParams, showUserModal, router, handleUserClick]);
+
   const mergedEmployees = useMemo(() => {
     const adminApprovedUsers = users.map((u) => ({
       id: u.id,
@@ -198,7 +294,9 @@ export default function EmployeesPage() {
     return (
       (user.name || '').toLowerCase().includes(search) ||
       (user.email || '').toLowerCase().includes(search) ||
-      (user.phoneNumber || '').toLowerCase().includes(search)
+      (user.phoneNumber || '').toLowerCase().includes(search) ||
+      (user.position || '').toLowerCase().includes(search) ||
+      (user.department || '').toLowerCase().includes(search)
     );
   });
 
@@ -308,156 +406,151 @@ export default function EmployeesPage() {
             )}
           </div>
 
-          <div className="overflow-x-auto">
+          <div>
             {viewMode === 'EMPLOYEES' ? (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider w-3/4">
-                      Ажилтны мэдээлэл
-                    </th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider w-1/4">
-                      Үйлдэл
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredEmployees.map((employee) => (
-                    <tr
-                      key={employee.id}
-                      className={`hover:bg-gray-50 transition-colors ${employee.isUser ? 'bg-blue-50' : ''}`}
-                    >
-                      <td className="px-6 py-5">
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                            <div className="text-lg font-bold text-gray-900">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {filteredEmployees.map((employee) => (
+                  <div
+                    key={employee.id}
+                    className={`bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-200 ${employee.isUser ? 'border-2 border-blue-200' : ''}`}
+                  >
+                    <div className="p-4 sm:p-6">
+                      <div className="flex items-center justify-between mb-3 sm:mb-4">
+                        <div className="flex items-center min-w-0 flex-1">
+                          <UsersIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 mr-2 sm:mr-3 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                               {employee.firstName} {employee.middleName}
-                            </div>
-                            {employee.isUser && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                                Хэрэглэгч
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5">
-                            <div className="flex flex-col space-y-0.5">
-                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">ID дугаар</span>
-                              <span className="text-sm font-medium text-gray-900">{employee.employeeId}</span>
-                            </div>
-                            
-                            <div className="flex flex-col space-y-0.5">
-                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Имэйл хаяг</span>
-                              <span className="text-sm font-medium text-gray-900 break-all">{employee.email}</span>
-                            </div>
-                            
-                            {employee.phoneNumber && (
-                              <div className="flex flex-col space-y-0.5">
-                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Утасны дугаар</span>
-                                <span className="text-sm font-medium text-gray-900">{employee.phoneNumber}</span>
-                              </div>
-                            )}
-                            
-                            <div className="flex flex-col space-y-0.5">
-                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Албан тушаал</span>
-                              <span className="text-sm font-medium text-gray-900">{employee.position.title}</span>
-                            </div>
-                            
-                            <div className="flex flex-col space-y-0.5 md:col-span-2">
-                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Хэлтэс</span>
-                              <span className="text-sm font-medium text-gray-900">{employee.department.name}</span>
-                            </div>
+                            </h3>
+                            <p className="text-xs sm:text-sm text-gray-500">
+                              {employee.employeeId}
+                            </p>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center justify-center gap-3">
-                          {!employee.isUser ? (
-                            <>
-                              <Link
-                                href={`/employer/hr/employees/${employee.id}`}
-                                className="inline-flex items-center justify-center p-2 text-blue-600 hover:text-white hover:bg-blue-600 rounded-lg transition-colors border border-blue-600"
-                                title="Харах"
-                              >
-                                <EyeIcon className="h-5 w-5" />
-                              </Link>
-                              <Link
-                                href={`/employer/hr/employees/${employee.id}/edit`}
-                                className="inline-flex items-center justify-center p-2 text-green-600 hover:text-white hover:bg-green-600 rounded-lg transition-colors border border-green-600"
-                                title="Засах"
-                              >
-                                <PencilIcon className="h-5 w-5" />
-                              </Link>
-                              <button
-                                onClick={async () => {
-                                  if (confirm('Энэ ажилтныг устгахдаа итгэлтэй байна уу?')) {
-                                    try {
-                                      const response = await fetch(
-                                        `/api/hr/employees/${employee.id}`,
-                                        { method: 'DELETE' }
-                                      );
-                                      if (response.ok) {
-                                        alert('Ажилтныг амжилттай устгалаа');
-                                        fetchEmployees();
-                                      } else {
-                                        const error = await response.json();
-                                        alert(error.error || 'Алдаа гарлаа');
-                                      }
-                                    } catch (error) {
-                                      console.error('Ажилтныг устгахад алдаа гарлаа:', error);
-                                      alert('Алдаа гарлаа');
-                                    }
-                                  }
-                                }}
-                                className="inline-flex items-center justify-center p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-colors border border-red-600"
-                                title="Устгах"
-                              >
-                                <TrashIcon className="h-5 w-5" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <Link
-                                href={`/employer/hr/employees/new?userId=${employee.userData?.id}`}
-                                className="inline-flex items-center justify-center p-2 text-green-600 hover:text-white hover:bg-green-600 rounded-lg transition-colors border border-green-600"
-                                title="Ажилтан болгох"
-                              >
-                                <PencilIcon className="h-5 w-5" />
-                              </Link>
-                              <button
-                                onClick={async () => {
-                                  if (confirm('Энэ хэрэглэгчийг устгахдаа итгэлтэй байна уу?')) {
-                                    try {
-                                      const response = await fetch(
-                                        `/api/hr/users/${employee.userData?.id}`,
-                                        { method: 'DELETE' }
-                                      );
-                                      if (response.ok) {
-                                        alert('Хэрэглэгчийг амжилттай устгалаа');
-                                        fetchEmployees();
-                                      } else {
-                                        const error = await response.json();
-                                        alert(error.error || 'Алдаа гарлаа');
-                                      }
-                                    } catch (error) {
-                                      console.error('Хэрэглэгчийг устгахад алдаа гарлаа:', error);
-                                      alert('Алдаа гарлаа');
-                                    }
-                                  }
-                                }}
-                                className="inline-flex items-center justify-center p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-colors border border-red-600"
-                                title="Устгах"
-                              >
-                                <TrashIcon className="h-5 w-5" />
-                              </button>
-                            </>
-                          )}
+                        {employee.isUser && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 ml-2">
+                            Хэрэглэгч
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 mb-3 sm:mb-4">
+                        <div>
+                          <p className="text-xs text-gray-500">Имэйл</p>
+                          <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{employee.email}</p>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        {employee.phoneNumber && (
+                          <div>
+                            <p className="text-xs text-gray-500">Утас</p>
+                            <p className="text-xs sm:text-sm font-medium text-gray-900">{employee.phoneNumber}</p>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-xs text-gray-500">Албан тушаал</p>
+                          <p className="text-xs sm:text-sm font-medium text-gray-900">{employee.position.title}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Хэлтэс</p>
+                          <p className="text-xs sm:text-sm font-medium text-gray-900">{employee.department.name}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div className="flex space-x-1 sm:space-x-2">
+                            {!employee.isUser ? (
+                              <>
+                                <Link
+                                  href={`/employer/hr/employees/${employee.id}`}
+                                  className="text-blue-600 hover:text-blue-900 p-1"
+                                  title="Үзэх"
+                                >
+                                  <EyeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                </Link>
+                                <Link
+                                  href={`/employer/hr/employees/${employee.id}/edit`}
+                                  className="text-green-600 hover:text-green-900 p-1"
+                                  title="Засах"
+                                >
+                                  <PencilIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                </Link>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm('Энэ ажилтныг устгахдаа итгэлтэй байна уу?')) {
+                                      try {
+                                        const response = await fetch(
+                                          `/api/hr/employees/${employee.id}`,
+                                          { method: 'DELETE' }
+                                        );
+                                        if (response.ok) {
+                                          alert('Ажилтныг амжилттай устгалаа');
+                                          fetchEmployees();
+                                        } else {
+                                          const error = await response.json();
+                                          alert(error.error || 'Алдаа гарлаа');
+                                        }
+                                      } catch (error) {
+                                        console.error('Ажилтныг устгахад алдаа гарлаа:', error);
+                                        alert('Алдаа гарлаа');
+                                      }
+                                    }
+                                  }}
+                                  className="text-red-600 hover:text-red-900 p-1"
+                                  title="Устгах"
+                                >
+                                  <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <Link
+                                  href={`/employer/hr/employees/new?userId=${employee.userData?.id}`}
+                                  className="text-green-600 hover:text-green-900 p-1"
+                                  title="Ажилтан болгох"
+                                >
+                                  <PencilIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                </Link>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm('Энэ хэрэглэгчийг устгахдаа итгэлтэй байна уу?')) {
+                                      try {
+                                        const response = await fetch(
+                                          `/api/hr/users/${employee.userData?.id}`,
+                                          { method: 'DELETE' }
+                                        );
+                                        if (response.ok) {
+                                          alert('Хэрэглэгчийг амжилттай устгалаа');
+                                          fetchEmployees();
+                                        } else {
+                                          const error = await response.json();
+                                          alert(error.error || 'Алдаа гарлаа');
+                                        }
+                                      } catch (error) {
+                                        console.error('Хэрэглэгчийг устгахад алдаа гарлаа:', error);
+                                        alert('Алдаа гарлаа');
+                                      }
+                                    }
+                                  }}
+                                  className="text-red-600 hover:text-red-900 p-1"
+                                  title="Устгах"
+                                >
+                                  <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                          <Link
+                            href={`/employer/hr/employees/${employee.id}`}
+                            className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            Дэлгэрэнгүй →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
               <div>
                 {usersLoading ? (
@@ -465,120 +558,249 @@ export default function EmployeesPage() {
                     <ListSkeleton count={5} />
                   </div>
                 ) : (
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                          Хэрэглэгчийн мэдээлэл
-                        </th>
-                        <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider w-48">
-                          Гэрээ
-                        </th>
-                        <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider w-56">
-                          Статус
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredUsers.map((u) => (
-                        <tr 
-                          key={u.id} 
-                          className="hover:bg-gray-50 transition-colors cursor-pointer"
-                          onClick={() => router.push(`/employer/hr/employees/new?userId=${u.id}`)}
-                        >
-                          <td className="px-6 py-5">
-                            <div className="space-y-3">
-                              {/* Нэр */}
-                              <div className="pb-2 border-b border-gray-100">
-                                <div className="text-lg font-bold text-gray-900">
-                                  {u.name || 'Нэргүй хэрэглэгч'}
-                                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-6">
+                    {filteredUsers.map((u) => (
+                      <div
+                        key={u.id}
+                        className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                        onClick={() => handleUserClick(u)}
+                      >
+                        <div className="p-4 sm:p-6">
+                          <div className="flex items-center justify-between mb-3 sm:mb-4">
+                            <div className="flex items-center min-w-0 flex-1">
+                              <UsersIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 mr-2 sm:mr-3 flex-shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                                  {u.name || 'Хэрэглэгч'}
+                                </h3>
+                                <p className="text-xs sm:text-sm text-gray-500 truncate">{u.email}</p>
                               </div>
-                              
-                              {/* Мэдээлэл */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5">
-                                <div className="flex flex-col space-y-0.5">
-                                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Имэйл хаяг</span>
-                                  <span className="text-sm font-medium text-gray-900 break-all">{u.email}</span>
-                                </div>
-                                
-                                {u.phoneNumber && (
-                                  <div className="flex flex-col space-y-0.5">
-                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Утасны дугаар</span>
-                                    <span className="text-sm font-medium text-gray-900">{u.phoneNumber}</span>
-                                  </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 mb-3 sm:mb-4">
+                            {u.phoneNumber && (
+                              <div>
+                                <p className="text-xs text-gray-500">Утас</p>
+                                <p className="text-xs sm:text-sm font-medium text-gray-900">{u.phoneNumber}</p>
+                              </div>
+                            )}
+                            {u.position && (
+                              <div>
+                                <p className="text-xs text-gray-500">Албан тушаал</p>
+                                <p className="text-xs sm:text-sm font-medium text-gray-900">{u.position}</p>
+                              </div>
+                            )}
+                            {u.department && (
+                              <div>
+                                <p className="text-xs text-gray-500">Хэлтэс</p>
+                                <p className="text-xs sm:text-sm font-medium text-gray-900">{u.department}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+                            <div className="flex flex-col space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  u.hasContract ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {u.hasContract ? 'Гэрээтэй' : 'Гэрээгүй'}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {u.employerApproved && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                    Ажил олгогч
+                                  </span>
+                                )}
+                                {u.adminApproved && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                                    Админ
+                                  </span>
+                                )}
+                                {(u.status || 'PENDING') === 'APPROVED' && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                    Зөвшөөрөгдсөн
+                                  </span>
+                                )}
+                                {(u.status || 'PENDING') === 'EMPLOYER' && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                                    Ажил олгогч
+                                  </span>
+                                )}
+                                {(u.status || 'PENDING') !== 'APPROVED' && (u.status || 'PENDING') !== 'EMPLOYER' && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                                    Хүлээгдэж байна
+                                  </span>
                                 )}
                               </div>
+                              <div className="mt-2 flex items-center justify-between">
+                                <span className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                  Дэлгэрэнгүй харах →
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(`/employer/hr/employees/new?userId=${u.id}`);
+                                  }}
+                                  className="text-xs sm:text-sm px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                                >
+                                  Ажилтан болгох
+                                </button>
+                              </div>
                             </div>
-                          </td>
-                          <td className="px-6 py-5 text-center">
-                            {u.hasContract ? (
-                              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-800">
-                                ✓ Гэрээтэй
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold bg-gray-100 text-gray-800">
-                                ✗ Гэрээгүй
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-5">
-                            <div className="flex flex-wrap gap-2 justify-center">
-                              {u.employerApproved && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                  Ажил олгогч
-                                </span>
-                              )}
-                              {u.adminApproved && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                                  Админ
-                                </span>
-                              )}
-                              {u.approved && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
-                                  Бүрэн зөвшөөрсөн
-                                </span>
-                              )}
-                              {(u.status || 'PENDING') === 'APPROVED' && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                  Зөвшөөрөгдсөн
-                                </span>
-                              )}
-                              {(u.status || 'PENDING') === 'EMPLOYER' && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                                  Ажил олгогч
-                                </span>
-                              )}
-                              {(u.status || 'PENDING') !== 'APPROVED' && (u.status || 'PENDING') !== 'EMPLOYER' && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
-                                  Хүлээгдэж байна
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             )}
           </div>
 
-          {viewMode === 'EMPLOYEES'
-            ? filteredEmployees.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="text-gray-500">Ажилтны олдсонгүй</div>
-                </div>
-              )
-            : filteredUsers.length === 0 &&
-              !usersLoading && (
-                <div className="text-center py-12">
-                  <div className="text-gray-500">Хэрэглэгч олдсонгүй</div>
-                </div>
-              )}
+          {viewMode === 'EMPLOYEES' && filteredEmployees.length === 0 && (
+            <div className="text-center py-8 sm:py-12">
+              <UsersIcon className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+              <div className="text-sm sm:text-base text-gray-500">
+                {searchTerm ? 'Хайлтын үр дүн олдсонгүй' : 'Ажилтан олдсонгүй'}
+              </div>
+            </div>
+          )}
+          {viewMode === 'USERS' && filteredUsers.length === 0 && !usersLoading && (
+            <div className="text-center py-8 sm:py-12">
+              <UsersIcon className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+              <div className="text-sm sm:text-base text-gray-500">
+                {searchTerm ? 'Хайлтын үр дүн олдсонгүй' : 'Хэрэглэгч олдсонгүй'}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* User Details Modal */}
+      {showUserModal && selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white w-full max-w-4xl rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-lg font-semibold text-[#0C213A]">
+                {selectedUser.name || 'Хэрэглэгч'} - Дэлгэрэнгүй мэдээлэл
+              </h3>
+              <button
+                onClick={() => {
+                  setShowUserModal(false);
+                  setSelectedUser(null);
+                  setUserDetails(null);
+                }}
+                className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-6">
+              {loadingUserDetails ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Basic User Info */}
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Үндсэн мэдээлэл</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Нэр</p>
+                        <p className="text-lg font-medium text-gray-900">{selectedUser.name || 'Тодорхойгүй'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Имэйл</p>
+                        <p className="text-lg font-medium text-gray-900">{selectedUser.email || 'Тодорхойгүй'}</p>
+                      </div>
+                      {selectedUser.phoneNumber && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Утас</p>
+                          <p className="text-lg font-medium text-gray-900">{selectedUser.phoneNumber}</p>
+                        </div>
+                      )}
+                      {selectedUser.position && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Албан тушаал</p>
+                          <p className="text-lg font-medium text-gray-900">{selectedUser.position}</p>
+                        </div>
+                      )}
+                      {selectedUser.department && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Хэлтэс</p>
+                          <p className="text-lg font-medium text-gray-900">{selectedUser.department}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Questionnaire Responses */}
+                  {userDetails?.questionnaireResponses && userDetails.questionnaireResponses.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                        Албан хаагчийн анкет ({userDetails.questionnaireResponses.length})
+                      </h4>
+                      <div className="space-y-4">
+                        {userDetails.questionnaireResponses.map((response: any) => (
+                          <div key={response.id} className="p-4 border border-gray-200 rounded-lg">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="font-semibold text-gray-900">
+                                  {response.questionnaire?.title || 'Анкет'}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  {new Date(response.createdAt).toLocaleDateString('mn-MN')}
+                                </p>
+                              </div>
+                            </div>
+                            {response.formData && (
+                              <div className="mt-3">
+                                <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-40">
+                                  {typeof response.formData === 'string' 
+                                    ? response.formData 
+                                    : JSON.stringify(response.formData, null, 2)}
+                                </pre>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">
+              <button
+                onClick={() => {
+                  setShowUserModal(false);
+                  setSelectedUser(null);
+                  setUserDetails(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+              >
+                Хаах
+              </button>
+              {selectedUser && (
+                <button
+                  onClick={() => {
+                    setShowUserModal(false);
+                    router.push(`/employer/hr/employees/new?userId=${selectedUser.id}`);
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Ажилтан болгох
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </>
   );

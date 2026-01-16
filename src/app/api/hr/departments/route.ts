@@ -1,45 +1,117 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getCompanyId } from '@/lib/hr-utils';
 
 const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    const departments = await prisma.department.findMany({
-      select: {
-        id: true,
-        name: true,
-        code: true,
-        description: true,
-        createdAt: true,
-        positions: {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Нэвтрээгүй байна' },
+        { status: 401 }
+      );
+    }
+
+    // Get current user's companyId
+    const companyId = await getCompanyId(session.user.id);
+    
+    if (!companyId) {
+      return NextResponse.json([]);
+    }
+
+    // Get departments by companyId directly
+    // Also include departments with null companyId (for backward compatibility)
+    // Note: If companyId field doesn't exist in database yet, this will return all departments
+    let departments;
+    try {
+      departments = await prisma.department.findMany({
+        where: {
+          OR: [
+            { companyId: companyId },
+            { companyId: null }, // Include old departments without companyId
+          ],
+        },
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          description: true,
+          createdAt: true,
+          positions: {
+            select: {
+              id: true,
+              title: true,
+              code: true,
+            },
+            take: 50,
+          },
+          employees: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              middleName: true,
+              employeeId: true,
+            },
+            take: 50,
+          },
+        },
+        orderBy: { name: 'asc' },
+        take: 100,
+      });
+    } catch (error: any) {
+      // If companyId field doesn't exist yet, get all departments
+      // This handles the case when schema is updated but database migration hasn't run
+      if (error?.message?.includes('companyId') || error?.code === 'P2009') {
+        console.warn('companyId field not found, fetching all departments');
+        departments = await prisma.department.findMany({
           select: {
             id: true,
-            title: true,
+            name: true,
             code: true,
+            description: true,
+            createdAt: true,
+            positions: {
+              select: {
+                id: true,
+                title: true,
+                code: true,
+              },
+              take: 50,
+            },
+            employees: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                middleName: true,
+                employeeId: true,
+              },
+              take: 50,
+            },
           },
-          take: 50,
-        },
-        employees: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            middleName: true,
-            employeeId: true,
-          },
-          take: 50,
-        },
-      },
-      orderBy: { name: 'asc' },
-      take: 100,
-    });
+          orderBy: { name: 'asc' },
+          take: 100,
+        });
+      } else {
+        throw error;
+      }
+    }
 
     return NextResponse.json(departments);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Хэлтсүүдийг авахад алдаа гарлаа:', error);
+    // Return more detailed error message for debugging
     return NextResponse.json(
-      { error: 'Хэлтсүүдийг авахад алдаа гарлаа' },
+      { 
+        error: 'Хэлтсүүдийг авахад алдаа гарлаа',
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      },
       { status: 500 }
     );
   }
@@ -47,6 +119,25 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Нэвтрээгүй байна' },
+        { status: 401 }
+      );
+    }
+
+    // Get current user's companyId
+    const companyId = await getCompanyId(session.user.id);
+    
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Компанийн мэдээлэл олдсонгүй' },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
     const { name, description, code } = body;
 
@@ -68,17 +159,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const department = await prisma.department.create({
-      data: {
-        name,
-        description,
-        code,
-      },
-      include: {
-        positions: true,
-        employees: true,
-      },
-    });
+    // Try to create with companyId, if field doesn't exist, create without it
+    let department;
+    try {
+      department = await prisma.department.create({
+        data: {
+          name,
+          description,
+          code,
+          companyId: companyId, // Link department to company
+        },
+        include: {
+          positions: true,
+          employees: true,
+        },
+      });
+    } catch (error: any) {
+      // If companyId field doesn't exist yet, create without it
+      if (error?.message?.includes('companyId') || error?.code === 'P2009') {
+        console.warn('companyId field not found, creating department without companyId');
+        department = await prisma.department.create({
+          data: {
+            name,
+            description,
+            code,
+          },
+          include: {
+            positions: true,
+            employees: true,
+          },
+        });
+      } else {
+        throw error;
+      }
+    }
 
     return NextResponse.json(department, { status: 201 });
   } catch (error) {

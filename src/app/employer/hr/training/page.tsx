@@ -326,8 +326,8 @@ export default function TrainingPage() {
         'Агуулга': t.content || '',
         'Эхлэх огноо': t.startDate,
         'Дуусах огноо': t.endDate,
-        'Байршил': t.location || '',
-        'Багш': t.instructor || '',
+        'Сургалтын хэлбэр': t.location || '',
+        'Сургалт явуулагч': t.instructor || '',
         'Оролцогчдын тоо': t.participants,
         'Төлөв': t.status,
         'Явц (%)': t.progress,
@@ -569,8 +569,8 @@ export default function TrainingPage() {
                     <p><span className="font-medium">Зорилго:</span> {training.objective}</p>
                     <p><span className="font-medium">Агуулга:</span> {training.content}</p>
                     <p><span className="font-medium">Огноо:</span> {training.startDate} - {training.endDate}</p>
-                    <p><span className="font-medium">Байршил:</span> {training.location}</p>
-                    <p><span className="font-medium">Багш:</span> {training.instructor}</p>
+                    <p><span className="font-medium">Сургалтын хэлбэр:</span> {training.location}</p>
+                    <p><span className="font-medium">Сургалт явуулагч:</span> {training.instructor}</p>
                     <p><span className="font-medium">Оролцогч:</span> {training.participants} хүн</p>
                   </div>
                   <div className="mt-4 flex space-x-2">
@@ -779,7 +779,7 @@ export default function TrainingPage() {
                   <p className="font-medium text-[#0C213A]">{selectedTraining.type}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Багш</p>
+                  <p className="text-gray-500">Сургалт явуулагч</p>
                   <p className="font-medium text-[#0C213A]">{selectedTraining.instructor}</p>
                 </div>
                 <div>
@@ -787,7 +787,7 @@ export default function TrainingPage() {
                   <p className="font-medium text-[#0C213A]">{selectedTraining.startDate} - {selectedTraining.endDate}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Байршил</p>
+                  <p className="text-gray-500">Сургалтын хэлбэр</p>
                   <p className="font-medium text-[#0C213A]">{selectedTraining.location}</p>
                 </div>
                 <div>
@@ -915,8 +915,6 @@ export default function TrainingPage() {
                   <select name="type" className="w-full border border-gray-300 rounded-lg px-3 py-2">
                     <option value="Дотоод">Дотоод</option>
                     <option value="Гадаад">Гадаад</option>
-                    <option value="Онлайн">Онлайн</option>
-                    <option value="Заавал">Танхим</option>
                   </select>
                 </div>
                 <div>
@@ -928,12 +926,19 @@ export default function TrainingPage() {
                   <input name="endDate" type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2" required />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 mb-1">Байршил</label>
-                  <input name="location" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                  <label className="block text-sm text-gray-600 mb-1">Сургалтын хэлбэр</label>
+                  <select name="type" className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="Онлайн">Онлайн</option>
+                    <option value="Заавал">Танхим</option>
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 mb-1">Багш</label>
-                  <input name="instructor" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                  <label className="block text-sm text-gray-600 mb-1">Сургалт явуулагч</label>
+                  <select name="instructor" className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="Хувь хүн">Хувь хүн</option>
+                    <option value="Сургалтын төв">Сургалтын төв</option>
+                    <option value="Комани">Комани</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Оролцогчдын тоо</label>
@@ -984,12 +989,10 @@ export default function TrainingPage() {
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Төрөл</label>
                   <select name="type" defaultValue={editingTraining.type} className="w-full border border-gray-300 rounded-lg px-3 py-2">
-                    <option value="Дотоод">Дотоод</option>
-                    <option value="Гадаад">Гадаад</option>
-                    <option value="Онлайн">Онлайн</option>
-                    <option value="Заавал">Танхим</option>
+                    <option value={"Дотоод"}>Дотоод</option>
+                    <option value={"Гадаад"}>Гадаад</option>
                   </select>
-                </div>
+                </div>м
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Эхлэх огноо</label>
                   <input name="startDate" type="date" defaultValue={editingTraining.startDate} className="w-full border border-gray-300 rounded-lg px-3 py-2" required />
@@ -999,12 +1002,19 @@ export default function TrainingPage() {
                   <input name="endDate" type="date" defaultValue={editingTraining.endDate} className="w-full border border-gray-300 rounded-lg px-3 py-2" required />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 mb-1">Байршил</label>
-                  <input name="location" defaultValue={editingTraining.location} className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                  <label className="block text-sm text-gray-600 mb-1">Сургалтын хэлбэр</label>
+                  <select name="location" defaultValue={editingTraining.location} className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="Онлайн">Онлайн</option>
+                    <option value="Заавал">Танхим</option>
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 mb-1">Багш</label>
-                  <input name="instructor" defaultValue={editingTraining.instructor} className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                  <label className="block text-sm text-gray-600 mb-1">Сургалт явуулагч</label>
+                  <select name="instructor" defaultValue={editingTraining.instructor} className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="Хувь хүн">Хувь хүн</option>
+                    <option value="Сургалтын төв">Сургалтын төв</option>
+                    <option value="Комани">Комани</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">Оролцогчдын тоо</label>

@@ -168,43 +168,6 @@ export default function EditPositionPage() {
                   className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Тушаалын код *
-                </label>
-                <input
-                  type="text"
-                  name="code"
-                  value={formData.code}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Хэлтэс *
-                </label>
-                <select
-                  name="departmentId"
-                  value={formData.departmentId}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Хэлтэс сонгох</option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.name} ({dept.code})
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-2 text-xs text-amber-600">
-                  ⚠️ Хэлтэс солих нь энэ албан тушаалд ажиллаж буй БҮХ ажилтнуудыг шинэ хэлтэст автоматаар шилжүүлнэ.
-                </p>
-              </div>
             </div>
 
             <div>

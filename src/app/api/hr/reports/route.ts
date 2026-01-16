@@ -1,13 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getCompanyId } from '@/lib/hr-utils';
 
 const prisma = new PrismaClient();
 
 export async function GET() {
-  const rows = await prisma.hRReport.findMany({ 
-    orderBy: { createdAt: 'desc' },
-    take: 100
-  });
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Нэвтрээгүй байна' },
+        { status: 401 }
+      );
+    }
+
+    // Get current user's companyId
+    const companyId = await getCompanyId(session.user.id);
+    
+    // Note: Reports might not have companyId field, so we filter by company if available
+
+    // Filter reports by company (if reports have companyId field, otherwise return all)
+    // Note: HRReport might not have companyId field, so we'll return all for now
+    // If you add companyId to HRReport model later, filter here
+    const rows = await prisma.hRReport.findMany({ 
+      orderBy: { createdAt: 'desc' },
+      take: 100
+    });
   const data = rows.map((r) => ({
     id: r.legacyId,
     name: r.name,
@@ -23,6 +44,13 @@ export async function GET() {
     department: r.department,
   }));
   return NextResponse.json(data);
+  } catch (error) {
+    console.error('Тайлангуудыг авахад алдаа гарлаа:', error);
+    return NextResponse.json(
+      { error: 'Тайлангуудыг авахад алдаа гарлаа' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {

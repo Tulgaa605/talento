@@ -722,7 +722,7 @@ export default function NewEmployeePage() {
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-1">Санхүүгийн мэдээлэл</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Банк *</label>
                   <select
                     name="bankName"
@@ -740,10 +740,10 @@ export default function NewEmployeePage() {
                     <option value="Капитрон банк">Капитрон банк</option>
                     <option value="Арилжааны банк бусад">Бусад</option>
                   </select>
-                </div>
+                </div> */}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Дансны дугаар *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Ибан банкны дугаар *</label>
                   <input
                     type="text"
                     name="bankAccountNumber"
