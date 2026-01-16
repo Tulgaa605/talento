@@ -51,52 +51,95 @@ export async function GET(request: NextRequest) {
       where.positionId = positionId;
     }
 
-    const employees = await prisma.employee.findMany({
-      where,
-      select: {
-        id: true,
-        employeeId: true,
-        firstName: true,
-        lastName: true,
-        middleName: true,
-        email: true,
-        phoneNumber: true,
-        status: true,
-        hireDate: true,
-        position: {
-          select: {
-            title: true,
-            department: {
-              select: { name: true }
+    try {
+      const employees = await prisma.employee.findMany({
+        where,
+        select: {
+          id: true,
+          employeeId: true,
+          firstName: true,
+          lastName: true,
+          middleName: true,
+          email: true,
+          phoneNumber: true,
+          status: true,
+          hireDate: true,
+          position: {
+            select: {
+              title: true,
+              department: {
+                select: { name: true }
+              }
             }
-          }
-        },
-        department: {
-          select: { name: true }
-        },
-        manager: {
-          select: { firstName: true, lastName: true }
-        },
-        contracts: {
-          where: { status: EmploymentContractStatus.ACTIVE },
-          select: {
-            contractNumber: true,
-            contractType: true,
-            salary: true,
-            currency: true
           },
-          orderBy: { startDate: 'desc' },
-          take: 1,
+          department: {
+            select: { name: true }
+          },
+          manager: {
+            select: { firstName: true, lastName: true }
+          },
+          contracts: {
+            where: { status: EmploymentContractStatus.ACTIVE },
+            select: {
+              contractNumber: true,
+              contractType: true,
+              salary: true,
+              currency: true
+            },
+            orderBy: { startDate: 'desc' },
+            take: 1,
+          },
         },
-      },
-      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
-      take: 200,
-    });
+        orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+        take: 200,
+      });
 
-    return NextResponse.json(employees);
-  } catch {
+      // Filter out employees with null position or department
+      const validEmployees = employees.filter(emp => emp.position && emp.department);
+      
+      return NextResponse.json(validEmployees);
+    } catch (queryError) {
+      console.error('Prisma query error:', queryError);
+      // If query fails, try a simpler query without relations
+      const employees = await prisma.employee.findMany({
+        where,
+        select: {
+          id: true,
+          employeeId: true,
+          firstName: true,
+          lastName: true,
+          middleName: true,
+          email: true,
+          phoneNumber: true,
+          status: true,
+          hireDate: true,
+          positionId: true,
+          departmentId: true,
+        },
+        orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+        take: 200,
+      });
+
+      // Filter employees that have both positionId and departmentId
+      const validEmployees = employees
+        .filter(emp => emp.positionId && emp.departmentId)
+        .map(emp => ({
+          ...emp,
+          position: { title: 'Тодорхойгүй', department: { name: 'Тодорхойгүй' } },
+          department: { name: 'Тодорхойгүй' },
+          manager: null,
+          contracts: [],
+        }));
+
+      return NextResponse.json(validEmployees);
+    }
+  } catch (error) {
+    console.error('Ажилтнуудыг авахад алдаа гарлаа:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Error details:', { message: errorMessage, stack: errorStack });
     return NextResponse.json(
-      { error: 'Ажилтнуудыг авахад алдаа гарлаа' },
+      { error: 'Ажилтнуудыг авахад алдаа гарлаа', details: errorMessage },
       { status: 500 }
     );
   }
