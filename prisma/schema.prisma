@@ -10,7 +10,7 @@ datasource db {
 enum UserRole {
   USER
   EMPLOYER
-  ADMIN 
+  ADMIN
 }
 
 enum UserStatus {
@@ -68,26 +68,26 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  profileImageUrl String?
-  phoneNumber     String?
-  facebookUrl     String?
-  position        String?
-  department      String?
-  role          UserRole  @default(USER)
-  status        UserStatus @default(PENDING)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  accounts      Account[]
-  sessions      Session[]
-  company       Company?  @relation(fields: [companyId], references: [id])
-  companyId     String?   @db.ObjectId
-  cvs           CV[]
+  id                 String     @id @default(auto()) @map("_id") @db.ObjectId
+  name               String?
+  email              String?    @unique
+  emailVerified      DateTime?
+  image              String?
+  password           String?
+  profileImageUrl    String?
+  phoneNumber        String?
+  facebookUrl        String?
+  position           String?
+  department         String?
+  role               UserRole   @default(USER)
+  status             UserStatus @default(PENDING)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  accounts           Account[]
+  sessions           Session[]
+  company            Company?   @relation(fields: [companyId], references: [id])
+  companyId          String?    @db.ObjectId
+  cvs                CV[]
   companyName        String?
   companyDescription String?
   location           String?
@@ -95,11 +95,11 @@ model User {
   logoUrl            String?
   coverImageUrl      String?
 
-  jobApplications JobApplication[]
-  savedJobs     SavedJob[]
+  jobApplications        JobApplication[]
+  savedJobs              SavedJob[]
   questionnaireResponses QuestionnaireResponse[]
-  passwordResets PasswordReset[]
-  notifications Notification[]
+  passwordResets         PasswordReset[]
+  notifications          Notification[]
 
   @@index([role])
   @@index([status])
@@ -108,47 +108,48 @@ model User {
 }
 
 model Company {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  name              String
-  description       String?
-  location          String?
-  website           String?
-  logoUrl           String?
-  coverImageUrl     String?  @db.String
-  registrationNumber String?  @unique
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  users             User[]
-  jobs              Job[]
-  questionnaires   Questionnaire[]
-  departments      Department[]
-  employees         Employee[]
+  id                 String          @id @default(auto()) @map("_id") @db.ObjectId
+  name               String
+  description        String?
+  location           String?
+  website            String?
+  logoUrl            String?
+  coverImageUrl      String?         @db.String
+  registrationNumber String?         @unique
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  positions          Position[]
+  users              User[]
+  jobs               Job[]
+  questionnaires     Questionnaire[]
+  departments        Department[]
+  employees          Employee[]
 
   @@index([name])
 }
 
 model Job {
-  id               String    @id @default(auto()) @map("_id") @db.ObjectId
-  title            String
-  description      String
-  requirements     String?
-  location         String
-  salary           String?
-  type             JobType   @default(FULL_TIME)
-  status           JobStatus @default(ACTIVE)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  company          Company   @relation(fields: [companyId], references: [id])
-  companyId        String    @db.ObjectId
-  applications     JobApplication[]
-  companyUrl       String?
-  contactPhone     String?
-  workHours        String?
-  skills           String   @default("[]")
-  savedBy          SavedJob[]
+  id                String           @id @default(auto()) @map("_id") @db.ObjectId
+  title             String
+  description       String
+  requirements      String?
+  location          String
+  salary            String?
+  type              JobType          @default(FULL_TIME)
+  status            JobStatus        @default(ACTIVE)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  company           Company          @relation(fields: [companyId], references: [id])
+  companyId         String           @db.ObjectId
+  applications      JobApplication[]
+  companyUrl        String?
+  contactPhone      String?
+  workHours         String?
+  skills            String           @default("[]")
+  savedBy           SavedJob[]
   jobProfessionCode String?
   jobProfessionName String?
-  otherInfo        String?
+  otherInfo         String?
 
   @@index([status])
   @@index([companyId])
@@ -157,17 +158,17 @@ model Job {
 }
 
 model CV {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  fileName    String
-  fileUrl     String?
-  content     String?
-  analysis    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String   @db.ObjectId
-  status      String?  @default("PENDING")
-  matchScore  Float?
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  fileName     String
+  fileUrl      String?
+  content      String?
+  analysis     String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  user         User             @relation(fields: [userId], references: [id])
+  userId       String           @db.ObjectId
+  status       String?          @default("PENDING")
+  matchScore   Float?
   applications JobApplication[]
 
   @@index([userId])
@@ -175,20 +176,20 @@ model CV {
 }
 
 model JobApplication {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  viewedAt  DateTime?
-  status    JobApplicationStatus   @default(PENDING)
-  message   String?
-  job       Job      @relation(fields: [jobId], references: [id])
-  jobId     String   @db.ObjectId
-  user      User?    @relation(fields: [userId], references: [id])
-  userId    String?  @db.ObjectId
-  cv        CV?      @relation(fields: [cvId], references: [id])
-  cvId      String?  @db.ObjectId
-  questionnaire Questionnaire? @relation(fields: [questionnaireId], references: [id])
-  questionnaireId String? @db.ObjectId
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  viewedAt        DateTime?
+  status          JobApplicationStatus @default(PENDING)
+  message         String?
+  job             Job                  @relation(fields: [jobId], references: [id])
+  jobId           String               @db.ObjectId
+  user            User?                @relation(fields: [userId], references: [id])
+  userId          String?              @db.ObjectId
+  cv              CV?                  @relation(fields: [cvId], references: [id])
+  cvId            String?              @db.ObjectId
+  questionnaire   Questionnaire?       @relation(fields: [questionnaireId], references: [id])
+  questionnaireId String?              @db.ObjectId
 
   @@unique([jobId, userId])
   @@index([userId])
@@ -211,47 +212,47 @@ model SavedJob {
 }
 
 model Questionnaire {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  description String?
-  type        String     @default("CUSTOM")
+  id             String                  @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  description    String?
+  type           String                  @default("CUSTOM")
   attachmentFile String?
   attachmentUrl  String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  company     Company    @relation(fields: [companyId], references: [id])
-  companyId   String     @db.ObjectId
-  questions   Question[]
-  responses   QuestionnaireResponse[]
-  applications JobApplication[]
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  company        Company                 @relation(fields: [companyId], references: [id])
+  companyId      String                  @db.ObjectId
+  questions      Question[]
+  responses      QuestionnaireResponse[]
+  applications   JobApplication[]
 
   @@index([companyId])
   @@index([type])
 }
 
 model Question {
-  id             String     @id @default(auto()) @map("_id") @db.ObjectId
-  text           String
-  type           String
-  required       Boolean    @default(false)
-  options        String[]
-  order          Int
-  questionnaire  Questionnaire @relation(fields: [questionnaireId], references: [id])
-  questionnaireId String    @db.ObjectId
-  answers        Answer[]
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  text            String
+  type            String
+  required        Boolean       @default(false)
+  options         String[]
+  order           Int
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id])
+  questionnaireId String        @db.ObjectId
+  answers         Answer[]
 }
 
 model QuestionnaireResponse {
-  id             String     @id @default(auto()) @map("_id") @db.ObjectId
-  createdAt      DateTime   @default(now())
-  questionnaire  Questionnaire @relation(fields: [questionnaireId], references: [id])
-  questionnaireId String    @db.ObjectId
-  formData       Json?
-  user           User       @relation(fields: [userId], references: [id])
-  userId         String     @db.ObjectId
-  answers        Answer[]
-  attachmentFile String?
-  attachmentUrl  String?
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt       DateTime      @default(now())
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id])
+  questionnaireId String        @db.ObjectId
+  formData        Json?
+  user            User          @relation(fields: [userId], references: [id])
+  userId          String        @db.ObjectId
+  answers         Answer[]
+  attachmentFile  String?
+  attachmentUrl   String?
 
   @@index([questionnaireId])
   @@index([userId])
@@ -259,12 +260,12 @@ model QuestionnaireResponse {
 }
 
 model Answer {
-  id                    String     @id @default(auto()) @map("_id") @db.ObjectId
+  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
   value                 String
-  question              Question   @relation(fields: [questionId], references: [id])
-  questionId            String     @db.ObjectId
+  question              Question              @relation(fields: [questionId], references: [id])
+  questionId            String                @db.ObjectId
   questionnaireResponse QuestionnaireResponse @relation(fields: [responseId], references: [id])
-  responseId            String     @db.ObjectId
+  responseId            String                @db.ObjectId
 }
 
 model Notification {
@@ -317,14 +318,14 @@ enum DecisionStatus {
 }
 
 model Department {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String?
-  code        String   @unique
-  company     Company? @relation(fields: [companyId], references: [id])
-  companyId   String?  @db.ObjectId
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  code        String     @unique
+  company     Company?   @relation(fields: [companyId], references: [id])
+  companyId   String?    @db.ObjectId
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   employees   Employee[]
   positions   Position[]
 
@@ -333,63 +334,67 @@ model Department {
 }
 
 model Position {
-  id               String     @id @default(auto()) @map("_id") @db.ObjectId
-  title            String
-  description      String?
-  code             String     @unique
-  department       Department @relation(fields: [departmentId], references: [id])
-  departmentId     String     @db.ObjectId
-  salaryRange      String?
-  requirements     String?
+  id                String     @id @default(auto()) @map("_id") @db.ObjectId
+  title             String
+  description       String?
+  code              String
+  department        Department @relation(fields: [departmentId], references: [id])
+  departmentId      String     @db.ObjectId
+  company           Company?   @relation(fields: [companyId], references: [id])
+  companyId         String?    @db.ObjectId
+  salaryRange       String?
+  requirements      String?
   jobProfessionCode String?
   jobProfessionName String?
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-  employees        Employee[]
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  employees         Employee[]
 
+  @@unique([code, companyId])
   @@index([departmentId])
+  @@index([companyId])
   @@index([title])
 }
 
 model Employee {
-  id              String         @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId      String         @unique
-  firstName       String
-  lastName        String
-  middleName      String?
-  email           String         @unique
-  phoneNumber     String
-  dateOfBirth     DateTime
-  gender          String
-  address         String
-  emergencyContact String?
-  emergencyPhone  String?
-  status          EmployeeStatus @default(ACTIVE)
-  hireDate        DateTime
-  terminationDate DateTime?
-  position        Position       @relation(fields: [positionId], references: [id])
-  positionId      String         @db.ObjectId
-  department      Department     @relation(fields: [departmentId], references: [id])
-  departmentId    String         @db.ObjectId
-  company         Company?       @relation(fields: [companyId], references: [id])
-  companyId       String?       @db.ObjectId
-  jobClassification JobClassification? @relation(fields: [jobClassificationId], references: [id])
-  jobClassificationId String?    @db.ObjectId
-  manager         Employee?      @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  managerId       String?        @db.ObjectId
-  subordinates    Employee[]     @relation("EmployeeManager")
-  contracts       EmploymentContract[]
-  decisions       Decision[]
-  documents       EmployeeDocument[]
-  salaryStructures SalaryStructure[]
-  salaryCalculations SalaryCalculation[]
-  salaryAllowances SalaryAllowance[]
-  salaryDeductions SalaryDeduction[]
-  leaveBalances   LeaveBalance[]
-  leaveRequests   LeaveRequest[]
-  leaveSchedules  LeaveSchedule[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id                  String               @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId          String               @unique
+  firstName           String
+  lastName            String
+  middleName          String?
+  email               String               @unique
+  phoneNumber         String
+  dateOfBirth         DateTime
+  gender              String
+  address             String
+  emergencyContact    String?
+  emergencyPhone      String?
+  status              EmployeeStatus       @default(ACTIVE)
+  hireDate            DateTime
+  terminationDate     DateTime?
+  position            Position             @relation(fields: [positionId], references: [id])
+  positionId          String               @db.ObjectId
+  department          Department           @relation(fields: [departmentId], references: [id])
+  departmentId        String               @db.ObjectId
+  company             Company?             @relation(fields: [companyId], references: [id])
+  companyId           String?              @db.ObjectId
+  jobClassification   JobClassification?   @relation(fields: [jobClassificationId], references: [id])
+  jobClassificationId String?              @db.ObjectId
+  manager             Employee?            @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  managerId           String?              @db.ObjectId
+  subordinates        Employee[]           @relation("EmployeeManager")
+  contracts           EmploymentContract[]
+  decisions           Decision[]
+  documents           EmployeeDocument[]
+  salaryStructures    SalaryStructure[]
+  salaryCalculations  SalaryCalculation[]
+  salaryAllowances    SalaryAllowance[]
+  salaryDeductions    SalaryDeduction[]
+  leaveBalances       LeaveBalance[]
+  leaveRequests       LeaveRequest[]
+  leaveSchedules      LeaveSchedule[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   @@index([lastName, firstName])
   @@index([departmentId])
@@ -406,24 +411,24 @@ enum EmploymentContractStatus {
 }
 
 model EmploymentContract {
-  id              String                     @id @default(auto()) @map("_id") @db.ObjectId
-  contractNumber  String                     @unique
-  employee        Employee                   @relation(fields: [employeeId], references: [id])
-  employeeId      String                     @db.ObjectId
+  id              String                   @id @default(auto()) @map("_id") @db.ObjectId
+  contractNumber  String                   @unique
+  employee        Employee                 @relation(fields: [employeeId], references: [id])
+  employeeId      String                   @db.ObjectId
   contractType    ContractType
   workConditions  String?
   startDate       DateTime
   endDate         DateTime?
   salary          Float
-  currency        String                     @default("MNT")
+  currency        String                   @default("MNT")
   probationPeriod Int?
   workSchedule    String?
   benefits        String?
   terms           String?
-  status          EmploymentContractStatus   @default(ACTIVE)
+  status          EmploymentContractStatus @default(ACTIVE)
   documentUrl     String?
-  createdAt       DateTime                   @default(now())
-  updatedAt       DateTime                   @updatedAt
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
 
   @@index([employeeId])
   @@index([status])
@@ -431,22 +436,22 @@ model EmploymentContract {
 }
 
 model Decision {
-  id            String         @id @default(auto()) @map("_id") @db.ObjectId
-  decisionNumber String        @unique
-  title         String
-  description   String
-  type          DecisionType
-  employee      Employee       @relation(fields: [employeeId], references: [id])
-  employeeId    String         @db.ObjectId
-  decisionDate  DateTime
-  effectiveDate DateTime?
-  reason        String?
-  details       String?
-  documentUrl   String?
-  status        DecisionStatus @default(ACTIVE)
-  createdBy     String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  decisionNumber String         @unique
+  title          String
+  description    String
+  type           DecisionType
+  employee       Employee       @relation(fields: [employeeId], references: [id])
+  employeeId     String         @db.ObjectId
+  decisionDate   DateTime
+  effectiveDate  DateTime?
+  reason         String?
+  details        String?
+  documentUrl    String?
+  status         DecisionStatus @default(ACTIVE)
+  createdBy      String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@index([employeeId])
   @@index([status])
@@ -455,18 +460,18 @@ model Decision {
 }
 
 model EmployeeDocument {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   type        String
-  employee    Employee @relation(fields: [employeeId], references: [id])
-  employeeId  String   @db.ObjectId
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  employeeId  String    @db.ObjectId
   documentUrl String
   fileName    String
   fileSize    Int?
-  uploadDate  DateTime @default(now())
+  uploadDate  DateTime  @default(now())
   expiryDate  DateTime?
   description String?
-  isRequired  Boolean  @default(false)
+  isRequired  Boolean   @default(false)
 
   @@index([employeeId])
   @@index([type])
@@ -498,40 +503,40 @@ enum LeaveStatus {
 }
 
 model SalaryStructure {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  employee    Employee @relation(fields: [employeeId], references: [id])
-  employeeId  String   @db.ObjectId
-  basicSalary Float
-  allowances  Float    @default(0)
-  deductions  Float    @default(0)
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  employee      Employee  @relation(fields: [employeeId], references: [id])
+  employeeId    String    @db.ObjectId
+  basicSalary   Float
+  allowances    Float     @default(0)
+  deductions    Float     @default(0)
   effectiveDate DateTime
-  endDate     DateTime?
-  currency    String   @default("MNT")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  endDate       DateTime?
+  currency      String    @default("MNT")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([employeeId])
   @@index([effectiveDate])
 }
 
 model SalaryCalculation {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  employee    Employee @relation(fields: [employeeId], references: [id])
-  employeeId  String   @db.ObjectId
-  month       Int
-  year        Int
-  basicSalary Float
-  allowances  Float    @default(0)
-  deductions  Float    @default(0)
-  overtime    Float    @default(0)
-  bonus       Float    @default(0)
-  tax         Float    @default(0)
-  socialInsurance Float @default(0)
-  netSalary   Float
-  currency    String   @default("MNT")
-  calculatedAt DateTime @default(now())
-  paidAt      DateTime?
-  status      String   @default("PENDING")
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+  employeeId      String    @db.ObjectId
+  month           Int
+  year            Int
+  basicSalary     Float
+  allowances      Float     @default(0)
+  deductions      Float     @default(0)
+  overtime        Float     @default(0)
+  bonus           Float     @default(0)
+  tax             Float     @default(0)
+  socialInsurance Float     @default(0)
+  netSalary       Float
+  currency        String    @default("MNT")
+  calculatedAt    DateTime  @default(now())
+  paidAt          DateTime?
+  status          String    @default("PENDING")
 
   @@index([employeeId])
   @@index([year, month])
@@ -539,50 +544,50 @@ model SalaryCalculation {
 }
 
 model SalaryAllowance {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  employee    Employee   @relation(fields: [employeeId], references: [id])
-  employeeId  String     @db.ObjectId
-  type        SalaryType
-  amount      Float
-  description String?
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  employee      Employee   @relation(fields: [employeeId], references: [id])
+  employeeId    String     @db.ObjectId
+  type          SalaryType
+  amount        Float
+  description   String?
   effectiveDate DateTime
-  endDate     DateTime?
-  currency    String     @default("MNT")
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  endDate       DateTime?
+  currency      String     @default("MNT")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   @@index([employeeId])
   @@index([type])
 }
 
 model SalaryDeduction {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  employee    Employee   @relation(fields: [employeeId], references: [id])
-  employeeId  String     @db.ObjectId
-  type        SalaryType
-  amount      Float
-  description String?
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  employee      Employee   @relation(fields: [employeeId], references: [id])
+  employeeId    String     @db.ObjectId
+  type          SalaryType
+  amount        Float
+  description   String?
   effectiveDate DateTime
-  endDate     DateTime?
-  currency    String     @default("MNT")
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  endDate       DateTime?
+  currency      String     @default("MNT")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   @@index([employeeId])
   @@index([type])
 }
 
 model LeaveBalance {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  employee    Employee @relation(fields: [employeeId], references: [id])
-  employeeId  String   @db.ObjectId
-  year        Int
-  leaveType   LeaveType
-  totalDays   Int
-  usedDays    Int      @default(0)
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  employee      Employee  @relation(fields: [employeeId], references: [id])
+  employeeId    String    @db.ObjectId
+  year          Int
+  leaveType     LeaveType
+  totalDays     Int
+  usedDays      Int       @default(0)
   remainingDays Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@unique([employeeId, year, leaveType])
   @@index([employeeId])
@@ -590,22 +595,22 @@ model LeaveBalance {
 }
 
 model LeaveRequest {
-  id          String      @id @default(auto()) @map("_id") @db.ObjectId
-  employee    Employee    @relation(fields: [employeeId], references: [id])
-  employeeId  String      @db.ObjectId
-  leaveType   LeaveType
-  startDate   DateTime
-  endDate     DateTime
-  totalDays   Int
-  reason      String
-  status      LeaveStatus @default(PENDING)
-  approvedBy  String?
-  approvedAt  DateTime?
-  rejectedBy  String?
-  rejectedAt  DateTime?
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  employee        Employee    @relation(fields: [employeeId], references: [id])
+  employeeId      String      @db.ObjectId
+  leaveType       LeaveType
+  startDate       DateTime
+  endDate         DateTime
+  totalDays       Int
+  reason          String
+  status          LeaveStatus @default(PENDING)
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedBy      String?
+  rejectedAt      DateTime?
   rejectionReason String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@index([employeeId])
   @@index([status])
@@ -613,33 +618,33 @@ model LeaveRequest {
 }
 
 model LeaveSchedule {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  employee    Employee @relation(fields: [employeeId], references: [id])
-  employeeId  String   @db.ObjectId
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  employeeId  String    @db.ObjectId
   year        Int
   leaveType   LeaveType
   plannedDays Int
   actualDays  Int?
   notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([employeeId])
   @@index([year])
 }
 
 model JobClassification {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  code         String   @unique
-  mainGroup    String
-  subGroup     String
-  minorGroup   String
-  unitGroup    String
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  code          String     @unique
+  mainGroup     String
+  subGroup      String
+  minorGroup    String
+  unitGroup     String
   jobProfession String
-  description  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  employees    Employee[]
+  description   String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  employees     Employee[]
 }
 
 model Training {
@@ -665,17 +670,17 @@ model Training {
 }
 
 model TrainingParticipant {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId     String
-  name           String
-  position       String?
-  trainingName   String
-  duration       String?
-  status         String
-  score          Int      @default(0)
-  certificate    String?
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId       String
+  name             String
+  position         String?
+  trainingName     String
+  duration         String?
+  status           String
+  score            Int      @default(0)
+  certificate      String?
   trainingLegacyId Int
-  createdAt      DateTime @default(now())
+  createdAt        DateTime @default(now())
 
   @@index([employeeId])
   @@index([trainingLegacyId])
@@ -721,22 +726,22 @@ model Penalty {
 }
 
 model PerformanceEvaluation {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  legacyId      Int      @unique
-  employee      String
-  employeeRefId String
-  evaluator     String
-  evaluatorType String
-  score         Float
-  period        String
-  status        String
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  legacyId       Int      @unique
+  employee       String
+  employeeRefId  String
+  evaluator      String
+  evaluatorType  String
+  score          Float
+  period         String
+  status         String
   evaluationDate DateTime
-  comment       String?
-  strengths     String?
-  improvements  String?
-  averageScore  Float
+  comment        String?
+  strengths      String?
+  improvements   String?
+  averageScore   Float
   evaluationType String
-  createdAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
 
   @@index([employeeRefId])
   @@index([status])
@@ -778,8 +783,8 @@ model PasswordReset {
   createdAt DateTime @default(now())
   used      Boolean  @default(false)
   userId    String   @db.ObjectId
-  
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([email])
 }

@@ -110,12 +110,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Auto-generate code if not provided or if code already exists
+    // Auto-generate code if not provided
     let finalCode: string = code || '';
-    let codeExists = false;
     
-    // Get all existing codes for this company
-    const positions = await prisma.position.findMany({
+    // Get all existing codes for this company only
+    const existingPositions = await prisma.position.findMany({
       where: {
         department: {
           companyId: companyId,
@@ -124,57 +123,42 @@ export async function POST(request: NextRequest) {
       select: { code: true },
     });
     
-    const existingCodes = new Set(positions.map((p) => p.code));
+    const existingCodesInCompany = new Set(existingPositions.map((p) => p.code));
     
-    // If code is provided, check if it exists
+    // If code is provided, check if it exists in this company
     if (finalCode && finalCode.trim() !== '') {
-      codeExists = existingCodes.has(finalCode);
+      if (existingCodesInCompany.has(finalCode)) {
+        return NextResponse.json(
+          { 
+            error: 'Энэ код танай компанид аль хэдийн ашиглагдсан байна',
+            details: `Код "${finalCode}" танай компанид бүртгэгдсэн байна. Өөр код оруулна уу эсвэл код хоосон үлдээвэл автоматаар үүсгэнэ.`
+          },
+          { status: 400 }
+        );
+      }
     }
     
-    // Auto-generate code if not provided or if code already exists
-    if (!finalCode || finalCode.trim() === '' || codeExists) {
-      // Generate random code
+    // Auto-generate random code if not provided
+    if (!finalCode || finalCode.trim() === '') {
+      // Generate random code that doesn't exist in this company
       const generateRandomCode = (): string => {
         const randomNum = Math.floor(Math.random() * 90000) + 10000; // 10000-99999
         return `DD${String(randomNum).padStart(5, '0')}`;
       };
       
-      // Find an available random code
       let attempts = 0;
-      while (attempts < 1000) { // Safety limit
+      while (attempts < 1000) {
         finalCode = generateRandomCode();
-        if (!existingCodes.has(finalCode)) {
+        if (!existingCodesInCompany.has(finalCode)) {
           break;
         }
         attempts++;
       }
       
       if (attempts >= 1000) {
-        // Fallback to sequential code if random fails
-        const ddCodes = positions
-          .map((p) => p.code)
-          .filter((c) => /^DD\d{5}$/.test(c))
-          .map((c) => parseInt(c.substring(2), 10))
-          .sort((a, b) => b - a);
-        
-        const maxNumber = ddCodes.length > 0 ? ddCodes[0] : 0;
-        let nextNumber = maxNumber + 1;
-        
-        while (attempts < 2000) {
-          finalCode = `DD${String(nextNumber).padStart(5, '0')}`;
-          if (!existingCodes.has(finalCode)) {
-            break;
-          }
-          nextNumber++;
-          attempts++;
-        }
-        
-        if (attempts >= 2000) {
-          return NextResponse.json(
-            { error: 'Код үүсгэхэд алдаа гарлаа. Дахин оролдоно уу.' },
-            { status: 500 }
-          );
-        }
+        // Fallback: use timestamp-based code
+        const timestamp = Date.now().toString().slice(-5);
+        finalCode = `DD${timestamp}`;
       }
     }
     
@@ -227,6 +211,7 @@ export async function POST(request: NextRequest) {
         description: description ?? null,
         code: finalCode,
         departmentId: finalDepartmentId,
+        companyId: companyId,
         salaryRange: salaryRange ?? null,
         requirements: requirements ?? null,
         jobProfessionCode: jobProfessionCode ?? null,
