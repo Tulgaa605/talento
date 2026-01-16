@@ -110,35 +110,79 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Auto-generate code if not provided
-    let finalCode = code;
-    if (!finalCode || finalCode.trim() === '') {
-      const positions = await prisma.position.findMany({
-        where: {
-          department: {
-            companyId: companyId,
-          },
+    // Auto-generate code if not provided or if code already exists
+    let finalCode: string = code || '';
+    let codeExists = false;
+    
+    // Get all existing codes for this company
+    const positions = await prisma.position.findMany({
+      where: {
+        department: {
+          companyId: companyId,
         },
-        select: { code: true },
-      });
-      
-      const ddCodes = positions
-        .map((p) => p.code)
-        .filter((c) => /^DD\d{5}$/.test(c))
-        .map((c) => parseInt(c.substring(2), 10))
-        .sort((a, b) => b - a);
-      
-      const maxNumber = ddCodes.length > 0 ? ddCodes[0] : 0;
-      const nextNumber = maxNumber + 1;
-      finalCode = `DD${String(nextNumber).padStart(5, '0')}`;
+      },
+      select: { code: true },
+    });
+    
+    const existingCodes = new Set(positions.map((p) => p.code));
+    
+    // If code is provided, check if it exists
+    if (finalCode && finalCode.trim() !== '') {
+      codeExists = existingCodes.has(finalCode);
     }
-
-    // Check if code already exists
-    const existingPosition = await prisma.position.findUnique({ where: { code: finalCode } });
-    if (existingPosition) {
+    
+    // Auto-generate code if not provided or if code already exists
+    if (!finalCode || finalCode.trim() === '' || codeExists) {
+      // Generate random code
+      const generateRandomCode = (): string => {
+        const randomNum = Math.floor(Math.random() * 90000) + 10000; // 10000-99999
+        return `DD${String(randomNum).padStart(5, '0')}`;
+      };
+      
+      // Find an available random code
+      let attempts = 0;
+      while (attempts < 1000) { // Safety limit
+        finalCode = generateRandomCode();
+        if (!existingCodes.has(finalCode)) {
+          break;
+        }
+        attempts++;
+      }
+      
+      if (attempts >= 1000) {
+        // Fallback to sequential code if random fails
+        const ddCodes = positions
+          .map((p) => p.code)
+          .filter((c) => /^DD\d{5}$/.test(c))
+          .map((c) => parseInt(c.substring(2), 10))
+          .sort((a, b) => b - a);
+        
+        const maxNumber = ddCodes.length > 0 ? ddCodes[0] : 0;
+        let nextNumber = maxNumber + 1;
+        
+        while (attempts < 2000) {
+          finalCode = `DD${String(nextNumber).padStart(5, '0')}`;
+          if (!existingCodes.has(finalCode)) {
+            break;
+          }
+          nextNumber++;
+          attempts++;
+        }
+        
+        if (attempts >= 2000) {
+          return NextResponse.json(
+            { error: 'Код үүсгэхэд алдаа гарлаа. Дахин оролдоно уу.' },
+            { status: 500 }
+          );
+        }
+      }
+    }
+    
+    // Ensure finalCode is a string
+    if (!finalCode || finalCode.trim() === '') {
       return NextResponse.json(
-        { error: 'Энэ код өмнө нь ашиглагдсан байна' },
-        { status: 400 }
+        { error: 'Код үүсгэхэд алдаа гарлаа' },
+        { status: 500 }
       );
     }
 

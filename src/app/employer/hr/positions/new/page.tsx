@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Briefcase, Search } from 'lucide-react';
 import { PrinterIcon } from '@heroicons/react/24/outline';
 import { useReactToPrint } from 'react-to-print';
+import { fetchDepartments } from '@/utils/hrDataFetchers';
 
 interface Department {
   id: string;
@@ -73,7 +74,11 @@ export default function NewPositionPage() {
   });
 
   useEffect(() => {
-    fetchDepartments();
+    const loadData = async () => {
+      const data = await fetchDepartments();
+      setDepartments(data);
+    };
+    loadData();
     setCurrentDate(new Date().toLocaleString('mn-MN', { 
       year: 'numeric', 
       month: 'long', 
@@ -104,20 +109,6 @@ export default function NewPositionPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  const fetchDepartments = async () => {
-    try {
-      const response = await fetch('/api/hr/departments');
-      if (response.ok) {
-        const data = await response.json();
-        setDepartments(data);
-      } else {
-        console.error('Хэлтсүүдийн API 404/500:', await response.text());
-      }
-    } catch (error) {
-      console.error('Хэлтсүүдийг авахад алдаа гарлаа:', error);
-    }
-  };
 
   const searchOccupations = async (search: string) => {
     try {
@@ -337,6 +328,24 @@ export default function NewPositionPage() {
                     </div>
                   </div>
                 )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Хэлтэс *
+                </label>
+                <select
+                  required
+                  value={formData.departmentId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, departmentId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="">Хэлтэс сонгох...</option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name} ({dept.code})
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
