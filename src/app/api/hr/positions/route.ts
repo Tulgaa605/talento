@@ -17,14 +17,12 @@ export async function GET() {
       );
     }
 
-    // Get current user's companyId
     const companyId = await getCompanyId(session.user.id);
     
     if (!companyId) {
       return NextResponse.json([]);
     }
 
-    // Get positions by filtering through department's companyId
     const positions = await prisma.position.findMany({
       where: {
         department: {
