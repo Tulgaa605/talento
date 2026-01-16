@@ -23,11 +23,10 @@ export async function GET() {
       return NextResponse.json([]);
     }
 
+    console.log('Fetching positions for companyId:', companyId);
     const positions = await prisma.position.findMany({
       where: {
-        department: {
-          companyId: companyId,
-        },
+        companyId: companyId,
       },
       select: {
         id: true,
@@ -86,7 +85,10 @@ export async function POST(request: NextRequest) {
     const companyId = await getCompanyId(session.user.id);
     
     if (!companyId) {
-      return NextResponse.json([]);
+      return NextResponse.json(
+        { error: 'Компани олдсонгүй' },
+        { status: 400 }
+      );
     }
 
     const body = await request.json();
@@ -203,6 +205,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('Creating position with companyId:', companyId, 'code:', finalCode);
+    
     const position = await prisma.position.create({
       data: {
         title,
@@ -221,6 +225,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log('Created position:', position.id, 'companyId:', position.companyId);
     return NextResponse.json(position, { status: 201 });
   } catch (error) {
     console.error('Албан тушаал нэмэхэд алдаа гарлаа:', error);
