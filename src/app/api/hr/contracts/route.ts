@@ -160,22 +160,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if contractNumber exists for this company's employees
-    if (employee && employee.companyId === companyId) {
-      const existingContract = await prisma.employmentContract.findFirst({
-        where: {
-          contractNumber,
-          employee: {
-            companyId: companyId,
-          },
+    const existingContract = await prisma.employmentContract.findFirst({
+      where: {
+        contractNumber,
+        employee: {
+          companyId: companyId,
         },
-      });
+      },
+    });
 
-      if (existingContract) {
-        return NextResponse.json(
-          { error: 'Энэ гэрээний дугаар танай компанид аль хэдийн ашиглагдсан байна' },
-          { status: 400 }
-        );
-      }
+    if (existingContract) {
+      return NextResponse.json(
+        { error: 'Энэ гэрээний дугаар танай компанид аль хэдийн ашиглагдсан байна' },
+        { status: 400 }
+      );
     }
 
     if (!employee) {
@@ -257,7 +255,6 @@ export async function POST(request: NextRequest) {
           status: 'ACTIVE',
           hireDate: new Date(),
           dateOfBirth: new Date('1990-01-01'),
-          companyId: companyId,
           gender: 'OTHER',
           address: '',
           positionId: defaultPosition.id,

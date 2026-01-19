@@ -90,22 +90,18 @@ export async function POST(request: NextRequest) {
     
     // Validate employee belongs to this company
     if (body.employeeId) {
-      const employee = await prisma.employee.findUnique({
-        where: { employeeId: body.employeeId },
+      const employee = await prisma.employee.findFirst({
+        where: {
+          employeeId: body.employeeId,
+          companyId: companyId,
+        },
         select: { companyId: true },
       });
       
       if (!employee) {
         return NextResponse.json(
-          { error: 'Ажилтан олдсонгүй' },
+          { error: 'Ажилтан олдсонгүй эсвэл танай компанид хамаарахгүй байна' },
           { status: 404 }
-        );
-      }
-      
-      if (employee.companyId !== companyId) {
-        return NextResponse.json(
-          { error: 'Энэ ажилтан танай компанид хамаарахгүй байна' },
-          { status: 403 }
         );
       }
     }

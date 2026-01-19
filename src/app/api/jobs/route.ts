@@ -36,7 +36,7 @@ export async function GET() {
     });
 
     // Then fetch companies separately to avoid relation errors
-    const companyIds = [...new Set(jobs.map(job => job.companyId).filter(Boolean))];
+    const companyIds = Array.from(new Set(jobs.map(job => job.companyId).filter(Boolean)));
     const companies = await prisma.company.findMany({
       where: {
         id: { in: companyIds },
@@ -45,7 +45,7 @@ export async function GET() {
         id: true,
         name: true,
         logoUrl: true,
-        url: true,
+        website: true,
         description: true,
       },
     });
