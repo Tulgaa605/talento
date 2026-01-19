@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
       if (existingCodesInCompany.has(finalCode)) {
         return NextResponse.json(
           { 
-            error: 'Энэ код танай компанид аль хэдийн ашиглагдсан байна',
+            error: 'Энэ ашиглагдсан код байна',
             details: `Код "${finalCode}" танай компанид бүртгэгдсэн байна. Өөр код оруулна уу эсвэл код хоосон үлдээвэл автоматаар үүсгэнэ.`
           },
           { status: 400 }
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
     if (existingPositionWithCode) {
       return NextResponse.json(
         { 
-          error: 'Энэ код танай компанид аль хэдийн ашиглагдсан байна',
+          error: 'Энэ ашиглагдсан код байна',
           details: `Код "${finalCode}" танай компанид бүртгэгдсэн байна. Өөр код оруулна уу.`
         },
         { status: 400 }
@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
         if (conflictCheck) {
           return NextResponse.json(
             { 
-              error: 'Энэ код танай компанид аль хэдийн ашиглагдсан байна',
+              error: 'Энэ ашиглагдсан код байна',
               details: `Код "${finalCode}" танай компанид бүртгэгдсэн байна. Өөр код оруулна уу.`
             },
             { status: 400 }

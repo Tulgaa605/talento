@@ -112,25 +112,52 @@ export async function PUT(
 
     if (existingDepartment) {
       return NextResponse.json(
-        { error: 'Энэ код танай компанид аль хэдийн ашиглагдсан байна' },
+        { error: 'Энэ ашиглагдсан код байна' },
         { status: 400 }
       );
     }
 
-    const updatedDepartment = await prisma.department.update({
-      where: { id },
-      data: {
-        name,
-        description: description || null,
-        code,
-      },
-      include: {
-        positions: true,
-        employees: true,
-      },
-    });
+    try {
+      const updatedDepartment = await prisma.department.update({
+        where: { id },
+        data: {
+          name,
+          description: description || null,
+          code,
+        },
+        include: {
+          positions: true,
+          employees: true,
+        },
+      });
 
-    return NextResponse.json(updatedDepartment);
+      return NextResponse.json(updatedDepartment);
+    } catch (error: any) {
+      // Handle unique constraint errors
+      if (error?.code === 'P2002' || error?.message?.includes('Unique constraint') || error?.message?.includes('Department_code_key') || error?.message?.includes('code_companyId')) {
+        // Check if it's a company-specific conflict
+        const conflictCheck = await prisma.department.findFirst({
+          where: {
+            code,
+            companyId: companyId,
+            id: { not: id },
+          },
+        });
+
+        if (conflictCheck) {
+          return NextResponse.json(
+            { error: 'Энэ ашиглагдсан код байна' },
+            { status: 400 }
+          );
+        } else {
+          return NextResponse.json(
+            { error: 'Энэ код аль хэдийн ашиглагдсан байна. Өөр код ашиглана уу.' },
+            { status: 400 }
+          );
+        }
+      }
+      throw error;
+    }
   } catch (error) {
     console.error('Хэлтсийн мэдээлэл шинэчлэхэд алдаа гарлаа:', error);
     return NextResponse.json(

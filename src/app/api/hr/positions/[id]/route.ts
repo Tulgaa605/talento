@@ -123,7 +123,7 @@ export async function PUT(
 
       if (positionWithSameCode) {
         return NextResponse.json(
-          { error: 'Энэ код танай компанид аль хэдийн ашиглагдсан байна' },
+          { error: 'Энэ ашиглагдсан код байна' },
           { status: 400 }
         );
       }

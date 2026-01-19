@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
 
     if (existingDepartment) {
       return NextResponse.json(
-        { error: 'Энэ код танай компанид аль хэдийн ашиглагдсан байна' },
+        { error: 'Энэ ашиглагдсан код байна' },
         { status: 400 }
       );
     }
@@ -179,6 +179,55 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch (error: any) {
+      console.error('Department create error:', error);
+      
+      // Handle unique constraint errors specifically
+      if (error?.code === 'P2002' || error?.message?.includes('Unique constraint') || error?.message?.includes('Department_code_key') || error?.message?.includes('code_companyId') || error?.message?.includes('code')) {
+        // Check if it's a company-specific conflict
+        const conflictCheck = await prisma.department.findFirst({
+          where: {
+            code,
+            companyId: companyId,
+          },
+        });
+
+        if (conflictCheck) {
+          return NextResponse.json(
+            { 
+              error: 'Энэ ашиглагдсан код байна',
+              details: `Код "${code}" танай компанид бүртгэгдсэн байна. Өөр код ашиглана уу.`
+            },
+            { status: 400 }
+          );
+        } else {
+          // Check if code exists globally (old unique index might still exist)
+          const globalCheck = await prisma.department.findFirst({
+            where: { code },
+          });
+          
+          if (globalCheck) {
+            // Code exists but in different company - this should be allowed
+            // But if old unique index exists, it will fail
+            return NextResponse.json(
+            { 
+              error: 'Database index асуудал байна',
+              details: 'Энэ код өөр компанид байгаа ч database-д хуучин index байгаа тул алдаа гарч байна. MongoDB-д хуучин index-ийг устгах хэрэгтэй.'
+            },
+            { status: 500 }
+          );
+          }
+          
+          // This shouldn't happen with proper composite unique, but handle it anyway
+          return NextResponse.json(
+            { 
+              error: 'Энэ код аль хэдийн ашиглагдсан байна',
+              details: 'Өөр код ашиглана уу эсвэл database index-ийг шалгана уу.'
+            },
+            { status: 400 }
+          );
+        }
+      }
+      
       // If companyId field doesn't exist yet, create without it
       if (error?.message?.includes('companyId') || error?.code === 'P2009') {
         console.warn('companyId field not found, creating department without companyId');
