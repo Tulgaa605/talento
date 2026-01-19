@@ -9,6 +9,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Validate userId - must be a non-empty string
+    if (!session.user.id || typeof session.user.id !== 'string' || session.user.id.trim() === '') {
+      console.error("Invalid userId in session:", session.user.id);
+      return NextResponse.json({ error: "Invalid user session" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+
     const response = new NextResponse(
       new ReadableStream({
         start(controller) {
@@ -23,7 +31,7 @@ export async function GET(request: NextRequest) {
             try {
               const newNotifications = await prisma.notification.findMany({
                 where: {
-                  userId: session.user.id,
+                  userId: userId,
                   read: false,
                   createdAt: {
                     gt: lastCheck,

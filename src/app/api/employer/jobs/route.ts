@@ -8,26 +8,36 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
+    console.log("GET /api/employer/jobs - Starting request");
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
+      console.error("GET /api/employer/jobs - No session or user");
       return NextResponse.json(
         { message: "Нэвтрээгүй байна" },
         { status: 401 }
       );
     }
 
+    console.log("GET /api/employer/jobs - Session email:", session.user.email);
     const user = await prisma.user.findUnique({
       where: { email: session.user.email! },
       include: { company: true },
     });
 
-    if (!user || !user.company) {
-      return NextResponse.json(
-        { message: "Компанийн мэдээлэл олдсонгүй" },
-        { status: 404 }
-      );
+    if (!user) {
+      console.error("GET /api/employer/jobs - User not found for email:", session.user.email);
+      // Return empty array instead of 404 to prevent frontend errors
+      return NextResponse.json([]);
     }
+
+    if (!user.company) {
+      console.error("GET /api/employer/jobs - Company not found for user:", user.id);
+      // Return empty array instead of 404 if company doesn't exist
+      return NextResponse.json([]);
+    }
+
+    console.log("GET /api/employer/jobs - Company found:", user.company.id);
 
     const jobs = await prisma.job.findMany({
       where: { companyId: user.company.id },
@@ -69,7 +79,16 @@ export async function POST(req: Request) {
       include: { company: true },
     });
 
-    if (!user || !user.company) {
+    if (!user) {
+      console.error("User not found for email:", session.user.email);
+      return NextResponse.json(
+        { message: "Хэрэглэгч олдсонгүй" },
+        { status: 404 }
+      );
+    }
+
+    if (!user.company) {
+      console.error("Company not found for user:", user.id);
       return NextResponse.json(
         { message: "Компанийн мэдээлэл олдсонгүй" },
         { status: 404 }

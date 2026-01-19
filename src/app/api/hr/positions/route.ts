@@ -266,8 +266,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         } else {
-          // This shouldn't happen with proper composite unique, but handle it anyway
-          // Generate a new code if there's a global conflict
+          
           const timestamp = Date.now().toString().slice(-8);
           const newCode = `DD${timestamp}`;
           

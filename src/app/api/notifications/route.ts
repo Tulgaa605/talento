@@ -10,6 +10,12 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Validate userId - must be a non-empty string
+    if (!session.user.id || typeof session.user.id !== 'string' || session.user.id.trim() === '') {
+      console.error("Invalid userId in session:", session.user.id);
+      return NextResponse.json({ error: "Invalid user session" }, { status: 401 });
+    }
+
     const notifications = await prisma.notification.findMany({
       where: {
         userId: session.user.id,
@@ -38,6 +44,12 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Validate userId - must be a non-empty string
+    if (!session.user.id || typeof session.user.id !== 'string' || session.user.id.trim() === '') {
+      console.error("Invalid userId in session:", session.user.id);
+      return NextResponse.json({ error: "Invalid user session" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { notificationId } = body;
 
@@ -47,6 +59,15 @@ export async function PATCH(request: Request) {
         { status: 400 }
       );
     }
+
+    // Validate notificationId format
+    if (typeof notificationId !== 'string' || notificationId.trim() === '') {
+      return NextResponse.json(
+        { error: "Invalid notification ID" },
+        { status: 400 }
+      );
+    }
+
     const updatedNotification = await prisma.notification.update({
       where: {
         id: notificationId,
@@ -63,6 +84,15 @@ export async function PATCH(request: Request) {
     const errorObj = error as { code?: string; name?: string; message?: string };
     if (errorObj?.code === 'ECONNRESET' || errorObj?.name === 'AbortError' || errorObj?.message?.includes('aborted')) {
       return new NextResponse(null, { status: 499 }); // 499 Client Closed Request
+    }
+    
+    // Handle Prisma errors
+    if (errorObj?.code === 'P2023' || errorObj?.message?.includes('Malformed ObjectID')) {
+      console.error("Invalid ObjectID in notification update:", error);
+      return NextResponse.json(
+        { error: "Invalid notification ID format" },
+        { status: 400 }
+      );
     }
     
     // Only log non-abort errors

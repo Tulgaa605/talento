@@ -121,6 +121,12 @@ export default function EmployerProfile() {
   const [activeTab, setActiveTab] = useState("jobs");
   const [applications, setApplications] = useState<EmployerApplication[]>([]);
   const [isEditingAbout, setIsEditingAbout] = useState(false);
+  const [isEditingUserEmail, setIsEditingUserEmail] = useState(false);
+  const [userEmail, setUserEmail] = useState(session?.user?.email || "");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [isVerificationSent, setIsVerificationSent] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
   const [aboutEdit, setAboutEdit] = useState({
     name: company?.name || "",
     location: company?.location || "",
@@ -179,6 +185,12 @@ export default function EmployerProfile() {
       setEditedCompany(company);
     }
   }, [company]);
+
+  useEffect(() => {
+    if (session?.user?.email) {
+      setUserEmail(session.user.email);
+    }
+  }, [session]);
 
   useEffect(() => {
     if (activeTab === "anketuud") {
@@ -285,9 +297,17 @@ export default function EmployerProfile() {
       setCompany(companyData);
       
       const jobsRes = await fetch("/api/employer/jobs");
+      
+      // Handle non-OK responses gracefully
       if (!jobsRes.ok) {
-        console.error("Jobs API error:", jobsRes.status, jobsRes.statusText);
-        setJobs([]);
+        // If 404, try to parse error message, otherwise just use empty array
+        if (jobsRes.status === 404) {
+          console.warn("Jobs API returned 404, using empty array");
+          setJobs([]);
+        } else {
+          console.error("Jobs API error:", jobsRes.status, jobsRes.statusText);
+          setJobs([]);
+        }
         return;
       }
       
@@ -299,7 +319,7 @@ export default function EmployerProfile() {
           const jobsData = JSON.parse(textJobs);
           // Ensure jobsData is an array
           if (Array.isArray(jobsData)) {
-        setJobs(jobsData);
+            setJobs(jobsData);
           } else {
             console.error("Jobs data is not an array:", jobsData);
             setJobs([]);
@@ -1462,6 +1482,183 @@ export default function EmployerProfile() {
                   </div>
                 </div>
               )}
+              
+              {/* User Email Section */}
+              <div className="mt-6 sm:mt-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg md:text-2xl lg:text-xl 2xl:text-2xl font-bold text-[#0C213A]">
+                    Хэрэглэгчийн мэдээлэл
+                  </h2>
+                  {!isEditingUserEmail && (
+                    <button
+                      onClick={() => setIsEditingUserEmail(true)}
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold px-4 sm:px-6 py-2 rounded-lg shadow transition flex items-center gap-2 text-sm sm:text-base"
+                    >
+                      <FiEdit className="w-4 h-4 sm:w-4 sm:h-4" />
+                      Засах
+                    </button>
+                  )}
+                </div>
+                
+                {isEditingUserEmail ? (
+                  <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-base font-medium text-gray-700 mb-1">
+                          Шинэ имэйл хаяг
+                        </label>
+                        <input
+                          type="email"
+                          className="w-full border border-gray-300 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg text-[#0C213A] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                          value={userEmail}
+                          onChange={(e) => {
+                            setUserEmail(e.target.value);
+                            setIsVerificationSent(false);
+                            setVerificationCode("");
+                          }}
+                          placeholder="example@gmail.com"
+                          disabled={isVerificationSent}
+                        />
+                      </div>
+                      
+                      {!isVerificationSent ? (
+                        <button
+                          onClick={async () => {
+                            if (!userEmail || userEmail === session?.user?.email) {
+                              alert("Одоогийн имэйл хаягаас өөр имэйл оруулна уу");
+                              return;
+                            }
+                            
+                            setIsSendingCode(true);
+                            try {
+                              const response = await fetch("/api/user/send-email-verification", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ newEmail: userEmail }),
+                              });
+                              
+                              const data = await response.json();
+                              
+                              if (!response.ok) {
+                                throw new Error(data.error || "Код илгээхэд алдаа гарлаа");
+                              }
+                              
+                              setIsVerificationSent(true);
+                              if (data.devMode && data.code) {
+                                alert(`Баталгаажуулах код: ${data.code} (Development mode)`);
+                              } else {
+                                alert(data.message || "Баталгаажуулах код имэйлдээ илгээгдлээ");
+                              }
+                            } catch (error: any) {
+                              alert(error.message || "Код илгээхэд алдаа гарлаа");
+                            } finally {
+                              setIsSendingCode(false);
+                            }
+                          }}
+                          disabled={isSendingCode || !userEmail || userEmail === session?.user?.email}
+                          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg shadow transition flex items-center gap-2 text-sm sm:text-base"
+                        >
+                          {isSendingCode ? "Илгээж байна..." : "Баталгаажуулах код илгээх"}
+                        </button>
+                      ) : (
+                        <>
+                          <div>
+                            <label className="block text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-base font-medium text-gray-700 mb-1">
+                              Баталгаажуулах код (6 орон)
+                            </label>
+                            <input
+                              type="text"
+                              maxLength={6}
+                              className="w-full border border-gray-300 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg text-[#0C213A] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center tracking-widest font-mono text-2xl"
+                              value={verificationCode}
+                              onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
+                              placeholder="000000"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Имэйлд ирсэн 6 оронтой кодыг оруулна уу
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                      {isVerificationSent ? (
+                        <button
+                          onClick={async () => {
+                            if (verificationCode.length !== 6) {
+                              alert("6 оронтой код оруулна уу");
+                              return;
+                            }
+                            
+                            setIsVerifying(true);
+                            try {
+                              const response = await fetch("/api/user/verify-email-code", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ 
+                                  code: verificationCode,
+                                  newEmail: userEmail 
+                                }),
+                              });
+                              
+                              const data = await response.json();
+                              
+                              if (!response.ok) {
+                                throw new Error(data.error || "Код баталгаажуулах үед алдаа гарлаа");
+                              }
+                              
+                              alert(data.message || "Имэйл амжилттай шинэчлэгдлээ");
+                              setIsEditingUserEmail(false);
+                              setIsVerificationSent(false);
+                              setVerificationCode("");
+                              
+                              // Update local state
+                              if (data.user?.email) {
+                                setUserEmail(data.user.email);
+                              }
+                              
+                              // Refresh the page to update session
+                              router.refresh();
+                            } catch (error: any) {
+                              alert(error.message || "Код баталгаажуулах үед алдаа гарлаа");
+                            } finally {
+                              setIsVerifying(false);
+                            }
+                          }}
+                          disabled={isVerifying || verificationCode.length !== 6}
+                          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg shadow transition flex items-center gap-2 text-sm sm:text-base"
+                        >
+                          {isVerifying ? "Баталгаажуулж байна..." : "Баталгаажуулах"}
+                        </button>
+                      ) : null}
+                      <button
+                        onClick={() => {
+                          setIsEditingUserEmail(false);
+                          setIsVerificationSent(false);
+                          setVerificationCode("");
+                          setUserEmail(session?.user?.email || "");
+                        }}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg shadow transition flex items-center gap-2 text-sm sm:text-base"
+                      >
+                        Цуцлах
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+                    <div className="space-y-6 sm:space-y-8">
+                      <div>
+                        <h3 className="text-base md:text-base lg:text-lg xl:text-xl 2xl:text-lg font-medium text-gray-500 mb-1">
+                          Имэйл хаяг
+                        </h3>
+                        <p className="text-lg sm:text-xl font-semibold text-[#0C213A]">
+                          {session?.user?.email || userEmail || "Имэйл оруулаагүй"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 const updateProfileSchema = z.object({
   name: z.string().min(1, "Нэр хоосон байж болохгүй").optional(),
+  email: z.string().email("Имэйл хаяг буруу байна").optional(),
   phoneNumber: z.string().optional().nullable(),
   facebookUrl: z.string().url("Facebook холбоос буруу байна").or(z.literal('')).optional().nullable(),
 });
@@ -33,10 +34,25 @@ async function handleProfileUpdate(request: NextRequest) {
       return NextResponse.json({ message: 'Invalid input', errors: validation.error.errors }, { status: 400 });
     }
 
-    const { name, phoneNumber, facebookUrl } = validation.data;
+    const { name, email, phoneNumber, facebookUrl } = validation.data;
 
-    const dataToUpdate: { name?: string; phoneNumber?: string | null; facebookUrl?: string | null } = {};
+    const dataToUpdate: { name?: string; email?: string; phoneNumber?: string | null; facebookUrl?: string | null } = {};
     if (name !== undefined) dataToUpdate.name = name;
+    if (email !== undefined) {
+      // Check if email is already used by another user
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email: email.toLowerCase().trim(),
+          id: { not: session.user.id },
+        },
+      });
+      
+      if (existingUser) {
+        return NextResponse.json({ message: 'Энэ имэйл хаяг өөр хэрэглэгчээс ашиглагдсан байна' }, { status: 400 });
+      }
+      
+      dataToUpdate.email = email.toLowerCase().trim();
+    }
     if (phoneNumber !== undefined) dataToUpdate.phoneNumber = phoneNumber === '' ? null : phoneNumber;
     if (facebookUrl !== undefined) dataToUpdate.facebookUrl = facebookUrl === '' ? null : facebookUrl;
 
@@ -49,7 +65,7 @@ async function handleProfileUpdate(request: NextRequest) {
       data: dataToUpdate,
     });
 
-    return NextResponse.json({ message: 'Профайл амжилттай шинэчлэгдлээ', user: { name: updatedUser.name, phoneNumber: updatedUser.phoneNumber, facebookUrl: updatedUser.facebookUrl } }, { status: 200 });
+    return NextResponse.json({ message: 'Профайл амжилттай шинэчлэгдлээ', user: { name: updatedUser.name, email: updatedUser.email, phoneNumber: updatedUser.phoneNumber, facebookUrl: updatedUser.facebookUrl } }, { status: 200 });
 
   } catch (error) {
     console.error('Profile update failed:', error);
