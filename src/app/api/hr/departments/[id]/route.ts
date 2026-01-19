@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getCompanyId } from '@/lib/hr-utils';
+
+const prisma = new PrismaClient();
 
 type Params = { id: string };
 
@@ -47,6 +52,24 @@ export async function PUT(
   { params }: { params: Promise<Params> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Нэвтрээгүй байна' },
+        { status: 401 }
+      );
+    }
+
+    const companyId = await getCompanyId(session.user.id);
+    
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Компанийн мэдээлэл олдсонгүй' },
+        { status: 404 }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { name, description, code } = body;
@@ -58,13 +81,38 @@ export async function PUT(
       );
     }
 
+    // Check if department belongs to this company
+    const currentDepartment = await prisma.department.findUnique({
+      where: { id },
+      select: { companyId: true },
+    });
+
+    if (!currentDepartment) {
+      return NextResponse.json(
+        { error: 'Хэлтэс олдсонгүй' },
+        { status: 404 }
+      );
+    }
+
+    if (currentDepartment.companyId !== companyId) {
+      return NextResponse.json(
+        { error: 'Энэ хэлтэс танай компанид хамаарахгүй байна' },
+        { status: 403 }
+      );
+    }
+
+    // Check if code exists in this company (excluding current department)
     const existingDepartment = await prisma.department.findFirst({
-      where: { code, id: { not: id } },
+      where: {
+        code,
+        companyId: companyId,
+        id: { not: id },
+      },
     });
 
     if (existingDepartment) {
       return NextResponse.json(
-        { error: 'Энэ код өөр хэлтэсэд ашиглагдсан байна' },
+        { error: 'Энэ код танай компанид аль хэдийн ашиглагдсан байна' },
         { status: 400 }
       );
     }

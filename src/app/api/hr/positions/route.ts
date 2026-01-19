@@ -205,28 +205,95 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('Creating position with companyId:', companyId, 'code:', finalCode);
-    
-    const position = await prisma.position.create({
-      data: {
-        title,
-        description: description ?? null,
+    // Double-check: Verify the code doesn't exist for this company
+    const existingPositionWithCode = await prisma.position.findFirst({
+      where: {
         code: finalCode,
-        departmentId: finalDepartmentId,
         companyId: companyId,
-        salaryRange: salaryRange ?? null,
-        requirements: requirements ?? null,
-        jobProfessionCode: jobProfessionCode ?? null,
-        jobProfessionName: jobProfessionName ?? null,
-      },
-      include: {
-        department: true,
-        employees: true,
       },
     });
 
-    console.log('Created position:', position.id, 'companyId:', position.companyId);
-    return NextResponse.json(position, { status: 201 });
+    if (existingPositionWithCode) {
+      return NextResponse.json(
+        { 
+          error: 'Энэ код танай компанид аль хэдийн ашиглагдсан байна',
+          details: `Код "${finalCode}" танай компанид бүртгэгдсэн байна. Өөр код оруулна уу.`
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log('Creating position with companyId:', companyId, 'code:', finalCode);
+    
+    try {
+      const position = await prisma.position.create({
+        data: {
+          title,
+          description: description ?? null,
+          code: finalCode,
+          departmentId: finalDepartmentId,
+          companyId: companyId,
+          salaryRange: salaryRange ?? null,
+          requirements: requirements ?? null,
+          jobProfessionCode: jobProfessionCode ?? null,
+          jobProfessionName: jobProfessionName ?? null,
+        },
+        include: {
+          department: true,
+          employees: true,
+        },
+      });
+
+      console.log('Created position:', position.id, 'companyId:', position.companyId);
+      return NextResponse.json(position, { status: 201 });
+    } catch (createError: any) {
+      // Handle unique constraint errors specifically
+      if (createError?.code === 'P2002' || createError?.message?.includes('Unique constraint') || createError?.message?.includes('Position_code_key')) {
+        // Check if it's a company-specific conflict
+        const conflictCheck = await prisma.position.findFirst({
+          where: {
+            code: finalCode,
+            companyId: companyId,
+          },
+        });
+
+        if (conflictCheck) {
+          return NextResponse.json(
+            { 
+              error: 'Энэ код танай компанид аль хэдийн ашиглагдсан байна',
+              details: `Код "${finalCode}" танай компанид бүртгэгдсэн байна. Өөр код оруулна уу.`
+            },
+            { status: 400 }
+          );
+        } else {
+          // This shouldn't happen with proper composite unique, but handle it anyway
+          // Generate a new code if there's a global conflict
+          const timestamp = Date.now().toString().slice(-8);
+          const newCode = `DD${timestamp}`;
+          
+          const position = await prisma.position.create({
+            data: {
+              title,
+              description: description ?? null,
+              code: newCode,
+              departmentId: finalDepartmentId,
+              companyId: companyId,
+              salaryRange: salaryRange ?? null,
+              requirements: requirements ?? null,
+              jobProfessionCode: jobProfessionCode ?? null,
+              jobProfessionName: jobProfessionName ?? null,
+            },
+            include: {
+              department: true,
+              employees: true,
+            },
+          });
+
+          return NextResponse.json(position, { status: 201 });
+        }
+      }
+      throw createError; // Re-throw if it's not a unique constraint error
+    }
   } catch (error) {
     console.error('Албан тушаал нэмэхэд алдаа гарлаа:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

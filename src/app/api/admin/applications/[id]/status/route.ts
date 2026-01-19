@@ -74,11 +74,25 @@ export async function PATCH(
 
         if (!existingEmployee) {
           const companyId = updatedApplication.job?.company?.id || null;
-          const department = await prisma.department.upsert({
-            where: { code: 'UNASSIGNED' },
-            update: {},
-            create: { name: 'Тодорхойгүй', description: 'Анхны автоматаар үүсгэсэн хэлтэс', code: 'UNASSIGNED', companyId },
+          
+          // Find or create department with code and companyId
+          let department = await prisma.department.findFirst({
+            where: {
+              code: 'UNASSIGNED',
+              companyId: companyId,
+            },
           });
+          
+          if (!department) {
+            department = await prisma.department.create({
+              data: {
+                name: 'Тодорхойгүй',
+                description: 'Анхны автоматаар үүсгэсэн хэлтэс',
+                code: 'UNASSIGNED',
+                companyId: companyId,
+              },
+            });
+          }
 
           // Find or create position with code and companyId
           let position = await prisma.position.findFirst({
@@ -117,6 +131,7 @@ export async function PATCH(
               hireDate: new Date(),
               positionId: position.id,
               departmentId: department.id,
+              companyId: companyId,
               status: 'ACTIVE',
             },
           });

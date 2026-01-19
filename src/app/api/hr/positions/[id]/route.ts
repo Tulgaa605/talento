@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getCompanyId } from '@/lib/hr-utils';
 
 // GET single position
 export async function GET(
@@ -95,23 +96,34 @@ export async function PUT(
       );
     }
 
+    // Get current user's companyId
+    const companyId = await getCompanyId(session.user.id);
+    
+    if (!companyId) {
+      return NextResponse.json(
+        { error: 'Компани олдсонгүй' },
+        { status: 400 }
+      );
+    }
+
     // Use existing values if not provided
     const finalCode = code || existingPosition.code;
     const finalDepartmentId = departmentId || existingPosition.departmentId;
     const finalDescription = description !== undefined ? description : existingPosition.description;
 
-    // Check if code is unique (excluding current position) - only if code is provided
+    // Check if code is unique within the same company (excluding current position) - only if code is provided
     if (code && code !== existingPosition.code) {
       const positionWithSameCode = await prisma.position.findFirst({
         where: {
           code,
+          companyId: companyId,
           id: { not: id },
         },
       });
 
       if (positionWithSameCode) {
         return NextResponse.json(
-          { error: 'Энэ код өмнө нь ашиглагдсан байна' },
+          { error: 'Энэ код танай компанид аль хэдийн ашиглагдсан байна' },
           { status: 400 }
         );
       }

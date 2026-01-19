@@ -146,28 +146,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existingContract = await prisma.employmentContract.findUnique({
-      where: { contractNumber },
-    });
-
-    if (existingContract) {
-      return NextResponse.json(
-        { error: 'Энэ гэрээний дугаар өмнө нь ашиглагдсан байна' },
-        { status: 400 }
-      );
-    }
-
     let employee = await prisma.employee.findUnique({
       where: { id: employeeId },
-      include: { department: { select: { companyId: true } } }
+      select: { id: true, companyId: true }
     });
 
     // Check if employee belongs to this company
-    if (employee && employee.department?.companyId && employee.department.companyId !== companyId) {
+    if (employee && employee.companyId && employee.companyId !== companyId) {
       return NextResponse.json(
         { error: 'Энэ ажилтан танай компанид хамаарахгүй байна' },
         { status: 403 }
       );
+    }
+
+    // Check if contractNumber exists for this company's employees
+    if (employee && employee.companyId === companyId) {
+      const existingContract = await prisma.employmentContract.findFirst({
+        where: {
+          contractNumber,
+          employee: {
+            companyId: companyId,
+          },
+        },
+      });
+
+      if (existingContract) {
+        return NextResponse.json(
+          { error: 'Энэ гэрээний дугаар танай компанид аль хэдийн ашиглагдсан байна' },
+          { status: 400 }
+        );
+      }
     }
 
     if (!employee) {
@@ -249,6 +257,7 @@ export async function POST(request: NextRequest) {
           status: 'ACTIVE',
           hireDate: new Date(),
           dateOfBirth: new Date('1990-01-01'),
+          companyId: companyId,
           gender: 'OTHER',
           address: '',
           positionId: defaultPosition.id,

@@ -148,13 +148,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existingDepartment = await prisma.department.findUnique({
-      where: { code },
+    // Check if code exists in this company only
+    const existingDepartment = await prisma.department.findFirst({
+      where: {
+        code,
+        companyId: companyId,
+      },
     });
 
     if (existingDepartment) {
       return NextResponse.json(
-        { error: 'Энэ код өмнө нь ашиглагдсан байна' },
+        { error: 'Энэ код танай компанид аль хэдийн ашиглагдсан байна' },
         { status: 400 }
       );
     }

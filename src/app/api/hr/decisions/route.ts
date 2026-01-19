@@ -144,19 +144,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existingDecision = await prisma.decision.findUnique({
-      where: { decisionNumber },
-    });
-    if (existingDecision) {
-      return NextResponse.json(
-        { error: 'Энэ шийдвэрийн дугаар өмнө нь ашиглагдсан байна' },
-        { status: 400 }
-      );
-    }
-
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
-      include: { department: { select: { companyId: true } } }
+      select: { id: true, companyId: true }
     });
     if (!employee) {
       return NextResponse.json(
@@ -166,10 +156,26 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if employee belongs to this company
-    if (employee.department?.companyId !== companyId) {
+    if (employee.companyId !== companyId) {
       return NextResponse.json(
         { error: 'Энэ ажилтан танай компанид хамаарахгүй байна' },
         { status: 403 }
+      );
+    }
+
+    // Check if decisionNumber exists for this company's employees
+    const existingDecision = await prisma.decision.findFirst({
+      where: {
+        decisionNumber,
+        employee: {
+          companyId: companyId,
+        },
+      },
+    });
+    if (existingDecision) {
+      return NextResponse.json(
+        { error: 'Энэ шийдвэрийн дугаар танай компанид аль хэдийн ашиглагдсан байна' },
+        { status: 400 }
       );
     }
 

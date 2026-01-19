@@ -202,10 +202,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existingEmployee = await prisma.employee.findUnique({ where: { employeeId } });
+    // Check if employeeId exists in this company only
+    const existingEmployee = await prisma.employee.findFirst({
+      where: {
+        employeeId,
+        companyId: companyId,
+      },
+    });
     if (existingEmployee) {
       return NextResponse.json(
-        { error: 'Энэ ажилтны дугаар өмнө нь ашиглагдсан байна' },
+        { error: 'Энэ ажилтны дугаар танай компанид аль хэдийн ашиглагдсан байна' },
         { status: 400 }
       );
     }
