@@ -240,16 +240,38 @@ export async function POST(request: NextRequest) {
 
     const position = await prisma.position.findUnique({ 
       where: { id: positionId },
-      include: { department: { select: { companyId: true } } }
+      select: { 
+        id: true,
+        companyId: true,
+        department: { 
+          select: { 
+            id: true,
+            companyId: true 
+          } 
+        } 
+      }
     });
     if (!position) return NextResponse.json({ error: 'Албан тушаал олдсонгүй' }, { status: 404 });
 
-    // Check if position's department belongs to companyId = 1
-    if (position.department.companyId && position.department.companyId !== companyId) {
-      return NextResponse.json(
-        { error: 'Энэ албан тушаал танай компанид хамаарахгүй байна' },
-        { status: 403 }
-      );
+    // Check if position belongs to companyId
+    // If position has companyId, check it matches
+    // If position.companyId is null, check department.companyId instead
+    if (position.companyId !== null) {
+      if (position.companyId !== companyId) {
+        return NextResponse.json(
+          { error: 'Энэ албан тушаал танай компанид хамаарахгүй байна' },
+          { status: 403 }
+        );
+      }
+    } else {
+      // If position.companyId is null, check department.companyId
+      if (position.department?.companyId && position.department.companyId !== companyId) {
+        return NextResponse.json(
+          { error: 'Энэ албан тушаал танай компанид хамаарахгүй байна' },
+          { status: 403 }
+        );
+      }
+      // If both are null, allow it (legacy data)
     }
 
     if (managerId) {
