@@ -370,13 +370,15 @@ export default function ReportsPage() {
     };
 
     setReports((prev) => [...prev, newReport]);
-    closeAddModal();
+    // Modal алга болохгүй, зөвхөн form хоосордох
+    e.currentTarget.reset();
     try {
       void fetch("/api/hr/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newReport),
       });
+    // closeAddModal(); - Modal нээлттэй үлдэнэ
     } catch {
     }
   };

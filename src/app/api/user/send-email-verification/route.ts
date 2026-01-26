@@ -91,7 +91,21 @@ export async function POST(request: NextRequest) {
 
     console.log('Email verification record created:', emailVerification.id);
 
+    // Get current user email (old email) to send verification code
+    const currentUserEmail = currentUser?.email;
+    
+    if (!currentUserEmail) {
+      await prisma.passwordReset.delete({
+        where: { id: emailVerification.id },
+      });
+      return NextResponse.json(
+        { error: "Одоогийн имэйл хаяг олдсонгүй" },
+        { status: 400 }
+      );
+    }
+
     // Create email content for email verification (different from password reset)
+    // Send to OLD email address, but verify NEW email address
     const emailContent = {
       subject: 'Имэйл хаяг баталгаажуулах код - Job Portal',
       html: `
@@ -108,7 +122,11 @@ export async function POST(request: NextRequest) {
             </p>
             
             <p style="color: #333; font-size: 16px; line-height: 1.5;">
-              Таны имэйл хаяг солих баталгаажуулах код:
+              Таны имэйл хаягийг <strong>${normalizedEmail}</strong> болгож өөрчлөх хүсэлт ирүүлсэн байна.
+            </p>
+            
+            <p style="color: #333; font-size: 16px; line-height: 1.5;">
+              Баталгаажуулах код:
             </p>
             
             <div style="text-align: center; margin: 30px 0;">
@@ -134,7 +152,9 @@ export async function POST(request: NextRequest) {
         
         ${currentUser?.name ? `Сайн байна уу, ${currentUser.name}!` : 'Сайн байна уу!'}
         
-        Таны имэйл хаяг солих баталгаажуулах код: ${verificationCode}
+        Таны имэйл хаягийг ${normalizedEmail} болгож өөрчлөх хүсэлт ирүүлсэн байна.
+        
+        Баталгаажуулах код: ${verificationCode}
         
         Энэ код 10 минутын дараа хүчингүй болно. Хэрэв та имэйл хаяг солих хүсэлт илгээгээгүй бол энэ имэйлийг үл тоомсорлож болно.
         
@@ -142,9 +162,11 @@ export async function POST(request: NextRequest) {
       `
     };
     
-    console.log('Sending email verification code to:', normalizedEmail);
+    // Send verification code to OLD email address (current user email)
+    console.log('Sending email verification code to current email:', currentUserEmail);
+    console.log('Verifying new email:', normalizedEmail);
     const emailResult = await sendEmail({
-      to: normalizedEmail,
+      to: currentUserEmail,
       subject: emailContent.subject,
       html: emailContent.html,
       text: emailContent.text,
@@ -184,7 +206,7 @@ export async function POST(request: NextRequest) {
     console.log('Email verification code sent successfully');
     return NextResponse.json({
       success: true,
-      message: "Баталгаажуулах код шинэ имэйл хаяг руу илгээгдлээ. 10 минутын дотор хүчингүй болно.",
+      message: `Баталгаажуулах код илгээгдлээ. 10 минутын дотор хүчингүй болно.`,
     });
   } catch (error) {
     console.error("Email verification request error:", error);
@@ -194,4 +216,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

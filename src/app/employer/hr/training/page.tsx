@@ -122,7 +122,7 @@ export default function TrainingPage() {
       fetch('/api/hr/training', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newTraining) });
     } catch {}
     setActiveTab("trainings");
-    closeAddTraining();
+    event.currentTarget.reset();
   };
 
   const openEditTraining = (training: Training) => {

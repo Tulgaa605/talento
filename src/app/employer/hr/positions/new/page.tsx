@@ -79,6 +79,7 @@ export default function NewPositionPage() {
       setDepartments(data);
     };
     loadData();
+    generateCode(); // Хуудас нээгдэхэд код автоматаар үүсгэх
     setCurrentDate(new Date().toLocaleString('mn-MN', { 
       year: 'numeric', 
       month: 'long', 
@@ -86,7 +87,7 @@ export default function NewPositionPage() {
       hour: '2-digit',
       minute: '2-digit'
     }));
-  }, []);
+  }, [generateCode]);
 
   useEffect(() => {
     if (occupationSearch.trim()) {
@@ -175,7 +176,23 @@ export default function NewPositionPage() {
         const errorMessage = errorData.details || errorData.error || `Алдаа гарлаа (${response.status})`;
         throw new Error(errorMessage);
       }
-      router.push('/employer/hr/positions');
+      
+      // Хадгалалт амжилттай болвол form хоосордох, хуудас алга болохгүй
+      alert('Албан тушаал амжилттай нэмэгдлээ');
+      setFormData({
+        title: '',
+        code: '',
+        departmentId: '',
+        description: '',
+        requirements: '',
+        salaryRange: '',
+        jobProfessionCode: '',
+        jobProfessionName: '',
+      });
+      setSelectedOccupation(null);
+      setOccupationSearch('');
+      generateCode();
+      // router.push('/employer/hr/positions'); - Хуудас алга болохгүй
     } catch (error) {
       console.error('Алдаа:', error);
       alert(error instanceof Error ? error.message : 'Алдаа гарлаа');

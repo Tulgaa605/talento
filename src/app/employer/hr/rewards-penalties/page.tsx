@@ -121,8 +121,10 @@ export default function RewardsPenaltiesPage() {
     try {
       fetch('/api/hr/rewards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newReward) });
     } catch {}
-    setShowAddModal(false);
+    // Modal алга болохгүй, зөвхөн form хоосордох
+    e.currentTarget.reset();
     setActiveTab("rewards");
+    // setShowAddModal(false); - Modal нээлттэй үлдэнэ
   };
 
   const handleSaveReward = (e: React.FormEvent<HTMLFormElement>) => {
@@ -184,8 +186,10 @@ export default function RewardsPenaltiesPage() {
     try {
       fetch('/api/hr/penalties', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newPenalty) });
     } catch {}
-    setShowAddPenaltyModal(false);
+    // Modal алга болохгүй, зөвхөн form хоосордох
+    e.currentTarget.reset();
     setActiveTab("penalties");
+    // setShowAddPenaltyModal(false); - Modal нээлттэй үлдэнэ
   };
 
   const handleDownloadRewardsReport = () => {

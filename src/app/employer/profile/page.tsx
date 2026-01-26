@@ -198,7 +198,7 @@ export default function EmployerProfile() {
     // Only update userEmail from session if not currently editing
     // This prevents overwriting user input when switching tabs
     if (session?.user?.email && !isEditingUserEmail) {
-      setUserEmail(session.user.email);
+      setUserEmail(""); // Clear the input when not editing
     }
   }, [session, isEditingUserEmail]);
 
@@ -1476,20 +1476,51 @@ export default function EmployerProfile() {
                   <h2 className="text-lg md:text-2xl lg:text-xl 2xl:text-2xl font-bold text-[#0C213A]">
                     Хэрэглэгчийн мэдээлэл
                   </h2>
-                  {!isEditingUserEmail && (
-                    <button
-                      onClick={() => setIsEditingUserEmail(true)}
-                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold px-4 sm:px-6 py-2 rounded-lg shadow transition flex items-center gap-2 text-sm sm:text-base"
-                    >
-                      <FiEdit className="w-4 h-4 sm:w-4 sm:h-4" />
-                      Засах
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      setIsEditingUserEmail(true);
+                      setUserEmail(""); // Clear input when opening modal
+                      setIsVerificationSent(false);
+                      setVerificationCode("");
+                    }}
+                    className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold px-4 sm:px-6 py-2 rounded-lg shadow transition flex items-center gap-2 text-sm sm:text-base"
+                  >
+                    <FiEdit className="w-4 h-4 sm:w-4 sm:h-4" />
+                    Засах
+                  </button>
                 </div>
                 
-                {isEditingUserEmail ? (
-                  <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-                    <div className="space-y-4">
+                {isEditingUserEmail && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200 border border-gray-200">
+                      <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                        <h3 className="text-xl md:text-2xl font-bold text-[#0C213A]">
+                          Имэйл хаяг солих
+                        </h3>
+                        <button
+                          onClick={() => {
+                            setIsEditingUserEmail(false);
+                            setIsVerificationSent(false);
+                            setVerificationCode("");
+                            setUserEmail(""); // Clear input when closing modal
+                          }}
+                          className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full p-1 transition-colors"
+                          aria-label="Хаах"
+                        >
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-base font-medium text-gray-700 mb-1">
+                          Одоогийн имэйл хаяг
+                        </label>
+                        <div className="w-full border border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg text-gray-600 bg-gray-50">
+                          {session?.user?.email || "Имэйл оруулаагүй"}
+                        </div>
+                      </div>
                       <div>
                         <label className="block text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-base font-medium text-gray-700 mb-1">
                           Шинэ имэйл хаяг
@@ -1562,7 +1593,7 @@ export default function EmployerProfile() {
                               placeholder="000000"
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              Имэйлд ирсэн 6 оронтой кодыг оруулна уу
+                              ({session?.user?.email}) дээр ирсэн 6 оронтой кодыг оруулна уу
                             </p>
                           </div>
                         </>
@@ -1616,15 +1647,18 @@ export default function EmployerProfile() {
                           setIsEditingUserEmail(false);
                           setIsVerificationSent(false);
                           setVerificationCode("");
-                          setUserEmail(session?.user?.email || "");
+                          setUserEmail(""); // Clear input when canceling
                         }}
                         className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg shadow transition flex items-center gap-2 text-sm sm:text-base"
                       >
                         Цуцлах
                       </button>
                     </div>
+                    </div>
                   </div>
-                ) : (
+                )}
+                
+                {!isEditingUserEmail && (
                   <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
                     <div className="space-y-6 sm:space-y-8">
                       <div>
@@ -1646,20 +1680,38 @@ export default function EmployerProfile() {
                   <h2 className="text-lg md:text-2xl lg:text-xl 2xl:text-2xl font-bold text-[#0C213A]">
                     Нууц үг
                   </h2>
-                  {!isEditingPassword && (
-                    <button
-                      onClick={() => setIsEditingPassword(true)}
-                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold px-4 sm:px-6 py-2 rounded-lg shadow transition flex items-center gap-2 text-sm sm:text-base"
-                    >
-                      <FiEdit className="w-4 h-4 sm:w-4 sm:h-4" />
-                      Нууц үг солих
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setIsEditingPassword(true)}
+                    className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold px-4 sm:px-6 py-2 rounded-lg shadow transition flex items-center gap-2 text-sm sm:text-base"
+                  >
+                    <FiEdit className="w-4 h-4 sm:w-4 sm:h-4" />
+                    Нууц үг солих
+                  </button>
                 </div>
                 
-                {isEditingPassword ? (
-                  <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-                    <div className="space-y-4">
+                {isEditingPassword && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200 border border-gray-200">
+                      <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                        <h3 className="text-xl md:text-2xl font-bold text-[#0C213A]">
+                          Нууц үг солих
+                        </h3>
+                        <button
+                          onClick={() => {
+                            setIsEditingPassword(false);
+                            setCurrentPassword("");
+                            setNewPassword("");
+                            setConfirmPassword("");
+                          }}
+                          className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full p-1 transition-colors"
+                          aria-label="Хаах"
+                        >
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="space-y-4">
                       <div>
                         <label className="block text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-base font-medium text-gray-700 mb-1">
                           Одоогийн нууц үг
@@ -1823,9 +1875,12 @@ export default function EmployerProfile() {
                       >
                         Цуцлах
                       </button>
+                      </div>
                     </div>
                   </div>
-                ) : (
+                )}
+                
+                {!isEditingPassword && (
                   <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
                     <div className="space-y-6 sm:space-y-8">
                       <div>

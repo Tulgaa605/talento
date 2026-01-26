@@ -425,7 +425,29 @@ export default function NewEmployeePage() {
           sessionStorage.removeItem(SESSION_STORAGE_KEY);
         }
         alert('Ажилтны бүртгэл амжилттай нэмэгдлээ!');
-        router.push('/employer/hr/employees');
+        
+        setFormData({
+          employeeId: '',
+          firstName: '',
+          lastName: '',
+          middleName: '',
+          email: '',
+          phoneNumber: '',
+          dateOfBirth: '',
+          gender: '',
+          address: '',
+          emergencyContact: '',
+          emergencyPhone: '',
+          hireDate: '',
+          positionId: '',
+          departmentId: '',
+          managerId: '',
+          bankName: '',
+          bankAccountNumber: '',
+        });
+        setSelectedDepartment('');
+        setApplicationInfo(null);
+        // router.push('/employer/hr/employees'); - Хуудас алга болохгүй
       } else {
         const error = await response.json();
         alert(error.error || 'Алдаа гарлаа');

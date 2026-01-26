@@ -225,9 +225,16 @@ export default function ContractModal({ isOpen, onClose, onSuccess, contractId }
       });
 
       if (response.ok) {
-        onSuccess();
-        onClose();
-        resetForm();
+        // Edit mode-д modal хаагдах, create mode-д modal нээлттэй үлдэх
+        if (isEditMode) {
+          onSuccess();
+          onClose();
+        } else {
+          // Create mode-д зөвхөн form хоосордох, modal нээлттэй үлдэнэ
+          onSuccess(); // List шинэчлэх
+          resetForm();
+          // Modal нээлттэй үлдэнэ - onClose() дуудахгүй
+        }
       } else {
         const error = await response.json();
         alert(`Алдаа: ${error.message || error.error || 'Алдаа гарлаа'}`);
@@ -251,7 +258,7 @@ export default function ContractModal({ isOpen, onClose, onSuccess, contractId }
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Dialog as="div" className="relative z-50" onClose={isEditMode ? onClose : () => {}}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"

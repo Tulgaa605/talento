@@ -2,8 +2,10 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { StatsSkeleton, PageHeaderSkeleton, CardSkeleton } from "@/components/Skeletons";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 type EvalStatus = "Дууссан" | "Хүлээгдэж буй" | "Эхлээгүй" | string;
 type EvalType =
@@ -73,8 +75,51 @@ export default function PerformancePage() {
   const openAddModal = () => setShowAddModal(true);
   const closeAddModal = () => setShowAddModal(false);
 
+  const handleDownloadPDF = async () => {
+    if (!overviewRef.current) return;
+    
+    setIsGeneratingPDF(true);
+    try {
+      const canvas = await html2canvas(overviewRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = `Ажлын_гүйцэтгэл_үнэлгээ_${new Date().toISOString().split("T")[0]}.pdf`;
+      pdf.save(fileName);
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      alert("PDF үүсгэхэд алдаа гарлаа");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
+  const overviewRef = useRef<HTMLDivElement>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const handleEditEvaluation = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -139,7 +184,9 @@ export default function PerformancePage() {
       });
     } catch {
     }
-    closeAddModal();
+    // Modal алга болохгүй, зөвхөн form хоосордох
+    e.currentTarget.reset();
+    // closeAddModal(); - Modal нээлттэй үлдэнэ
   };
   // const totalEvaluations = evaluations.length;
   // const averageScore =
@@ -252,6 +299,27 @@ export default function PerformancePage() {
               })}
             </div>
           </div>
+          {activeTab === "overview" && (
+            <button
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPDF}
+              className="flex items-center gap-2 bg-[#0C213A] hover:bg-[#0C213A]/90 text-white px-4 py-2 rounded-lg shadow transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGeneratingPDF ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  <span>PDF үүсгэж байна...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>PDF татах</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         {performanceStats.map((stat, index) => (
@@ -294,7 +362,21 @@ export default function PerformancePage() {
         </div>
       </div>
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        <div ref={overviewRef} className="space-y-6">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-[#0C213A] mb-2">Ажлын гүйцэтгэл үнэлгээ</h1>
+            <p className="text-gray-600">Ажилтнуудын ажлын гүйцэтгэлийг үнэлж, хөгжүүлэх</p>
+            <div className="mt-2 text-sm text-gray-500">
+              Хэвлэсэн огноо: {new Date().toLocaleString('mn-MN', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-[#0C213A]">Шилдэг ажилтнууд</h3>
@@ -366,6 +448,7 @@ export default function PerformancePage() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       )}
 
@@ -517,7 +600,7 @@ export default function PerformancePage() {
                   <span className="text-sm font-medium text-blue-800">4 - Сайн</span>
                   <span className="text-xs text-blue-600 font-medium">80-89%</span>
                 </div>
-                <div className="flex justify_between items-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                   <span className="text-sm font-medium text-yellow-800">3 - Дундаж</span>
                   <span className="text-xs text-yellow-600 font-medium">70-79%</span>
                 </div>
@@ -591,7 +674,7 @@ export default function PerformancePage() {
                   </svg>
                   <span className="text-gray-600">Excel файл татах</span>
                 </button>
-                <button className="w-full flex items_center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0C213A] hover:bg-[#0C213A]/5 transition-colors">
+                <button className="w-full flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0C213A] hover:bg-[#0C213A]/5 transition-colors">
                   <svg className="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -718,7 +801,7 @@ export default function PerformancePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font_medium text-gray-700 mb-1">Үнэлэгч</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Үнэлэгч</label>
                   <input
                     name="evaluator"
                     defaultValue={selectedEvaluation.evaluator}

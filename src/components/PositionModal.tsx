@@ -8,45 +8,71 @@ interface Department {
   id: string;
   name: string;
   code: string;
-  description?: string;
 }
 
-interface DepartmentModalProps {
+interface Position {
+  id: string;
+  title: string;
+  description?: string;
+  code: string;
+  departmentId?: string;
+  salaryRange?: string;
+  requirements?: string;
+}
+
+interface PositionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  departmentId?: string | null;
+  positionId?: string | null;
 }
 
-export default function DepartmentModal({ isOpen, onClose, onSuccess, departmentId }: DepartmentModalProps) {
+export default function PositionModal({ isOpen, onClose, onSuccess, positionId }: PositionModalProps) {
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
+    title: '',
     code: '',
+    departmentId: '',
     description: '',
+    salaryRange: '',
+    requirements: '',
   });
 
-  const isEditMode = !!departmentId;
+  const isEditMode = !!positionId;
 
   useEffect(() => {
     if (isOpen) {
-      if (isEditMode && departmentId) {
-        fetchDepartment(departmentId);
+      fetchDepartments();
+      if (isEditMode && positionId) {
+        fetchPosition(positionId);
       } else {
         resetForm();
         generateCode();
       }
     }
-  }, [isOpen, departmentId, isEditMode]);
+  }, [isOpen, positionId, isEditMode]);
 
-  const generateCode = async () => {
+  const fetchDepartments = async () => {
     try {
       const response = await fetch('/api/hr/departments');
       if (response.ok) {
-        const departments = await response.json();
-        const ddCodes = departments
-          .map((d: { code: string }) => d.code)
+        const data = await response.json();
+        setDepartments(data);
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
+  };
+
+  const generateCode = async () => {
+    try {
+      const response = await fetch('/api/hr/positions');
+      if (response.ok) {
+        const positions = await response.json();
+        const ddCodes = positions
+          .map((p: { code: string }) => p.code)
           .filter((code: string) => /^DD\d{5}$/.test(code))
           .map((code: string) => parseInt(code.substring(2), 10))
           .sort((a: number, b: number) => b - a);
@@ -61,21 +87,24 @@ export default function DepartmentModal({ isOpen, onClose, onSuccess, department
     }
   };
 
-  const fetchDepartment = async (id: string) => {
+  const fetchPosition = async (id: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/hr/departments/${id}`);
+      const response = await fetch(`/api/hr/positions/${id}`);
       if (response.ok) {
-        const data: Department = await response.json();
+        const data: Position = await response.json();
         setFormData({
-          name: data.name || '',
+          title: data.title || '',
           code: data.code || '',
+          departmentId: data.departmentId || '',
           description: data.description || '',
+          salaryRange: data.salaryRange || '',
+          requirements: data.requirements || '',
         });
       }
     } catch (error) {
-      console.error('Error fetching department:', error);
-      alert('Хэлтсийн мэдээлэл авахад алдаа гарлаа');
+      console.error('Error fetching position:', error);
+      alert('Албан тушаалын мэдээлэл авахад алдаа гарлаа');
     } finally {
       setLoading(false);
     }
@@ -83,17 +112,20 @@ export default function DepartmentModal({ isOpen, onClose, onSuccess, department
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      title: '',
       code: '',
+      departmentId: '',
       description: '',
+      salaryRange: '',
+      requirements: '',
     });
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     let processedValue = value;
     
-    if (name === 'name' && value) {
+    if (name === 'title' && value) {
       const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-()]*$/;
       if (!lettersAndPunctuation.test(value)) {
         return;
@@ -103,13 +135,20 @@ export default function DepartmentModal({ isOpen, onClose, onSuccess, department
       }
     }
     
-    if (name === 'description' && value) {
+    if ((name === 'description' || name === 'requirements') && value) {
       const lettersAndPunctuation = /^[A-Za-zА-Яа-яЁёӨөҮү\s.,;:!?\-\n()]*$/;
       if (!lettersAndPunctuation.test(value)) {
         return;
       }
       if (value.length > 0) {
         processedValue = value.charAt(0).toUpperCase() + value.slice(1);
+      }
+    }
+
+    if (name === 'salaryRange' && value) {
+      const numbersAndDash = /^[0-9,\-\s]*$/;
+      if (!numbersAndDash.test(value)) {
+        return;
       }
     }
     
@@ -125,8 +164,8 @@ export default function DepartmentModal({ isOpen, onClose, onSuccess, department
 
     try {
       const url = isEditMode 
-        ? `/api/hr/departments/${departmentId}`
-        : '/api/hr/departments';
+        ? `/api/hr/positions/${positionId}`
+        : '/api/hr/positions';
       
       const method = isEditMode ? 'PUT' : 'POST';
 
@@ -147,15 +186,16 @@ export default function DepartmentModal({ isOpen, onClose, onSuccess, department
           // Create mode-д зөвхөн form хоосордох, modal нээлттэй үлдэнэ
           onSuccess(); // List шинэчлэх
           resetForm();
-          generateCode();
+          generateCode(); // Шинэ код үүсгэх
+          // Modal нээлттэй үлдэнэ - onClose() дуудахгүй
         }
       } else {
         const error = await response.json();
         alert(`Алдаа: ${error.message || error.error || 'Алдаа гарлаа'}`);
       }
     } catch (error) {
-      console.error('Error saving department:', error);
-      alert(isEditMode ? 'Хэлтэс засахдаа алдаа гарлаа' : 'Хэлтэс үүсгэхэд алдаа гарлаа');
+      console.error('Error saving position:', error);
+      alert(isEditMode ? 'Албан тушаал засахдаа алдаа гарлаа' : 'Албан тушаал үүсгэхэд алдаа гарлаа');
     } finally {
       setSubmitting(false);
     }
@@ -202,7 +242,7 @@ export default function DepartmentModal({ isOpen, onClose, onSuccess, department
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
                     <Dialog.Title as="h3" className="text-2xl font-bold leading-6 text-gray-900 mb-4">
-                      {isEditMode ? 'Хэлтсийн мэдээлэл засах' : 'Шинэ хэлтэс нэмэх'}
+                      {isEditMode ? 'Албан тушаалын мэдээлэл засах' : 'Шинэ албан тушаал нэмэх'}
                     </Dialog.Title>
 
                     {loading ? (
@@ -214,16 +254,16 @@ export default function DepartmentModal({ isOpen, onClose, onSuccess, department
                         <div className="grid grid-cols-1 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Хэлтсийн нэр *
+                              Тушаалын нэр *
                             </label>
                             <input
                               type="text"
-                              name="name"
-                              value={formData.name}
+                              name="title"
+                              value={formData.title}
                               onChange={handleInputChange}
                               required
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
-                              placeholder="Жишээ: Хүний нөөцийн хэлтэс"
+                              placeholder="Жишээ: Программист"
                             />
                           </div>
 
@@ -255,15 +295,62 @@ export default function DepartmentModal({ isOpen, onClose, onSuccess, department
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Хэлтэс
+                            </label>
+                            <select
+                              name="departmentId"
+                              value={formData.departmentId}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
+                            >
+                              <option value="">Хэлтэс сонгох</option>
+                              {departments.map((department) => (
+                                <option key={department.id} value={department.id}>
+                                  {department.name} ({department.code})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Цалин хязгаар
+                            </label>
+                            <input
+                              type="text"
+                              name="salaryRange"
+                              value={formData.salaryRange}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
+                              placeholder="Жишээ: 2,000,000 - 3,500,000"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
                               Тайлбар
                             </label>
                             <textarea
                               name="description"
                               value={formData.description}
                               onChange={handleInputChange}
+                              rows={3}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
+                              placeholder="Албан тушаалын тайлбар..."
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Шаардлага
+                            </label>
+                            <textarea
+                              name="requirements"
+                              value={formData.requirements}
+                              onChange={handleInputChange}
                               rows={4}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-gray-700 focus:ring-2 focus:ring-blue-500 text-sm"
-                              placeholder="Хэлтсийн тайлбар..."
+                              placeholder="Тушаалын шаардлага..."
                             />
                           </div>
                         </div>
@@ -283,7 +370,7 @@ export default function DepartmentModal({ isOpen, onClose, onSuccess, department
                           >
                             {submitting 
                               ? (isEditMode ? 'Хадгалж байна...' : 'Үүсгэж байна...') 
-                              : (isEditMode ? 'Хадгалах' : 'Хэлтэс үүсгэх')}
+                              : (isEditMode ? 'Хадгалах' : 'Албан тушаал үүсгэх')}
                           </button>
                         </div>
                       </form>
