@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useChat } from "@/providers/ChatProvider";
 import { DocumentArrowUpIcon } from "@heroicons/react/24/outline";
+import CVBuilder from "./CVBuilder";
 
 interface JobMatch {
   job: {
@@ -37,6 +38,7 @@ export default function CVUploadWithProfile({
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCVBuilder, setShowCVBuilder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { sendMessage } = useChat();
 
@@ -56,6 +58,11 @@ export default function CVUploadWithProfile({
         setFile(null);
       }
     }
+  };
+
+  const handleCVGenerated = async (generatedFile: File) => {
+    setFile(generatedFile);
+    setShowCVBuilder(false);
   };
 
   const handleUpload = async () => {
@@ -142,7 +149,44 @@ export default function CVUploadWithProfile({
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      {showCVBuilder && (
+        <CVBuilder
+          onCVGenerated={handleCVGenerated}
+          onClose={() => setShowCVBuilder(false)}
+        />
+      )}
+      <div className="space-y-6">
+        {/* CV Builder Integration */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                CV үүсгэх
+              </h3>
+              <p className="text-xs text-slate-600">
+                Мэргэжлийн CV үүсгээд эндээс байршуулна уу
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowCVBuilder(true)}
+            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+          >
+            CV Builder нээх
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-300"></div>
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-slate-500">эсвэл</span>
+          </div>
+        </div>
+
       <div className="flex flex-col space-y-4">
         <label className="text-base font-medium text-slate-900">
           CV-гээ байршуулах (PDF эсвэл Word)
@@ -195,6 +239,7 @@ export default function CVUploadWithProfile({
           {uploading ? "Байршуулж байна..." : "CV байршуулах"}
         </button>
       )}
-    </div>
+      </div>
+    </>
   );
 }

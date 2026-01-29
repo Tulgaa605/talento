@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useChat } from "@/providers/ChatProvider";
 import { useNotification } from "@/providers/NotificationProvider";
+import CVBuilder from "./CVBuilder";
 
 
 
@@ -18,6 +19,7 @@ export default function CVUpload({
   const { data: session } = useSession();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [showCVBuilder, setShowCVBuilder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { sendMessage } = useChat();
   const { addNotification } = useNotification();
@@ -36,6 +38,12 @@ export default function CVUpload({
       setFile(selectedFile);
       addNotification("Файл сонгогдлоо", "info");
     }
+  };
+
+  const handleCVGenerated = async (generatedFile: File) => {
+    setFile(generatedFile);
+    setShowCVBuilder(false);
+    addNotification("CV амжилттай үүслээ. Одоо байршуулна уу.", "success");
   };
 
   const handleUpload = async () => {
@@ -96,9 +104,46 @@ export default function CVUpload({
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <div className="space-y-4">
+    <>
+      {showCVBuilder && (
+        <CVBuilder
+          onCVGenerated={handleCVGenerated}
+          onClose={() => setShowCVBuilder(false)}
+        />
+      )}
+      <div className="w-full max-w-2xl mx-auto">
+        <div className="bg-white rounded-xl shadow-sm border p-6">
+          <div className="space-y-4">
+            {/* CV Builder Integration */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                    CV үүсгэх
+                  </h3>
+                  <p className="text-xs text-gray-600">
+                    Мэргэжлийн CV үүсгээд эндээс байршуулна уу
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCVBuilder(true)}
+                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+              >
+                CV Builder нээх
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">эсвэл</span>
+              </div>
+            </div>
+
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">CV байршуулах</h2>
             <button
@@ -171,8 +216,9 @@ export default function CVUpload({
           >
             {uploading ? "Байршуулж байна..." : "Байршуулах"}
           </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { TrashIcon } from "@heroicons/react/24/solid";
+import { TrashIcon, EyeIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
 
 interface CV {
@@ -17,6 +17,68 @@ interface CVListProps {
 export default function CVList({ cvs: initialCvs }: CVListProps) {
   const [cvs, setCVs] = useState(initialCvs);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isViewing, setIsViewing] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
+
+  const handleView = async (cvId: string) => {
+    if (isViewing === cvId) return;
+
+    setIsViewing(cvId);
+    try {
+      const response = await fetch(`/api/user/cvs/${cvId}/view`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      // Clean up the URL after a delay
+      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+    } catch (error) {
+      console.error('CV харахад алдаа гарлаа:', error);
+      alert(
+        error instanceof Error 
+          ? error.message 
+          : 'CV харахад алдаа гарлаа. Дахин оролдоно уу.'
+      );
+    } finally {
+      setIsViewing(null);
+    }
+  };
+
+  const handleDownload = async (cvId: string, fileName: string) => {
+    if (isDownloading === cvId) return;
+
+    setIsDownloading(cvId);
+    try {
+      const response = await fetch(`/api/user/cvs/${cvId}/view`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName || 'CV.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('CV татахад алдаа гарлаа:', error);
+      alert(
+        error instanceof Error 
+          ? error.message 
+          : 'CV татахад алдаа гарлаа. Дахин оролдоно уу.'
+      );
+    } finally {
+      setIsDownloading(null);
+    }
+  };
 
   const handleDelete = async (cvId: string) => {
     if (!confirm("CV-гээ устгахдаа итгэлтэй байна уу?")) return;
@@ -67,37 +129,34 @@ export default function CVList({ cvs: initialCvs }: CVListProps) {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 mt-3 sm:mt-0 w-full sm:w-auto">
-            {cv.fileUrl ? (
-              <a
-                href={cv.fileUrl}
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 sm:flex-none px-4 sm:px-5 py-2 bg-[#0a1931] text-white rounded-lg font-semibold shadow hover:bg-[#185adb] transition text-black text-center flex items-center justify-center gap-2 text-sm sm:text-base"
+            <button
+              onClick={() => handleView(cv.id)}
+              disabled={isViewing === cv.id}
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700 transition text-center flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <EyeIcon className="w-4 h-4" />
+              {isViewing === cv.id ? "Харж байна..." : "Харах"}
+            </button>
+            <button
+              onClick={() => handleDownload(cv.id, cv.fileName)}
+              disabled={isDownloading === cv.id}
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-[#0a1931] text-white rounded-lg font-semibold shadow hover:bg-[#185adb] transition text-center flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-                Татах
-              </a>
-            ) : (
-              <button
-                className="flex-1 sm:flex-none px-4 sm:px-5 py-2 bg-gray-300 text-white rounded-lg font-semibold shadow cursor-not-allowed text-black text-sm sm:text-base"
-                disabled
-              >
-                Татах
-              </button>
-            )}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              {isDownloading === cv.id ? "Татаж байна..." : "Татах"}
+            </button>
             <button
               onClick={() => handleDelete(cv.id)}
               disabled={isDeleting === cv.id}
