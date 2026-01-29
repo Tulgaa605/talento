@@ -318,6 +318,40 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
     return date.toLocaleDateString("mn-MN", { year: "numeric", month: "long" });
   };
 
+  // Helper function to convert lab() color to rgb using browser's color conversion
+  const getRgbFromLab = (labColor: string): string | null => {
+    if (!labColor || !labColor.includes("lab")) {
+      return null;
+    }
+    
+    try {
+      // Use browser's built-in color conversion by creating a temporary element
+      const tempEl = document.createElement("div");
+      tempEl.style.color = labColor;
+      tempEl.style.position = "absolute";
+      tempEl.style.visibility = "hidden";
+      document.body.appendChild(tempEl);
+      
+      const computedColor = window.getComputedStyle(tempEl).color;
+      document.body.removeChild(tempEl);
+      
+      // If conversion worked, return rgb value
+      if (computedColor && computedColor !== labColor && !computedColor.includes("lab")) {
+        return computedColor;
+      }
+      
+      // Fallback: try to parse and convert manually
+      const match = labColor.match(/lab\(([^)]+)\)/);
+      if (!match) return null;
+      
+      // For now, return a safe fallback color
+      return "#000000";
+    } catch (e) {
+      console.warn("Failed to convert lab color:", labColor, e);
+      return "#000000";
+    }
+  };
+
   const generatePDF = async () => {
     setGenerating(true);
     try {
@@ -334,9 +368,76 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       cvElement.style.display = "block";
       cvElement.style.visibility = "visible";
 
+      // Add CSS override to convert lab() colors to rgb/hex
+      // This polyfill converts lab() colors to rgb before html2canvas processes them
+      const styleId = "cv-pdf-color-fix";
+      let colorFixStyle = document.getElementById(styleId);
+      if (colorFixStyle) {
+        colorFixStyle.remove();
+      }
+      
+      // Inject CSS that will be processed by html2canvas
+      colorFixStyle = document.createElement("style");
+      colorFixStyle.id = styleId;
+      // Add CSS rules that override common Tailwind gradient classes with rgb equivalents
+      colorFixStyle.textContent = `
+        #cv-preview * {
+          /* Force rgb colors for common Tailwind colors */
+        }
+        #cv-preview .bg-gradient-to-r {
+          background-image: none !important;
+        }
+        #cv-preview [class*="from-blue"] {
+          background-color: rgb(59, 130, 246) !important;
+        }
+        #cv-preview [class*="from-indigo"] {
+          background-color: rgb(99, 102, 241) !important;
+        }
+        #cv-preview [class*="from-purple"] {
+          background-color: rgb(168, 85, 247) !important;
+        }
+        #cv-preview [class*="from-pink"] {
+          background-color: rgb(236, 72, 153) !important;
+        }
+        #cv-preview [class*="from-gray"] {
+          background-color: rgb(107, 114, 128) !important;
+        }
+        #cv-preview [class*="text-blue"] {
+          color: rgb(59, 130, 246) !important;
+        }
+        #cv-preview [class*="text-indigo"] {
+          color: rgb(99, 102, 241) !important;
+        }
+        #cv-preview [class*="text-purple"] {
+          color: rgb(168, 85, 247) !important;
+        }
+        #cv-preview [class*="text-pink"] {
+          color: rgb(236, 72, 153) !important;
+        }
+        #cv-preview [class*="text-gray"] {
+          color: rgb(107, 114, 128) !important;
+        }
+        #cv-preview [class*="text-white"] {
+          color: rgb(255, 255, 255) !important;
+        }
+        #cv-preview [class*="bg-white"] {
+          background-color: rgb(255, 255, 255) !important;
+        }
+        #cv-preview [class*="bg-gray"] {
+          background-color: rgb(243, 244, 246) !important;
+        }
+      `;
+      document.head.appendChild(colorFixStyle);
+      
+      // Wait for styles to apply
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       console.log("Starting PDF generation...");
       
-      const canvas = await html2canvas(cvElement, {
+      // Wrap html2canvas in try-catch to handle lab() color errors
+      let canvas;
+      try {
+        canvas = await html2canvas(cvElement, {
         scale: 2,
         useCORS: true,
         logging: false,
@@ -347,7 +448,131 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
         windowHeight: cvElement.scrollHeight,
         allowTaint: false,
         removeContainer: false,
-      });
+          onclone: (clonedDoc) => {
+            // Remove all gradient classes that might contain lab() colors
+            const allElements = clonedDoc.querySelectorAll("*");
+            allElements.forEach((el: Element) => {
+              const htmlEl = el as HTMLElement;
+              
+              // Remove gradient classes
+              if (htmlEl.className && typeof htmlEl.className === 'string') {
+                const classes = htmlEl.className.split(' ');
+                const filteredClasses = classes.filter(cls => 
+                  !cls.includes('gradient') && 
+                  !cls.includes('from-') && 
+                  !cls.includes('to-') &&
+                  !cls.includes('via-')
+                );
+                if (filteredClasses.length !== classes.length) {
+                  htmlEl.className = filteredClasses.join(' ');
+                }
+              }
+              
+              // Get computed styles and convert any lab() colors
+              const computedStyle = clonedDoc.defaultView?.getComputedStyle(htmlEl);
+              if (computedStyle) {
+                // Fix background colors
+                try {
+                  const bgColor = computedStyle.backgroundColor;
+                  if (bgColor && (bgColor.includes('lab') || bgColor === 'rgba(0, 0, 0, 0)')) {
+                    // If transparent or lab, set a fallback
+                    if (htmlEl.classList.toString().includes('bg-white') || 
+                        htmlEl.classList.toString().includes('bg-gray-50') ||
+                        htmlEl.classList.toString().includes('bg-gray-100')) {
+                      htmlEl.style.backgroundColor = '#ffffff';
+                    } else if (htmlEl.classList.toString().includes('bg-blue')) {
+                      htmlEl.style.backgroundColor = '#3b82f6';
+                    } else if (htmlEl.classList.toString().includes('bg-indigo')) {
+                      htmlEl.style.backgroundColor = '#6366f1';
+                    } else if (htmlEl.classList.toString().includes('bg-purple')) {
+                      htmlEl.style.backgroundColor = '#a855f7';
+                    } else if (htmlEl.classList.toString().includes('bg-pink')) {
+                      htmlEl.style.backgroundColor = '#ec4899';
+                    } else if (htmlEl.classList.toString().includes('bg-gray')) {
+                      htmlEl.style.backgroundColor = '#6b7280';
+                    } else {
+                      htmlEl.style.backgroundColor = '#ffffff';
+                    }
+                  }
+                } catch (e) {
+                  // Ignore
+                }
+                
+                // Fix text colors
+                try {
+                  const textColor = computedStyle.color;
+                  if (textColor && textColor.includes('lab')) {
+                    if (htmlEl.classList.toString().includes('text-white')) {
+                      htmlEl.style.color = '#ffffff';
+                    } else if (htmlEl.classList.toString().includes('text-blue')) {
+                      htmlEl.style.color = '#3b82f6';
+                    } else if (htmlEl.classList.toString().includes('text-indigo')) {
+                      htmlEl.style.color = '#6366f1';
+                    } else if (htmlEl.classList.toString().includes('text-purple')) {
+                      htmlEl.style.color = '#a855f7';
+                    } else if (htmlEl.classList.toString().includes('text-pink')) {
+                      htmlEl.style.color = '#ec4899';
+                    } else if (htmlEl.classList.toString().includes('text-gray')) {
+                      htmlEl.style.color = '#6b7280';
+                    } else {
+                      htmlEl.style.color = '#000000';
+                    }
+                  }
+                } catch (e) {
+                  // Ignore
+                }
+              }
+            });
+          },
+        });
+      } catch (error: any) {
+        // If error is related to lab() colors, try again with more aggressive fixes
+        if (error?.message?.includes('lab') || error?.message?.includes('color')) {
+          console.warn("Retrying PDF generation with color fixes...");
+          
+          // Remove the previous style fix
+          if (colorFixStyle) {
+            colorFixStyle.remove();
+          }
+          
+          // Add more aggressive CSS fixes
+          colorFixStyle = document.createElement("style");
+          colorFixStyle.id = styleId;
+          colorFixStyle.textContent = `
+            #cv-preview * {
+              background-image: none !important;
+            }
+            #cv-preview .bg-gradient-to-r,
+            #cv-preview .bg-gradient-to-br,
+            #cv-preview .bg-gradient-to-l {
+              background: linear-gradient(to right, #3b82f6, #6366f1) !important;
+            }
+          `;
+          document.head.appendChild(colorFixStyle);
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          
+          // Retry
+          canvas = await html2canvas(cvElement, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: "#ffffff",
+            width: cvElement.scrollWidth,
+            height: cvElement.scrollHeight,
+            windowWidth: cvElement.scrollWidth,
+            windowHeight: cvElement.scrollHeight,
+            allowTaint: false,
+            removeContainer: false,
+          });
+        } else {
+          throw error;
+        }
+      } finally {
+        // Clean up the style fix
+        if (colorFixStyle) {
+          colorFixStyle.remove();
+        }
+      }
 
       console.log("Canvas created:", canvas.width, canvas.height);
 
@@ -436,79 +661,88 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   };
 
   const renderModernTemplate = () => {
-    // Two-column layout with dark blue left sidebar
+    // Two-column layout with dark blue left sidebar - A4 optimized
     return (
       <div
         id="cv-preview"
-        className="bg-white p-0 max-w-4xl mx-auto shadow-lg"
-        style={{ fontFamily: "Arial, sans-serif", fontSize: "11pt" }}
+        className="bg-white p-0 mx-auto shadow-lg"
+        style={{ 
+          fontFamily: "Arial, sans-serif", 
+          fontSize: "10pt",
+          width: "210mm",
+          maxWidth: "210mm",
+          minHeight: "297mm"
+        }}
       >
         <div className="flex">
           {/* Left Column - Dark Blue Background */}
           <div className="w-1/3" style={{ backgroundColor: "#1e3a5f", minHeight: "100%" }}>
-            <div className="p-6 pb-4">
-              <h1 className="text-xl font-bold leading-tight text-white">
+            <div className="p-5 pb-4">
+              <h1 className="text-xl font-bold leading-tight text-white" style={{ fontSize: "18px", lineHeight: "1.2" }}>
                 {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
               </h1>
             </div>
-            <div className="px-6 pb-4">
-              <h2 className="text-base font-bold mb-3" style={{ color: "#d0d0d0", fontSize: "13px" }}>Personal details</h2>
-              <div className="space-y-2.5 text-xs text-white" style={{ fontSize: "11px" }}>
-                {personalInfo.firstName && personalInfo.lastName && (
-                  <div className="flex items-start gap-2">
-                    <span className="text-sm mt-0.5 flex-shrink-0" style={{ fontSize: "12px" }}>👤</span>
-                    <span className="leading-relaxed">{personalInfo.firstName} {personalInfo.lastName}</span>
-                  </div>
-                )}
+            <div className="px-5 pb-4">
+              <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ color: "#d0d0d0", fontSize: "12px" }}>Personal details</h2>
+              <div className="space-y-2 text-white" style={{ fontSize: "10px", lineHeight: "1.5" }}>
                 {personalInfo.email && (
                   <div className="flex items-start gap-2">
-                    <span className="text-sm mt-0.5 flex-shrink-0" style={{ fontSize: "12px" }}>📧</span>
-                    <span className="leading-relaxed">{personalInfo.email}</span>
+                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "11px" }}>📧</span>
+                    <span className="break-words">{personalInfo.email}</span>
                   </div>
                 )}
                 {personalInfo.phone && (
                   <div className="flex items-start gap-2">
-                    <span className="text-sm mt-0.5 flex-shrink-0" style={{ fontSize: "12px" }}>📞</span>
-                    <span className="leading-relaxed">{personalInfo.phone}</span>
+                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "11px" }}>📞</span>
+                    <span>{personalInfo.phone}</span>
                   </div>
                 )}
                 {personalInfo.address && (
                   <div className="flex items-start gap-2">
-                    <span className="text-sm mt-0.5 flex-shrink-0" style={{ fontSize: "12px" }}>🏠</span>
-                    <span className="leading-relaxed">{personalInfo.address}</span>
+                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "11px" }}>🏠</span>
+                    <span className="break-words">{personalInfo.address}</span>
+                  </div>
+                )}
+                {personalInfo.linkedin && (
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "11px" }}>💼</span>
+                    <span className="break-words">{personalInfo.linkedin}</span>
                   </div>
                 )}
               </div>
             </div>
             {skills.some((skill) => skill.name) && (
-              <div className="px-6 pt-0 pb-6">
-                <h2 className="text-base font-bold mb-3" style={{ color: "#d0d0d0", fontSize: "13px" }}>Skills</h2>
-                <div className="space-y-1.5 text-xs text-white leading-relaxed" style={{ fontSize: "11px" }}>
+              <div className="px-5 pt-0 pb-5">
+                <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ color: "#d0d0d0", fontSize: "12px" }}>Skills</h2>
+                <div className="space-y-1.5 text-white" style={{ fontSize: "10px", lineHeight: "1.5" }}>
                   {skills.filter((skill) => skill.name).map((skill) => (
-                    <div key={skill.id} className="leading-relaxed">{skill.name}</div>
+                    <div key={skill.id}>{skill.name}</div>
                   ))}
                 </div>
               </div>
             )}
           </div>
-          <div className="w-2/3 bg-white p-6">
+          <div className="w-2/3 bg-white p-5">
             {personalInfo.summary && (
               <div className="mb-5">
-                <h2 className="text-base font-bold mb-2" style={{ color: "#2d3748", fontSize: "13px" }}>Profile</h2>
-                <p className="text-xs leading-relaxed" style={{ color: "#4a5568", fontSize: "11px" }}>{personalInfo.summary}</p>
+                <h2 className="text-base font-bold mb-2 uppercase tracking-wide" style={{ color: "#2d3748", fontSize: "13px" }}>Profile</h2>
+                <p className="leading-relaxed" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.6" }}>{personalInfo.summary}</p>
               </div>
             )}
             {educations.some((edu) => edu.school || edu.degree) && (
               <div className="mb-5">
-                <h2 className="text-base font-bold mb-2" style={{ color: "#2d3748", fontSize: "13px" }}>Education</h2>
-                <div className="space-y-2">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-300 pb-1" style={{ color: "#2d3748", fontSize: "13px" }}>Education</h2>
+                <div className="space-y-2.5">
                   {educations.filter((edu) => edu.school || edu.degree).map((edu) => (
                     <div key={edu.id} className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h3 className="text-xs font-semibold" style={{ color: "#2d3748", fontSize: "11px" }}>{edu.degree}</h3>
-                        <p className="text-xs" style={{ color: "#4a5568", fontSize: "11px" }}>{edu.school}</p>
+                        <h3 className="font-semibold mb-1" style={{ color: "#2d3748", fontSize: "11px" }}>{edu.degree}</h3>
+                        <p className="mb-0.5" style={{ color: "#4a5568", fontSize: "10px" }}>{edu.school}</p>
+                        {edu.field && (
+                          <p style={{ color: "#718096", fontSize: "9px" }}>{edu.field}</p>
+                        )}
                       </div>
-                      <p className="text-xs ml-3 whitespace-nowrap" style={{ color: "#718096", fontSize: "11px" }}>
+                      <p className="ml-3 whitespace-nowrap" style={{ color: "#718096", fontSize: "10px" }}>
                         {formatDate(edu.startDate)} - {edu.current ? "Present" : formatDate(edu.endDate) || ""}
                       </p>
                     </div>
@@ -518,29 +752,78 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
             )}
             {experiences.some((exp) => exp.company || exp.position) && (
               <div className="mb-5">
-                <h2 className="text-base font-bold mb-2" style={{ color: "#2d3748", fontSize: "13px" }}>Employment</h2>
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-300 pb-1" style={{ color: "#2d3748", fontSize: "13px" }}>Employment</h2>
                 <div className="space-y-3">
                   {experiences.filter((exp) => exp.company || exp.position).map((exp) => (
                     <div key={exp.id}>
                       <div className="flex justify-between items-start mb-1.5">
                         <div className="flex-1">
-                          <h3 className="text-xs font-semibold" style={{ color: "#2d3748", fontSize: "11px" }}>{exp.position}</h3>
-                          <p className="text-xs" style={{ color: "#4a5568", fontSize: "11px" }}>{exp.company}</p>
+                          <h3 className="font-semibold mb-0.5" style={{ color: "#2d3748", fontSize: "11px" }}>{exp.position}</h3>
+                          <p className="mb-0.5" style={{ color: "#4a5568", fontSize: "10px" }}>{exp.company}</p>
+                          {exp.location && (
+                            <p style={{ color: "#718096", fontSize: "9px" }}>{exp.location}</p>
+                          )}
                         </div>
-                        <p className="text-xs ml-3 whitespace-nowrap" style={{ color: "#718096", fontSize: "11px" }}>
+                        <p className="ml-3 whitespace-nowrap" style={{ color: "#718096", fontSize: "10px" }}>
                           {formatDate(exp.startDate)} - {exp.current ? "Present" : formatDate(exp.endDate) || ""}
                         </p>
                       </div>
                       {exp.description && (
-                        <ul className="text-xs list-disc list-inside ml-1 space-y-0.5 mt-1" style={{ color: "#4a5568", fontSize: "11px" }}>
+                        <ul className="list-disc list-inside ml-1 space-y-0.5 mt-1" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.5" }}>
                           {exp.description.split('\n').filter(line => line.trim()).map((line, idx) => (
-                            <li key={idx} className="leading-relaxed">{line.trim()}</li>
+                            <li key={idx}>{line.trim()}</li>
                           ))}
                         </ul>
                       )}
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+            {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name)) && (
+              <div className="mb-5">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-300 pb-1" style={{ color: "#2d3748", fontSize: "13px" }}>Additional Information</h2>
+                {languages.some((lang) => lang.name) && (
+                  <div className="mb-3">
+                    <h3 className="font-semibold mb-1.5" style={{ color: "#2d3748", fontSize: "11px" }}>Languages</h3>
+                    <div className="space-y-1" style={{ fontSize: "10px", color: "#4a5568" }}>
+                      {languages.filter((lang) => lang.name).map((lang) => (
+                        <div key={lang.id}>
+                          {lang.name} - {lang.level === "basic" && "Энгийн"}
+                          {lang.level === "conversational" && "Ярилцлага"}
+                          {lang.level === "fluent" && "Чөлөөтэй"}
+                          {lang.level === "native" && "Эх хэл"}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {certificates.some((cert) => cert.name) && (
+                  <div className="mb-3">
+                    <h3 className="font-semibold mb-1.5" style={{ color: "#2d3748", fontSize: "11px" }}>Certificates</h3>
+                    <div className="space-y-1" style={{ fontSize: "10px", color: "#4a5568" }}>
+                      {certificates.filter((cert) => cert.name).map((cert) => (
+                        <div key={cert.id}>
+                          <span className="font-medium">{cert.name}</span> - {cert.issuer} {cert.date && `(${formatDate(cert.date)})`}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {projects.some((proj) => proj.name) && (
+                  <div>
+                    <h3 className="font-semibold mb-1.5" style={{ color: "#2d3748", fontSize: "11px" }}>Projects</h3>
+                    <div className="space-y-2" style={{ fontSize: "10px", color: "#4a5568" }}>
+                      {projects.filter((proj) => proj.name).map((proj) => (
+                        <div key={proj.id}>
+                          <span className="font-medium">{proj.name}</span>
+                          {proj.description && <p className="mt-0.5" style={{ fontSize: "9px" }}>{proj.description}</p>}
+                          {proj.technologies && <p className="mt-0.5" style={{ fontSize: "9px", color: "#718096" }}>Tech: {proj.technologies}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -550,34 +833,41 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   };
 
   const renderClassicTemplate = () => {
-    // Single column, clean and simple design with gray sidebar
+    // Single column, clean and simple design with gray sidebar - A4 optimized
     return (
       <div
         id="cv-preview"
-        className="bg-white p-0 max-w-4xl mx-auto shadow-lg"
-        style={{ fontFamily: "Times New Roman, serif", fontSize: "12pt" }}
+        className="bg-white p-0 mx-auto shadow-lg"
+        style={{ 
+          fontFamily: "Times New Roman, serif", 
+          fontSize: "10pt",
+          width: "210mm",
+          maxWidth: "210mm",
+          minHeight: "297mm"
+        }}
       >
         <div className="flex">
           {/* Left Column - Gray Background */}
-          <div className="w-1/4 bg-gray-200 p-6">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="w-1/4 bg-gray-200 p-5">
+            <div className="text-center mb-5">
+              <h1 className="text-xl font-bold text-gray-900 mb-2" style={{ fontSize: "18px", lineHeight: "1.2" }}>
                 {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
               </h1>
             </div>
             <div className="space-y-4">
               <div>
-                <h2 className="text-sm font-bold text-gray-800 mb-2 uppercase tracking-wide">Contact</h2>
-                <div className="text-xs text-gray-700 space-y-1">
-                  {personalInfo.email && <div>📧 {personalInfo.email}</div>}
+                <h2 className="text-xs font-bold text-gray-800 mb-2 uppercase tracking-wide border-b border-gray-600 pb-1" style={{ fontSize: "11px" }}>Contact</h2>
+                <div className="text-gray-700 space-y-1.5" style={{ fontSize: "10px", lineHeight: "1.5" }}>
+                  {personalInfo.email && <div className="break-words">📧 {personalInfo.email}</div>}
                   {personalInfo.phone && <div>📞 {personalInfo.phone}</div>}
-                  {personalInfo.address && <div>🏠 {personalInfo.address}</div>}
+                  {personalInfo.address && <div className="break-words">🏠 {personalInfo.address}</div>}
+                  {personalInfo.linkedin && <div className="break-words">💼 {personalInfo.linkedin}</div>}
                 </div>
               </div>
               {skills.some((skill) => skill.name) && (
                 <div>
-                  <h2 className="text-sm font-bold text-gray-800 mb-2 uppercase tracking-wide">Skills</h2>
-                  <div className="text-xs text-gray-700 space-y-1">
+                  <h2 className="text-xs font-bold text-gray-800 mb-2 uppercase tracking-wide border-b border-gray-600 pb-1" style={{ fontSize: "11px" }}>Skills</h2>
+                  <div className="text-gray-700 space-y-1" style={{ fontSize: "10px", lineHeight: "1.5" }}>
                     {skills.filter((skill) => skill.name).map((skill) => (
                       <div key={skill.id}>• {skill.name}</div>
                     ))}
@@ -587,24 +877,27 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
             </div>
           </div>
           {/* Right Column - White Background */}
-          <div className="w-3/4 bg-white p-8">
+          <div className="w-3/4 bg-white p-6">
             {personalInfo.summary && (
-              <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-2 border-b-2 border-gray-800 pb-1">Profile</h2>
-                <p className="text-sm text-gray-700 leading-relaxed">{personalInfo.summary}</p>
+              <div className="mb-5">
+                <h2 className="text-base font-bold text-gray-900 mb-2 border-b-2 border-gray-800 pb-1" style={{ fontSize: "13px" }}>Profile</h2>
+                <p className="text-gray-700 leading-relaxed" style={{ fontSize: "10px", lineHeight: "1.6" }}>{personalInfo.summary}</p>
               </div>
             )}
             {educations.some((edu) => edu.school || edu.degree) && (
-              <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-2 border-b-2 border-gray-800 pb-1">Education</h2>
+              <div className="mb-5">
+                <h2 className="text-base font-bold text-gray-900 mb-2 border-b-2 border-gray-800 pb-1" style={{ fontSize: "13px" }}>Education</h2>
                 {educations.filter((edu) => edu.school || edu.degree).map((edu) => (
-                  <div key={edu.id} className="mb-4">
+                  <div key={edu.id} className="mb-3">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-base font-semibold text-gray-900">{edu.degree}</h3>
-                        <p className="text-sm text-gray-700">{edu.school}</p>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-0.5" style={{ fontSize: "11px" }}>{edu.degree}</h3>
+                        <p className="text-gray-700 mb-0.5" style={{ fontSize: "10px" }}>{edu.school}</p>
+                        {edu.field && (
+                          <p className="text-gray-600" style={{ fontSize: "9px" }}>{edu.field}</p>
+                        )}
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-gray-600 whitespace-nowrap ml-3" style={{ fontSize: "10px" }}>
                         {formatDate(edu.startDate)} - {edu.current ? "Present" : formatDate(edu.endDate) || ""}
                       </p>
                     </div>
@@ -613,21 +906,24 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
               </div>
             )}
             {experiences.some((exp) => exp.company || exp.position) && (
-              <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-2 border-b-2 border-gray-800 pb-1">Employment</h2>
+              <div className="mb-5">
+                <h2 className="text-base font-bold text-gray-900 mb-2 border-b-2 border-gray-800 pb-1" style={{ fontSize: "13px" }}>Employment</h2>
                 {experiences.filter((exp) => exp.company || exp.position).map((exp) => (
-                  <div key={exp.id} className="mb-4">
+                  <div key={exp.id} className="mb-3">
                     <div className="flex justify-between items-start mb-1">
                       <div>
-                        <h3 className="text-base font-semibold text-gray-900">{exp.position}</h3>
-                        <p className="text-sm text-gray-700">{exp.company}</p>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-0.5" style={{ fontSize: "11px" }}>{exp.position}</h3>
+                        <p className="text-gray-700 mb-0.5" style={{ fontSize: "10px" }}>{exp.company}</p>
+                        {exp.location && (
+                          <p className="text-gray-600" style={{ fontSize: "9px" }}>{exp.location}</p>
+                        )}
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-gray-600 whitespace-nowrap ml-3" style={{ fontSize: "10px" }}>
                         {formatDate(exp.startDate)} - {exp.current ? "Present" : formatDate(exp.endDate) || ""}
                       </p>
                     </div>
                     {exp.description && (
-                      <ul className="text-sm text-gray-700 list-disc list-inside ml-4 space-y-1">
+                      <ul className="text-gray-700 list-disc list-inside ml-4 space-y-0.5" style={{ fontSize: "10px", lineHeight: "1.5" }}>
                         {exp.description.split('\n').filter(line => line.trim()).map((line, idx) => (
                           <li key={idx}>{line.trim()}</li>
                         ))}
@@ -637,6 +933,52 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 ))}
               </div>
             )}
+            {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name)) && (
+              <div className="mb-5">
+                <h2 className="text-base font-bold text-gray-900 mb-2 border-b-2 border-gray-800 pb-1" style={{ fontSize: "13px" }}>Additional Information</h2>
+                {languages.some((lang) => lang.name) && (
+                  <div className="mb-3">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1.5" style={{ fontSize: "11px" }}>Languages</h3>
+                    <div className="space-y-1" style={{ fontSize: "10px", color: "#4a5568" }}>
+                      {languages.filter((lang) => lang.name).map((lang) => (
+                        <div key={lang.id}>
+                          {lang.name} - {lang.level === "basic" && "Энгийн"}
+                          {lang.level === "conversational" && "Ярилцлага"}
+                          {lang.level === "fluent" && "Чөлөөтэй"}
+                          {lang.level === "native" && "Эх хэл"}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {certificates.some((cert) => cert.name) && (
+                  <div className="mb-3">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1.5" style={{ fontSize: "11px" }}>Certificates</h3>
+                    <div className="space-y-1" style={{ fontSize: "10px", color: "#4a5568" }}>
+                      {certificates.filter((cert) => cert.name).map((cert) => (
+                        <div key={cert.id}>
+                          <span className="font-medium">{cert.name}</span> - {cert.issuer} {cert.date && `(${formatDate(cert.date)})`}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {projects.some((proj) => proj.name) && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1.5" style={{ fontSize: "11px" }}>Projects</h3>
+                    <div className="space-y-2" style={{ fontSize: "10px", color: "#4a5568" }}>
+                      {projects.filter((proj) => proj.name).map((proj) => (
+                        <div key={proj.id}>
+                          <span className="font-medium">{proj.name}</span>
+                          {proj.description && <p className="mt-0.5" style={{ fontSize: "9px" }}>{proj.description}</p>}
+                          {proj.technologies && <p className="mt-0.5" style={{ fontSize: "9px", color: "#718096" }}>Tech: {proj.technologies}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -644,72 +986,85 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   };
 
   const renderCreativeTemplate = () => {
-    // Colorful, modern design with gradients - Top header with colorful sections
+    // Two-column layout with dark gray header spanning both columns - A4 optimized
     return (
       <div
         id="cv-preview"
-        className="bg-white p-0 max-w-4xl mx-auto shadow-lg"
-        style={{ fontFamily: "Arial, sans-serif", fontSize: "11pt" }}
+        className="bg-white p-0 mx-auto shadow-lg"
+        style={{ 
+          fontFamily: "Arial, sans-serif", 
+          fontSize: "10pt",
+          width: "210mm",
+          maxWidth: "210mm",
+          minHeight: "297mm"
+        }}
       >
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 text-white">
-          <h1 className="text-3xl font-bold mb-2">
+        {/* Header - Dark gray background spanning full width */}
+        <div className="p-5" style={{ backgroundColor: "#4a5568" }}>
+          <h1 className="text-xl font-bold mb-2 text-white" style={{ fontSize: "20px", lineHeight: "1.2" }}>
             {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
           </h1>
-          <div className="flex flex-wrap gap-4 text-sm">
-            {personalInfo.email && <span>📧 {personalInfo.email}</span>}
-            {personalInfo.phone && <span>📞 {personalInfo.phone}</span>}
-            {personalInfo.address && <span>🏠 {personalInfo.address}</span>}
+          <div className="flex flex-wrap gap-3 text-white" style={{ fontSize: "10px", lineHeight: "1.5" }}>
+            {personalInfo.email && <span className="break-words">{personalInfo.email}</span>}
+            {personalInfo.phone && <span>{personalInfo.phone}</span>}
+            {personalInfo.address && <span className="break-words">{personalInfo.address}</span>}
+            {personalInfo.linkedin && <span className="break-words">💼 {personalInfo.linkedin}</span>}
           </div>
         </div>
-        <div className="p-6">
+
+        {/* Two-column layout */}
+        <div className="flex">
+          {/* Left Column - Main content */}
+          <div className="w-2/3 bg-white p-5">
           {personalInfo.summary && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border-l-4 border-indigo-500">
-              <h2 className="text-lg font-bold text-indigo-900 mb-2">Profile</h2>
-              <p className="text-sm text-gray-700 leading-relaxed">{personalInfo.summary}</p>
+              <div className="mb-5">
+                <h2 className="text-base font-bold mb-2 uppercase tracking-wide" style={{ color: "#2d3748", fontSize: "13px" }}>Profile</h2>
+                <p className="leading-relaxed" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.6" }}>{personalInfo.summary}</p>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-6">
-            <div>
+            
               {educations.some((edu) => edu.school || edu.degree) && (
-                <div className="mb-6 p-4 bg-indigo-50 rounded-lg">
-                  <h2 className="text-lg font-bold text-indigo-600 mb-3 border-l-4 border-indigo-600 pl-2">Education</h2>
+              <div className="mb-5">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-300 pb-1" style={{ color: "#2d3748", fontSize: "13px" }}>Education</h2>
+                <div className="space-y-2.5">
                   {educations.filter((edu) => edu.school || edu.degree).map((edu) => (
-                    <div key={edu.id} className="mb-4">
-                      <h3 className="text-sm font-semibold text-gray-900">{edu.degree}</h3>
-                      <p className="text-xs text-gray-600">{edu.school}</p>
-                      <p className="text-xs text-gray-500 mt-1">
+                    <div key={edu.id} className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold mb-0.5" style={{ color: "#2d3748", fontSize: "11px" }}>{edu.degree}</h3>
+                        <p className="mb-0.5" style={{ color: "#4a5568", fontSize: "10px" }}>{edu.school}</p>
+                        {edu.field && (
+                          <p style={{ color: "#718096", fontSize: "9px" }}>{edu.field}</p>
+                        )}
+                      </div>
+                      <p className="ml-3 whitespace-nowrap" style={{ color: "#718096", fontSize: "10px" }}>
                         {formatDate(edu.startDate)} - {edu.current ? "Present" : formatDate(edu.endDate) || ""}
                       </p>
                     </div>
-                  ))}
-                </div>
-              )}
-              {skills.some((skill) => skill.name) && (
-                <div className="mb-6 p-4 bg-purple-50 rounded-lg">
-                  <h2 className="text-lg font-bold text-purple-600 mb-3 border-l-4 border-purple-600 pl-2">Skills</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {skills.filter((skill) => skill.name).map((skill) => (
-                      <span key={skill.id} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
-                        {skill.name}
-                      </span>
                     ))}
                   </div>
                 </div>
               )}
-            </div>
-            <div>
+
               {experiences.some((exp) => exp.company || exp.position) && (
-                <div className="mb-6 p-4 bg-pink-50 rounded-lg">
-                  <h2 className="text-lg font-bold text-pink-600 mb-3 border-l-4 border-pink-600 pl-2">Employment</h2>
+              <div className="mb-5">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-300 pb-1" style={{ color: "#2d3748", fontSize: "13px" }}>Employment</h2>
+                <div className="space-y-3">
                   {experiences.filter((exp) => exp.company || exp.position).map((exp) => (
-                    <div key={exp.id} className="mb-4">
-                      <h3 className="text-sm font-semibold text-gray-900">{exp.position}</h3>
-                      <p className="text-xs text-gray-600">{exp.company}</p>
-                      <p className="text-xs text-gray-500 mt-1">
+                    <div key={exp.id}>
+                      <div className="flex justify-between items-start mb-1.5">
+                        <div className="flex-1">
+                          <h3 className="font-semibold mb-0.5" style={{ color: "#2d3748", fontSize: "11px" }}>{exp.position}</h3>
+                          <p className="mb-0.5" style={{ color: "#4a5568", fontSize: "10px" }}>{exp.company}</p>
+                          {exp.location && (
+                            <p style={{ color: "#718096", fontSize: "9px" }}>{exp.location}</p>
+                          )}
+                        </div>
+                        <p className="ml-3 whitespace-nowrap" style={{ color: "#718096", fontSize: "10px" }}>
                         {formatDate(exp.startDate)} - {exp.current ? "Present" : formatDate(exp.endDate) || ""}
                       </p>
+                      </div>
                       {exp.description && (
-                        <ul className="text-xs text-gray-700 list-disc list-inside ml-2 mt-2 space-y-1">
+                        <ul className="list-disc list-inside ml-1 space-y-0.5 mt-1" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.5" }}>
                           {exp.description.split('\n').filter(line => line.trim()).map((line, idx) => (
                             <li key={idx}>{line.trim()}</li>
                           ))}
@@ -718,8 +1073,85 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                     </div>
                   ))}
                 </div>
+                </div>
               )}
+
+            {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name)) && (
+              <div className="mb-5">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-300 pb-1" style={{ color: "#2d3748", fontSize: "13px" }}>Additional Information</h2>
+                {languages.some((lang) => lang.name) && (
+                  <div className="mb-3">
+                    <h3 className="font-semibold mb-1.5" style={{ color: "#2d3748", fontSize: "11px" }}>Languages</h3>
+                    <div className="space-y-1" style={{ fontSize: "10px", color: "#4a5568" }}>
+                      {languages.filter((lang) => lang.name).map((lang) => (
+                        <div key={lang.id}>
+                          {lang.name} - {lang.level === "basic" && "Энгийн"}
+                          {lang.level === "conversational" && "Ярилцлага"}
+                          {lang.level === "fluent" && "Чөлөөтэй"}
+                          {lang.level === "native" && "Эх хэл"}
             </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {certificates.some((cert) => cert.name) && (
+                  <div className="mb-3">
+                    <h3 className="font-semibold mb-1.5" style={{ color: "#2d3748", fontSize: "11px" }}>Certificates</h3>
+                    <div className="space-y-1" style={{ fontSize: "10px", color: "#4a5568" }}>
+                      {certificates.filter((cert) => cert.name).map((cert) => (
+                        <div key={cert.id}>
+                          <span className="font-medium">{cert.name}</span> - {cert.issuer} {cert.date && `(${formatDate(cert.date)})`}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {projects.some((proj) => proj.name) && (
+                  <div>
+                    <h3 className="font-semibold mb-1.5" style={{ color: "#2d3748", fontSize: "11px" }}>Projects</h3>
+                    <div className="space-y-2" style={{ fontSize: "10px", color: "#4a5568" }}>
+                      {projects.filter((proj) => proj.name).map((proj) => (
+                        <div key={proj.id}>
+                          <span className="font-medium">{proj.name}</span>
+                          {proj.description && <p className="mt-0.5" style={{ fontSize: "9px" }}>{proj.description}</p>}
+                          {proj.technologies && <p className="mt-0.5" style={{ fontSize: "9px", color: "#718096" }}>Tech: {proj.technologies}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="w-1/3 bg-white p-5" style={{ backgroundColor: "#f7fafc" }}>
+            <div className="mb-5">
+              <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ color: "#2d3748", fontSize: "12px" }}>Personal details</h2>
+              <div className="space-y-2 text-xs" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.5" }}>
+                {personalInfo.address && (
+                  <div>
+                    <span className="font-semibold">Үндэс угсаа:</span> {personalInfo.address}
+                  </div>
+                )}
+                {!personalInfo.address && (
+                  <div>
+                    <span className="font-semibold">Үндэс угсаа:</span> Монгол Улс
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {skills.some((skill) => skill.name) && (
+              <div>
+                <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ color: "#2d3748", fontSize: "12px" }}>Skills</h2>
+                <div className="space-y-1.5 text-xs leading-relaxed" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.5" }}>
+                  {skills.filter((skill) => skill.name).map((skill) => (
+                    <div key={skill.id}>{skill.name}</div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -727,40 +1159,51 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   };
 
   const renderWizardTemplate = () => {
-    // Mystical, elegant design with dark theme
+    // Mystical, elegant design with dark theme - A4 optimized
     return (
       <div
         id="cv-preview"
-        className="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 p-0 max-w-4xl mx-auto shadow-2xl"
-        style={{ fontFamily: "Georgia, serif", fontSize: "11pt" }}
+        className="p-0 mx-auto shadow-2xl"
+        style={{ 
+          fontFamily: "Georgia, serif", 
+          fontSize: "10pt",
+          width: "210mm",
+          maxWidth: "210mm",
+          minHeight: "297mm",
+          background: "linear-gradient(to bottom right, #1a202c, #4c1d95, #1a202c)"
+        }}
       >
-        <div className="p-8 border-b-2 border-purple-500">
-          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-3">
+        <div className="p-5 border-b-2 border-purple-500">
+          <h1 className="text-2xl font-bold mb-2 text-white" style={{ fontSize: "20px", color: "#a78bfa", lineHeight: "1.2" }}>
             {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
           </h1>
-          <div className="flex flex-wrap gap-4 text-purple-200 text-sm">
-            {personalInfo.email && <span>✨ {personalInfo.email}</span>}
+          <div className="flex flex-wrap gap-3 text-purple-200" style={{ fontSize: "10px", lineHeight: "1.5" }}>
+            {personalInfo.email && <span className="break-words">✨ {personalInfo.email}</span>}
             {personalInfo.phone && <span>✨ {personalInfo.phone}</span>}
-            {personalInfo.address && <span>✨ {personalInfo.address}</span>}
+            {personalInfo.address && <span className="break-words">✨ {personalInfo.address}</span>}
+            {personalInfo.linkedin && <span className="break-words">✨ {personalInfo.linkedin}</span>}
           </div>
         </div>
-        <div className="p-6 text-purple-100">
+        <div className="p-5 text-purple-100">
           {personalInfo.summary && (
-            <div className="mb-6 p-4 bg-purple-900/50 rounded-lg border border-purple-500/30">
-              <h2 className="text-xl font-bold text-purple-300 mb-2">Profile</h2>
-              <p className="text-sm leading-relaxed">{personalInfo.summary}</p>
+            <div className="mb-5 p-4 rounded-lg border border-purple-500/30" style={{ backgroundColor: "rgba(88, 28, 135, 0.5)" }}>
+              <h2 className="text-base font-bold text-purple-300 mb-2" style={{ fontSize: "13px" }}>Profile</h2>
+              <p className="leading-relaxed" style={{ fontSize: "10px", lineHeight: "1.6" }}>{personalInfo.summary}</p>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-5">
             <div>
               {educations.some((edu) => edu.school || edu.degree) && (
-                <div className="mb-6">
-                  <h2 className="text-lg font-bold text-purple-300 mb-3 border-l-4 border-purple-400 pl-2">Education</h2>
+                <div className="mb-5">
+                  <h2 className="text-sm font-bold text-purple-300 mb-3 border-l-4 border-purple-400 pl-2" style={{ fontSize: "12px" }}>Education</h2>
                   {educations.filter((edu) => edu.school || edu.degree).map((edu) => (
-                    <div key={edu.id} className="mb-4 p-3 bg-purple-900/30 rounded border border-purple-500/20">
-                      <h3 className="text-sm font-semibold text-purple-200">{edu.degree}</h3>
-                      <p className="text-xs text-purple-300">{edu.school}</p>
-                      <p className="text-xs text-purple-400 mt-1">
+                    <div key={edu.id} className="mb-3 p-3 rounded border border-purple-500/20" style={{ backgroundColor: "rgba(88, 28, 135, 0.3)" }}>
+                      <h3 className="text-xs font-semibold text-purple-200 mb-0.5" style={{ fontSize: "11px" }}>{edu.degree}</h3>
+                      <p className="text-xs text-purple-300 mb-0.5" style={{ fontSize: "10px" }}>{edu.school}</p>
+                      {edu.field && (
+                        <p className="text-xs text-purple-400 mb-0.5" style={{ fontSize: "9px" }}>{edu.field}</p>
+                      )}
+                      <p className="text-xs text-purple-400 mt-1" style={{ fontSize: "10px" }}>
                         {formatDate(edu.startDate)} - {edu.current ? "Present" : formatDate(edu.endDate) || ""}
                       </p>
                     </div>
@@ -768,11 +1211,11 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 </div>
               )}
               {skills.some((skill) => skill.name) && (
-                <div className="mb-6">
-                  <h2 className="text-lg font-bold text-purple-300 mb-3 border-l-4 border-purple-400 pl-2">Skills</h2>
-                  <div className="space-y-2">
+                <div className="mb-5">
+                  <h2 className="text-sm font-bold text-purple-300 mb-3 border-l-4 border-purple-400 pl-2" style={{ fontSize: "12px" }}>Skills</h2>
+                  <div className="space-y-1.5" style={{ fontSize: "10px", lineHeight: "1.5" }}>
                     {skills.filter((skill) => skill.name).map((skill) => (
-                      <div key={skill.id} className="text-sm text-purple-200">🔮 {skill.name}</div>
+                      <div key={skill.id} className="text-purple-200">🔮 {skill.name}</div>
                     ))}
                   </div>
                 </div>
@@ -780,17 +1223,20 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
             </div>
             <div>
               {experiences.some((exp) => exp.company || exp.position) && (
-                <div className="mb-6">
-                  <h2 className="text-lg font-bold text-purple-300 mb-3 border-l-4 border-purple-400 pl-2">Employment</h2>
+                <div className="mb-5">
+                  <h2 className="text-sm font-bold text-purple-300 mb-3 border-l-4 border-purple-400 pl-2" style={{ fontSize: "12px" }}>Employment</h2>
                   {experiences.filter((exp) => exp.company || exp.position).map((exp) => (
-                    <div key={exp.id} className="mb-4 p-3 bg-purple-900/30 rounded border border-purple-500/20">
-                      <h3 className="text-sm font-semibold text-purple-200">{exp.position}</h3>
-                      <p className="text-xs text-purple-300">{exp.company}</p>
-                      <p className="text-xs text-purple-400 mt-1">
+                    <div key={exp.id} className="mb-3 p-3 rounded border border-purple-500/20" style={{ backgroundColor: "rgba(88, 28, 135, 0.3)" }}>
+                      <h3 className="text-xs font-semibold text-purple-200 mb-0.5" style={{ fontSize: "11px" }}>{exp.position}</h3>
+                      <p className="text-xs text-purple-300 mb-0.5" style={{ fontSize: "10px" }}>{exp.company}</p>
+                      {exp.location && (
+                        <p className="text-xs text-purple-400 mb-0.5" style={{ fontSize: "9px" }}>{exp.location}</p>
+                      )}
+                      <p className="text-xs text-purple-400 mt-1" style={{ fontSize: "10px" }}>
                         {formatDate(exp.startDate)} - {exp.current ? "Present" : formatDate(exp.endDate) || ""}
                       </p>
                       {exp.description && (
-                        <ul className="text-xs text-purple-200 list-disc list-inside ml-2 mt-2 space-y-1">
+                        <ul className="text-xs text-purple-200 list-disc list-inside ml-2 mt-1.5 space-y-0.5" style={{ fontSize: "10px", lineHeight: "1.5" }}>
                           {exp.description.split('\n').filter(line => line.trim()).map((line, idx) => (
                             <li key={idx}>{line.trim()}</li>
                           ))}
@@ -798,6 +1244,52 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+              {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name)) && (
+                <div className="mb-5">
+                  <h2 className="text-sm font-bold text-purple-300 mb-3 border-l-4 border-purple-400 pl-2" style={{ fontSize: "12px" }}>Additional</h2>
+                  {languages.some((lang) => lang.name) && (
+                    <div className="mb-3">
+                      <h3 className="text-xs font-semibold text-purple-200 mb-1.5" style={{ fontSize: "11px" }}>Languages</h3>
+                      <div className="space-y-1" style={{ fontSize: "10px", color: "#c084fc" }}>
+                        {languages.filter((lang) => lang.name).map((lang) => (
+                          <div key={lang.id}>
+                            {lang.name} - {lang.level === "basic" && "Энгийн"}
+                            {lang.level === "conversational" && "Ярилцлага"}
+                            {lang.level === "fluent" && "Чөлөөтэй"}
+                            {lang.level === "native" && "Эх хэл"}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {certificates.some((cert) => cert.name) && (
+                    <div className="mb-3">
+                      <h3 className="text-xs font-semibold text-purple-200 mb-1.5" style={{ fontSize: "11px" }}>Certificates</h3>
+                      <div className="space-y-1" style={{ fontSize: "10px", color: "#c084fc" }}>
+                        {certificates.filter((cert) => cert.name).map((cert) => (
+                          <div key={cert.id}>
+                            <span className="font-medium">{cert.name}</span> - {cert.issuer} {cert.date && `(${formatDate(cert.date)})`}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {projects.some((proj) => proj.name) && (
+                    <div>
+                      <h3 className="text-xs font-semibold text-purple-200 mb-1.5" style={{ fontSize: "11px" }}>Projects</h3>
+                      <div className="space-y-2" style={{ fontSize: "10px", color: "#c084fc" }}>
+                        {projects.filter((proj) => proj.name).map((proj) => (
+                          <div key={proj.id}>
+                            <span className="font-medium">{proj.name}</span>
+                            {proj.description && <p className="mt-0.5" style={{ fontSize: "9px" }}>{proj.description}</p>}
+                            {proj.technologies && <p className="mt-0.5" style={{ fontSize: "9px", color: "#a78bfa" }}>Tech: {proj.technologies}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -922,7 +1414,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           setErrors({ ...errors, firstName: "" });
                         }
                       }}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md ${
+                      className={`w-full px-4 py-3 border-2 text-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md ${
                         errors.firstName ? "border-red-400 bg-red-50" : "border-gray-300 hover:border-gray-400"
                       }`}
                       placeholder="Нэр"
@@ -944,7 +1436,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           setErrors({ ...errors, lastName: "" });
                         }
                       }}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md ${
+                      className={`w-full px-4 py-3 border-2 text-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md ${
                         errors.lastName ? "border-red-400 bg-red-50" : "border-gray-300 hover:border-gray-400"
                       }`}
                       placeholder="Овог"
@@ -964,7 +1456,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           setErrors({ ...errors, email: "" });
                         }
                       }}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md ${
+                      className={`w-full px-4 py-3 border-2 text-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md ${
                         errors.email ? "border-red-400 bg-red-50" : "border-gray-300 hover:border-gray-400"
                       }`}
                       placeholder="email@example.com"
@@ -981,7 +1473,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                   onChange={(e) =>
                     setPersonalInfo({ ...personalInfo, phone: e.target.value })
                   }
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                  className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                   placeholder="99112233"
                 />
               </div>
@@ -993,7 +1485,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                   onChange={(e) =>
                     setPersonalInfo({ ...personalInfo, address: e.target.value })
                   }
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                  className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                   placeholder="Хаяг"
                 />
               </div>
@@ -1005,7 +1497,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                   onChange={(e) =>
                     setPersonalInfo({ ...personalInfo, linkedin: e.target.value })
                   }
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                  className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                   placeholder="linkedin.com/in/username"
                 />
               </div>
@@ -1019,7 +1511,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                     setPersonalInfo({ ...personalInfo, summary: e.target.value })
                   }
                   rows={4}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400 resize-none"
+                  className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400 resize-none"
                   placeholder="Өөрийн талаар товч танилцуулга..."
                 />
               </div>
@@ -1081,7 +1573,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         type="text"
                         value={exp.position}
                         onChange={(e) => updateExperience(exp.id, "position", e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                        className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                         placeholder="Албан тушаал"
                       />
                     </div>
@@ -1093,7 +1585,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         type="text"
                         value={exp.company}
                         onChange={(e) => updateExperience(exp.id, "company", e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                        className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                         placeholder="Компани"
                       />
                     </div>
@@ -1105,7 +1597,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         type="text"
                         value={exp.location}
                         onChange={(e) => updateExperience(exp.id, "location", e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                        className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                         placeholder="Байршил"
                       />
                     </div>
@@ -1117,7 +1609,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         type="month"
                         value={exp.startDate}
                         onChange={(e) => updateExperience(exp.id, "startDate", e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                        className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                       />
                     </div>
                     <div>
@@ -1130,7 +1622,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           value={exp.endDate}
                           onChange={(e) => updateExperience(exp.id, "endDate", e.target.value)}
                           disabled={exp.current}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                          className="w-full px-3 py-2 border text-gray-700 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                         />
                         <label className="flex items-center gap-2 text-sm text-gray-700">
                           <input
@@ -1155,7 +1647,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           updateExperience(exp.id, "description", e.target.value)
                         }
                         rows={3}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400 resize-none"
+                        className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400 resize-none"
                         placeholder="Ажлын тайлбар..."
                       />
                     </div>
@@ -1209,7 +1701,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         type="text"
                         value={edu.degree}
                         onChange={(e) => updateEducation(edu.id, "degree", e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                        className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                         placeholder="Жишээ: Бакалавр"
                       />
                     </div>
@@ -1221,7 +1713,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         type="text"
                         value={edu.school}
                         onChange={(e) => updateEducation(edu.id, "school", e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                        className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                         placeholder="Сургуулийн нэр"
                       />
                     </div>
@@ -1233,7 +1725,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         type="text"
                         value={edu.field}
                         onChange={(e) => updateEducation(edu.id, "field", e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                        className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                         placeholder="Мэргэжлийн чиглэл"
                       />
                     </div>
@@ -1243,7 +1735,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         type="text"
                         value={edu.gpa}
                         onChange={(e) => updateEducation(edu.id, "gpa", e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                        className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                         placeholder="3.5"
                       />
                     </div>
@@ -1255,7 +1747,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         type="month"
                         value={edu.startDate}
                         onChange={(e) => updateEducation(edu.id, "startDate", e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                        className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                       />
                     </div>
                     <div>
@@ -1268,7 +1760,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           value={edu.endDate}
                           onChange={(e) => updateEducation(edu.id, "endDate", e.target.value)}
                           disabled={edu.current}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                          className="w-full px-3 py-2 border text-gray-700 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                         />
                         <label className="flex items-center gap-2 text-sm text-gray-700">
                           <input
@@ -1322,7 +1814,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                     type="text"
                     value={skill.name}
                     onChange={(e) => updateSkill(skill.id, "name", e.target.value)}
-                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                    className="flex-1 px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                     placeholder="Ур чадварын нэр"
                   />
                   <select
@@ -1330,7 +1822,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                     onChange={(e) =>
                       updateSkill(skill.id, "level", e.target.value as Skill["level"])
                     }
-                    className="px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                    className="px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                   >
                     <option value="beginner">Эхлэгч</option>
                     <option value="intermediate">Дунд</option>
@@ -1360,7 +1852,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 <h3 className="text-xl font-bold text-gray-900">Хэл</h3>
                 <button
                   onClick={addLanguage}
-                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-md"
+                  className="flex items-center gap-2 text-gray-700 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-md"
                 >
                   <PlusIcon className="w-4 h-4" />
                   Нэмэх
@@ -1373,7 +1865,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                       type="text"
                       value={lang.name}
                       onChange={(e) => updateLanguage(lang.id, "name", e.target.value)}
-                      className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                      className="flex-1 px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                       placeholder="Хэл"
                     />
                     <select
@@ -1381,7 +1873,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                       onChange={(e) =>
                         updateLanguage(lang.id, "level", e.target.value as Language["level"])
                       }
-                      className="px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                      className="px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                     >
                       <option value="basic">Энгийн</option>
                       <option value="conversational">Ярилцлага</option>
@@ -1407,7 +1899,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 <h3 className="text-xl font-bold text-gray-900">Сертификат</h3>
                 <button
                   onClick={addCertificate}
-                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-md"
+                  className="flex items-center gap-2 text-gray-700 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-md"
                 >
                   <PlusIcon className="w-4 h-4" />
                   Нэмэх
@@ -1438,7 +1930,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           type="text"
                           value={cert.name}
                           onChange={(e) => updateCertificate(cert.id, "name", e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                          className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                           placeholder="Сертификатын нэр"
                         />
                       </div>
@@ -1450,7 +1942,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           type="text"
                           value={cert.issuer}
                           onChange={(e) => updateCertificate(cert.id, "issuer", e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                          className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                           placeholder="Байгууллага"
                         />
                       </div>
@@ -1462,7 +1954,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           type="month"
                           value={cert.date}
                           onChange={(e) => updateCertificate(cert.id, "date", e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                          className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                         />
                       </div>
                       <div>
@@ -1473,7 +1965,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           type="url"
                           value={cert.url}
                           onChange={(e) => updateCertificate(cert.id, "url", e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                          className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                           placeholder="https://..."
                         />
                       </div>
@@ -1520,7 +2012,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           type="text"
                           value={proj.name}
                           onChange={(e) => updateProject(proj.id, "name", e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                          className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                           placeholder="Төслийн нэр"
                         />
                       </div>
@@ -1532,7 +2024,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           value={proj.description}
                           onChange={(e) => updateProject(proj.id, "description", e.target.value)}
                           rows={3}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                          className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                           placeholder="Төслийн тайлбар..."
                         />
                       </div>
@@ -1547,7 +2039,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                             onChange={(e) =>
                               updateProject(proj.id, "technologies", e.target.value)
                             }
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                            className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                             placeholder="React, Node.js, MongoDB"
                           />
                         </div>
@@ -1559,7 +2051,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                             type="url"
                             value={proj.url}
                             onChange={(e) => updateProject(proj.id, "url", e.target.value)}
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
+                            className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400"
                             placeholder="https://..."
                           />
                         </div>
@@ -1721,8 +2213,13 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex justify-center overflow-auto">
+                <div style={{ 
+                  transform: "scale(0.8)",
+                  transformOrigin: "top center"
+                }}>
                 {renderCVPreview()}
+                </div>
               </div>
             </div>
           ) : (

@@ -74,9 +74,14 @@ export default function RewardsPenaltiesPage() {
           fetch('/api/hr/rewards').then(res => res.json()),
           fetch('/api/hr/penalties').then(res => res.json()),
         ]);
-        setRewards(r as Reward[]);
-        setPenalties(p as Penalty[]);
-      } catch {
+        // Ensure rewards and penalties are arrays
+        setRewards(Array.isArray(r) ? r : (Array.isArray(r?.data) ? r.data : []));
+        setPenalties(Array.isArray(p) ? p : (Array.isArray(p?.data) ? p.data : []));
+      } catch (error) {
+        console.error('Error loading rewards/penalties:', error);
+        // Set empty arrays on error
+        setRewards([]);
+        setPenalties([]);
       } finally {
         setLoading(false);
       }
@@ -413,7 +418,7 @@ export default function RewardsPenaltiesPage() {
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                {rewards.map((reward) => (
+                {Array.isArray(rewards) && rewards.length > 0 ? rewards.map((reward) => (
                   <div key={reward.id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
@@ -434,7 +439,11 @@ export default function RewardsPenaltiesPage() {
                       </span>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-center text-gray-500 py-8">
+                    Шагнал байхгүй байна
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -452,7 +461,7 @@ export default function RewardsPenaltiesPage() {
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                {penalties.map((penalty) => (
+                {Array.isArray(penalties) && penalties.length > 0 ? penalties.map((penalty) => (
                   <div key={penalty.id} className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
@@ -471,7 +480,11 @@ export default function RewardsPenaltiesPage() {
                       </span>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-center text-gray-500 py-8">
+                    Шийтгэл байхгүй байна
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -505,7 +518,7 @@ export default function RewardsPenaltiesPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {rewards.map((reward) => (
+                {Array.isArray(rewards) && rewards.length > 0 ? rewards.map((reward) => (
                   <tr key={reward.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#0C213A]">{reward.employeeId}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#0C213A]">{reward.employee}</td>
@@ -526,7 +539,13 @@ export default function RewardsPenaltiesPage() {
                       <button onClick={() => openReward("edit", reward)} className="text-gray-500 hover:text-gray-700">Засах</button>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+                      Шагнал байхгүй байна
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -557,7 +576,7 @@ export default function RewardsPenaltiesPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {penalties.map((penalty) => (
+                {Array.isArray(penalties) && penalties.length > 0 ? penalties.map((penalty) => (
                   <tr key={penalty.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#0C213A]">{penalty.employeeId}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#0C213A]">{penalty.employee}</td>
@@ -578,7 +597,13 @@ export default function RewardsPenaltiesPage() {
                       <button onClick={() => openPenalty("edit", penalty)} className="text-gray-500 hover:text-gray-700">Засах</button>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+                      Шийтгэл байхгүй байна
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

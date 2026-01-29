@@ -24,10 +24,12 @@ export async function GET() {
       return NextResponse.json([]);
     }
 
-    // Get employees directly by companyId
+    // Get employees by companyId through department
     const companyEmployees = await prisma.employee.findMany({
       where: {
-        companyId: companyId,
+        department: {
+          companyId: companyId,
+        },
       },
       select: { employeeId: true },
     });
@@ -93,9 +95,16 @@ export async function POST(request: NextRequest) {
       const employee = await prisma.employee.findFirst({
         where: {
           employeeId: body.employeeId,
-          companyId: companyId,
+          department: {
+            companyId: companyId,
+          },
         },
-        select: { companyId: true },
+        select: { 
+          id: true,
+          department: {
+            select: { companyId: true }
+          }
+        },
       });
       
       if (!employee) {
