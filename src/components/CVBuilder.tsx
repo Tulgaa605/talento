@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import {
   PlusIcon,
@@ -7,9 +7,13 @@ import {
   XMarkIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
   EyeIcon,
   InformationCircleIcon,
   CheckCircleIcon,
+  DocumentArrowUpIcon,
+  EllipsisVerticalIcon,
 } from "@heroicons/react/24/outline";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -95,6 +99,26 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   const [showSidebarPreview, setShowSidebarPreview] = useState(false);
   const [template, setTemplate] = useState<Template>("modern");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    personalDetails: false,
+    profile: false,
+    education: false,
+    experience: false,
+    skills: false,
+    languages: false,
+    certificates: false,
+    projects: false,
+  });
+  const [sectionOrder, setSectionOrder] = useState<string[]>([
+    "personalDetails",
+    "profile",
+    "education",
+    "experience",
+    "skills",
+    "languages",
+    "certificates",
+    "projects",
+  ]);
   const [showCropModal, setShowCropModal] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string>("");
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -157,20 +181,23 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       );
 
       const croppedImageUrl = canvas.toDataURL('image/jpeg', 0.9);
-      setPersonalInfo({ ...personalInfo, photo: croppedImageUrl });
+      setPersonalInfo((prev) => ({ ...prev, photo: croppedImageUrl }));
       setShowCropModal(false);
       setImageToCrop("");
       setCrop({ x: 0, y: 0 });
       setZoom(1);
       setCroppedAreaPixels(null);
-      if (errors.photo) {
-        setErrors({ ...errors, photo: "" });
-      }
+      setErrors((prev) => {
+        if (prev.photo) {
+          return { ...prev, photo: "" };
+        }
+        return prev;
+      });
     } catch (error) {
       console.error('Error creating cropped image:', error);
-      setErrors({ ...errors, photo: "Зураг crop хийхэд алдаа гарлаа" });
+      setErrors((prev) => ({ ...prev, photo: "Зураг crop хийхэд алдаа гарлаа" }));
     }
-  }, [imageToCrop, croppedAreaPixels, personalInfo, errors]);
+  }, [imageToCrop, croppedAreaPixels]);
 
   const cancelCrop = () => {
     setShowCropModal(false);
@@ -390,6 +417,51 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
 
   const updateProject = (id: string, field: keyof Project, value: any) => {
     setProjects(projects.map((proj) => (proj.id === id ? { ...proj, [field]: value } : proj)));
+  };
+
+  const toggleSection = (section: string) => {
+    setCollapsedSections((prev) => {
+      const newState = { ...prev, [section]: !prev[section] };
+      // If section is being expanded, move it to the top
+      if (!prev[section]) {
+        setSectionOrder((order) => {
+          const newOrder = order.filter((s) => s !== section);
+          return [section, ...newOrder];
+        });
+      }
+      return newState;
+    });
+  };
+
+  const renderCollapsibleSection = (
+    sectionKey: string,
+    title: string,
+    content: React.ReactNode,
+    icon?: string
+  ) => {
+    const isCollapsed = collapsedSections[sectionKey];
+    return (
+      <div key={sectionKey} className="border-b border-gray-200">
+        <button
+          onClick={() => toggleSection(sectionKey)}
+          className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            {icon && <span className="text-lg">{icon}</span>}
+            <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <EllipsisVerticalIcon className="w-5 h-5 text-gray-400" />
+            {isCollapsed ? (
+              <ChevronDownIcon className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronUpIcon className="w-5 h-5 text-gray-400" />
+            )}
+          </div>
+        </button>
+        {!isCollapsed && <div className="p-4">{content}</div>}
+      </div>
+    );
   };
 
   const formatDate = (dateString: string) => {
@@ -1652,7 +1724,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         if (file) {
                           // Validate file size (max 5MB)
                           if (file.size > 5 * 1024 * 1024) {
-                            setErrors({ ...errors, photo: "Зургийн хэмжээ 5MB-ээс хэтэрч байна" });
+                            setErrors((prev) => ({ ...prev, photo: "Зургийн хэмжээ 5MB-ээс хэтэрч байна" }));
                             return;
                           }
                           // Open crop modal
@@ -2274,257 +2346,488 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-xl max-w-7xl w-full max-h-[90vh] overflow-y-auto relative">
-        <div className="sticky top-0 bg-gradient-to-r from-white to-gray-50 border-b-2 border-gray-300 px-6 py-5 z-10 shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-lg">CV</span>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">CV Builder</h2>
-                <p className="text-xs text-gray-500">Мэргэжлийн CV үүсгэх хэрэгсэл</p>
-              </div>
+    <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      {/* Header */}
+      <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10 shadow-sm">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-lg">CV</span>
             </div>
-            <div className="flex items-center gap-2">
-              {!previewMode && (
-                <button
-                  onClick={() => setShowSidebarPreview(!showSidebarPreview)}
-                  className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all transform hover:scale-105 ${
-                    showSidebarPreview
-                      ? "text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-md"
-                      : "text-gray-700 bg-gray-100 hover:bg-gray-200"
-                  }`}
-                >
-                  <EyeIcon className="w-4 h-4" />
-                  {showSidebarPreview ? "Preview хаах" : "Preview нээх"}
-                </button>
-              )}
-              <button
-                onClick={() => setPreviewMode(!previewMode)}
-                className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-md"
-              >
-                <EyeIcon className="w-4 h-4" />
-                {previewMode ? "Засах" : "Бүрэн харах"}
-              </button>
-              {onClose && (
-                <button
-                  onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  <XMarkIcon className="w-6 h-6" />
-                </button>
-              )}
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">CV Builder</h2>
+              <p className="text-xs text-gray-500">Мэргэжлийн CV үүсгэх хэрэгсэл</p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={generatePDF}
+              disabled={generating}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-md disabled:opacity-50"
+            >
+              {generating ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  PDF үүсгэж байна...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  PDF татах
+                </>
+              )}
+            </button>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
-          {/* Progress Steps */}
-          {!previewMode && (
-            <div className="flex items-center justify-between px-2">
-              {steps.map((step, index) => (
-                <div key={step.id} className="flex items-center flex-1 group">
-                  <div className="flex items-center flex-1">
-                    <div className="flex flex-col items-center flex-1">
-                      <div
-                        className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 transform ${
-                          currentStep === step.id
-                            ? "bg-blue-600 border-blue-600 text-white scale-110 shadow-lg ring-4 ring-blue-200"
-                            : currentStep > step.id
-                            ? "bg-green-500 border-green-500 text-white scale-105"
-                            : "bg-white border-gray-300 text-gray-500 hover:border-gray-400"
-                        }`}
-                      >
-                        {currentStep > step.id ? (
-                          <CheckCircleIcon className="w-6 h-6" />
-                        ) : (
-                          <span className="font-bold">{step.id}</span>
-                        )}
-                      </div>
-                      <span
-                        className={`text-xs mt-2 font-medium transition-colors ${
-                          currentStep === step.id
-                            ? "text-blue-600"
-                            : currentStep > step.id
-                            ? "text-green-600"
-                            : "text-gray-500"
-                        }`}
-                      >
-                        {step.name}
-                      </span>
+      {/* Two Panel Layout */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Panel - Input Forms */}
+        <div className="w-1/2 border-r border-gray-200 overflow-y-auto bg-gray-50">
+          <div className="p-6 space-y-4">
+            {/* Upload Buttons */}
+            <div className="flex gap-3 mb-6">
+              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <DocumentArrowUpIcon className="w-5 h-5 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Upload existing resume</span>
+              </button>
+              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+                <span className="text-sm font-medium text-gray-700">Import LinkedIn profile</span>
+              </button>
+            </div>
+
+            {/* Collapsible Sections */}
+            <div className="bg-white rounded-lg shadow-sm">
+              {sectionOrder.map((sectionKey) => {
+                if (sectionKey === "personalDetails") {
+                  return renderCollapsibleSection(
+                    "personalDetails",
+                    "Personal details",
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Нэр *</label>
+                    <input
+                      type="text"
+                      value={personalInfo.firstName}
+                      onChange={(e) => {
+                        setPersonalInfo({ ...personalInfo, firstName: e.target.value });
+                        if (errors.firstName) {
+                          setErrors({ ...errors, firstName: "" });
+                        }
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg ${errors.firstName ? "border-red-400" : "border-gray-300"}`}
+                      placeholder="Нэр"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Овог *</label>
+                    <input
+                      type="text"
+                      value={personalInfo.lastName}
+                      onChange={(e) => {
+                        setPersonalInfo({ ...personalInfo, lastName: e.target.value });
+                        if (errors.lastName) {
+                          setErrors({ ...errors, lastName: "" });
+                        }
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg ${errors.lastName ? "border-red-400" : "border-gray-300"}`}
+                      placeholder="Овог"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Имэйл</label>
+                    <input
+                      type="email"
+                      value={personalInfo.email}
+                      onChange={(e) => setPersonalInfo({ ...personalInfo, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      placeholder="email@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Утас</label>
+                    <input
+                      type="tel"
+                      value={personalInfo.phone}
+                      onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      placeholder="99112233"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Хаяг</label>
+                    <input
+                      type="text"
+                      value={personalInfo.address}
+                      onChange={(e) => setPersonalInfo({ ...personalInfo, address: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      placeholder="Хаяг"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">3x4 Зураг</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 5 * 1024 * 1024) {
+                            setErrors((prev) => ({ ...prev, photo: "Зургийн хэмжээ 5MB-ээс хэтэрч байна" }));
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            setImageToCrop(event.target?.result as string);
+                            setShowCropModal(true);
+                            setCrop({ x: 0, y: 0 });
+                            setZoom(1);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                      id="photo-upload"
+                    />
+                    <label
+                      htmlFor="photo-upload"
+                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                    >
+                      {personalInfo.photo ? (
+                        <img src={personalInfo.photo} alt="Profile" className="max-w-full max-h-full object-contain rounded-lg" />
+                      ) : (
+                        <>
+                          <svg className="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-sm text-gray-600">Зураг оруулах</span>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                </div>
+                  );
+                }
+                if (sectionKey === "profile") {
+                  return renderCollapsibleSection(
+                    "profile",
+                    "Profile",
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Товч танилцуулга</label>
+                      <textarea
+                        value={personalInfo.summary}
+                        onChange={(e) => setPersonalInfo({ ...personalInfo, summary: e.target.value })}
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        placeholder="Өөрийн талаар товч танилцуулга..."
+                      />
                     </div>
-                    {index < steps.length - 1 && (
-                      <div className="flex-1 mx-2 relative">
-                        <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-500 ${
-                              currentStep > step.id ? "bg-green-500" : "bg-gray-300"
-                            }`}
-                            style={{
-                              width: currentStep > step.id ? "100%" : "0%",
-                            }}
+                  );
+                }
+                if (sectionKey === "education") {
+                  return renderCollapsibleSection(
+                    "education",
+                        "Education",
+                <div className="space-y-4">
+                  {educations.map((edu) => (
+                    <div key={edu.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Боловсролын зэрэг *</label>
+                          <input
+                            type="text"
+                            value={edu.degree}
+                            onChange={(e) => updateEducation(edu.id, "degree", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Бакалавр"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Сургууль *</label>
+                          <input
+                            type="text"
+                            value={edu.school}
+                            onChange={(e) => updateEducation(edu.id, "school", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Сургуулийн нэр"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Эхлэх огноо</label>
+                          <input
+                            type="month"
+                            value={edu.startDate}
+                            onChange={(e) => updateEducation(edu.id, "startDate", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Дуусах огноо</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="month"
+                              value={edu.endDate}
+                              onChange={(e) => updateEducation(edu.id, "endDate", e.target.value)}
+                              disabled={edu.current}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
+                            />
+                            <label className="flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={edu.current}
+                                onChange={(e) => updateEducation(edu.id, "current", e.target.checked)}
+                                className="rounded"
+                              />
+                              Одоо
+                            </label>
+                          </div>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Тайлбар</label>
+                          <textarea
+                            value={edu.field}
+                            onChange={(e) => updateEducation(edu.id, "field", e.target.value)}
+                            rows={2}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Мэргэжлийн чиглэл"
                           />
                         </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className={`p-6 ${showSidebarPreview && !previewMode ? "pr-80" : ""} transition-all duration-300`}>
-          {previewMode ? (
-            <div className="space-y-4 animate-in fade-in duration-500">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-4 border border-blue-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">CV бэлэн боллоо! 🎉</h3>
-                    <p className="text-sm text-gray-600">
-                      Урьдчилан хараад, хэрэв таалагдвал PDF татаж авна уу
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setPreviewMode(false)}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-all border border-gray-300 hover:shadow-md"
-                    >
-                      Засах
-                    </button>
-                    <button
-                      onClick={generatePDF}
-                      disabled={generating}
-                      className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all transform hover:scale-105 disabled:transform-none flex items-center gap-2 shadow-lg"
-                    >
-                      {generating ? (
-                        <>
-                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          PDF үүсгэж байна...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          PDF татах
-                        </>
+                      {educations.length > 1 && (
+                        <button
+                          onClick={() => removeEducation(edu.id)}
+                          className="mt-2 text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Устгах
+                        </button>
                       )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex justify-center overflow-auto">
-                <div style={{ 
-                  transform: "scale(0.8)",
-                  transformOrigin: "top center"
-                }}>
-                {renderCVPreview()}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <div className="mb-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-5 border border-gray-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">
-                      {steps.find((s) => s.id === currentStep)?.title}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {currentStep === 1 && "CV-ийн харагдах байдлыг сонгоно уу"}
-                      {currentStep === 2 && "Хувийн мэдээллийг бүрэн оруулна уу"}
-                      {currentStep === 3 && "Ажлын туршлагаа дэлгэрэнгүй бичнэ үү"}
-                      {currentStep === 4 && "Боловсролын мэдээллийг оруулна уу"}
-                      {currentStep === 5 && "Ур чадваруудыг нэмнэ үү"}
-                      {currentStep === 6 && "Нэмэлт мэдээллийг оруулна уу"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 rounded-full shadow-md">
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                    Алхам {currentStep} / {totalSteps}
-                  </div>
-                </div>
-                {Object.keys(errors).length > 0 && (
-                  <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-red-800 mb-2">Алдаа засах:</p>
-                        <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
-                          {Object.values(errors).map((error, idx) => (
-                            <li key={idx}>{error}</li>
-                          ))}
-                        </ul>
-                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                {renderStepContent()}
-              </div>
-
-              {/* Navigation */}
-              <div className="flex justify-between items-center pt-6 border-t border-gray-200 mt-6">
-                <button
-                  onClick={prevStep}
-                  disabled={currentStep === 1}
-                  className="flex items-center gap-2 px-6 py-3 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 disabled:transform-none shadow-sm"
-                >
-                  <ChevronLeftIcon className="w-5 h-5" />
-                  Өмнөх
-                </button>
-                {currentStep < totalSteps ? (
+                  ))}
                   <button
-                    onClick={nextStep}
-                    className="flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-lg"
+                    onClick={addEducation}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50"
                   >
-                    Дараагийн
-                    <ChevronRightIcon className="w-5 h-5" />
+                    <PlusIcon className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm text-gray-600">+ Add education</span>
                   </button>
-                ) : (
+                </div>
+                  );
+                }
+                if (sectionKey === "experience") {
+                  return renderCollapsibleSection(
+                    "experience",
+                    "Employment",
+                <div className="space-y-4">
+                  {experiences.map((exp) => (
+                    <div key={exp.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Албан тушаал *</label>
+                          <input
+                            type="text"
+                            value={exp.position}
+                            onChange={(e) => updateExperience(exp.id, "position", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Албан тушаал"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Компани *</label>
+                          <input
+                            type="text"
+                            value={exp.company}
+                            onChange={(e) => updateExperience(exp.id, "company", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Компани"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Эхлэх огноо</label>
+                          <input
+                            type="month"
+                            value={exp.startDate}
+                            onChange={(e) => updateExperience(exp.id, "startDate", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Дуусах огноо</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="month"
+                              value={exp.endDate}
+                              onChange={(e) => updateExperience(exp.id, "endDate", e.target.value)}
+                              disabled={exp.current}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
+                            />
+                            <label className="flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={exp.current}
+                                onChange={(e) => updateExperience(exp.id, "current", e.target.checked)}
+                                className="rounded"
+                              />
+                              Одоо
+                            </label>
+                          </div>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Тайлбар</label>
+                          <textarea
+                            value={exp.description}
+                            onChange={(e) => updateExperience(exp.id, "description", e.target.value)}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            placeholder="Ажлын тайлбар..."
+                          />
+                        </div>
+                      </div>
+                      {experiences.length > 1 && (
+                        <button
+                          onClick={() => removeExperience(exp.id)}
+                          className="mt-2 text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Устгах
+                        </button>
+                      )}
+                    </div>
+                  ))}
                   <button
-                    onClick={() => setPreviewMode(true)}
-                    className="flex items-center gap-2 px-8 py-3 text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all transform hover:scale-105 shadow-lg"
+                    onClick={addExperience}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50"
                   >
-                    <EyeIcon className="w-5 h-5" />
-                    Урьдчилан харах
+                    <PlusIcon className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm text-gray-600">+ Add employment</span>
                   </button>
-                )}
-              </div>
+                </div>
+                  );
+                }
+                if (sectionKey === "skills") {
+                  return renderCollapsibleSection(
+                    "skills",
+                    "Skills",
+                <div className="space-y-3">
+                  {skills.map((skill) => (
+                    <div key={skill.id} className="flex items-center gap-3">
+                      <input
+                        type="text"
+                        value={skill.name}
+                        onChange={(e) => updateSkill(skill.id, "name", e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+                        placeholder="Ур чадварын нэр"
+                      />
+                      <select
+                        value={skill.level}
+                        onChange={(e) => updateSkill(skill.id, "level", e.target.value as Skill["level"])}
+                        className="px-3 py-2 border border-gray-300 rounded-lg"
+                      >
+                        <option value="beginner">Эхлэгч</option>
+                        <option value="intermediate">Дунд</option>
+                        <option value="advanced">Дэвшилтэт</option>
+                        <option value="expert">Мэргэжилтэн</option>
+                      </select>
+                      {skills.length > 1 && (
+                        <button
+                          onClick={() => removeSkill(skill.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={addSkill}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    <PlusIcon className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm text-gray-600">+ Add skill</span>
+                  </button>
+                </div>
+                  );
+                }
+                if (sectionKey === "languages") {
+                  return renderCollapsibleSection(
+                    "languages",
+                    "Languages",
+                    <div className="space-y-3">
+                  {languages.map((lang) => (
+                    <div key={lang.id} className="flex items-center gap-3">
+                      <input
+                        type="text"
+                        value={lang.name}
+                        onChange={(e) => updateLanguage(lang.id, "name", e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+                        placeholder="Хэл"
+                      />
+                      <select
+                        value={lang.level}
+                        onChange={(e) => updateLanguage(lang.id, "level", e.target.value as Language["level"])}
+                        className="px-3 py-2 border border-gray-300 rounded-lg"
+                      >
+                        <option value="basic">Энгийн</option>
+                        <option value="conversational">Ярилцлага</option>
+                        <option value="fluent">Чөлөөтэй</option>
+                        <option value="native">Эх хэл</option>
+                      </select>
+                      {languages.length > 1 && (
+                        <button
+                          onClick={() => removeLanguage(lang.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={addLanguage}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    <PlusIcon className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm text-gray-600">+ Add language</span>
+                  </button>
+                </div>
+                  );
+                }
+                return null;
+              })}
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Sidebar Preview */}
-        {showSidebarPreview && !previewMode && (
-          <div className="absolute top-0 right-0 w-96 h-full bg-white border-l-2 border-gray-300 overflow-y-auto z-20 shadow-2xl transform transition-transform duration-300 ease-in-out">
-            <div className="sticky top-0 bg-gradient-to-r from-gray-100 to-gray-50 border-b-2 border-gray-300 px-4 py-4 flex justify-between items-center shadow-sm">
-              <div>
-                <h3 className="text-sm font-bold text-gray-900">Урьдчилан харах</h3>
-                <p className="text-xs text-gray-500 mt-1">Real-time шинэчлэлт</p>
+          {/* Right Panel - Preview */}
+          <div className="w-1/2 overflow-y-auto bg-white">
+            <div className="p-6">
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-t-lg p-4">
+                <h2 className="text-2xl font-bold text-white">Resume</h2>
               </div>
-              <button
-                onClick={() => setShowSidebarPreview(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-200 rounded"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4 transform scale-[0.35] origin-top-left" style={{ width: "285%" }}>
-              <div className="bg-white shadow-lg">
+              <div className="bg-white border border-gray-200 border-t-0 rounded-b-lg p-6 min-h-[600px]">
                 {renderCVPreview()}
+              </div>
+              <div className="mt-6 border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">References</h3>
+                <p className="text-sm text-gray-600">References available upon request.</p>
               </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Crop Modal */}
