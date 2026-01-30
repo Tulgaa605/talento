@@ -100,14 +100,14 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   const [template, setTemplate] = useState<Template>("modern");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
-    personalDetails: false,
-    profile: false,
-    education: false,
-    experience: false,
-    skills: false,
-    languages: false,
-    certificates: false,
-    projects: false,
+    personalDetails: true,
+    profile: true,
+    education: true,
+    experience: true,
+    skills: true,
+    languages: true,
+    certificates: true,
+    projects: true,
   });
   const [sectionOrder, setSectionOrder] = useState<string[]>([
     "personalDetails",
@@ -421,15 +421,28 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
 
   const toggleSection = (section: string) => {
     setCollapsedSections((prev) => {
-      const newState = { ...prev, [section]: !prev[section] };
-      // If section is being expanded, move it to the top
-      if (!prev[section]) {
+      const wasCollapsed = prev[section];
+      // If section is being expanded, close all others and move this one to top
+      if (wasCollapsed) {
+        // Close all sections first
+        const allCollapsed = Object.keys(prev).reduce((acc, key) => {
+          acc[key] = true;
+          return acc;
+        }, {} as Record<string, boolean>);
+        // Then expand only the clicked section
+        const newState = { ...allCollapsed, [section]: false };
+        
+        // Move expanded section to the top
         setSectionOrder((order) => {
           const newOrder = order.filter((s) => s !== section);
           return [section, ...newOrder];
         });
+        
+        return newState;
+      } else {
+        // If section is being collapsed, just close it
+        return { ...prev, [section]: true };
       }
-      return newState;
     });
   };
 
@@ -2346,7 +2359,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col">
+    <div className="fixed inset-0 bg-white z-50 flex flex-col h-screen">
       {/* Header */}
       <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10 shadow-sm">
         <div className="flex justify-between items-center">
@@ -2395,9 +2408,9 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       </div>
 
       {/* Two Panel Layout */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-row flex-1 overflow-hidden" style={{ height: 'calc(100vh - 80px)' }}>
         {/* Left Panel - Input Forms */}
-        <div className="w-1/2 border-r border-gray-200 overflow-y-auto bg-gray-50">
+        <div className="w-1/2 border-r border-gray-200 overflow-y-auto bg-gray-50 flex-shrink-0" style={{ maxHeight: '100%' }}>
           <div className="p-6 space-y-4">
             {/* Upload Buttons */}
             <div className="flex gap-3 mb-6">
@@ -2813,15 +2826,21 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
           </div>
 
           {/* Right Panel - Preview */}
-          <div className="w-1/2 overflow-y-auto bg-white">
-            <div className="p-6">
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-t-lg p-4">
+          <div className="w-1/2 overflow-y-auto bg-white border-l-2 border-gray-300 flex-shrink-0" style={{ minWidth: '400px', maxHeight: '100%' }}>
+            <div className="sticky top-0 bg-white border-b-2 border-gray-300 p-4 z-10 shadow-md">
+              <h2 className="text-lg font-bold text-gray-900">CV Preview</h2>
+              <p className="text-xs text-gray-500 mt-1">Real-time preview</p>
+            </div>
+            <div className="p-6 bg-gray-50">
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-t-lg p-4 shadow-lg">
                 <h2 className="text-2xl font-bold text-white">Resume</h2>
               </div>
-              <div className="bg-white border border-gray-200 border-t-0 rounded-b-lg p-6 min-h-[600px]">
-                {renderCVPreview()}
+              <div className="bg-white border-2 border-gray-200 border-t-0 rounded-b-lg shadow-xl overflow-hidden">
+                <div className="p-6 min-h-[600px] bg-white">
+                  {renderCVPreview()}
+                </div>
               </div>
-              <div className="mt-6 border-t border-gray-200 pt-6">
+              <div className="mt-6 border-t-2 border-gray-300 pt-6 bg-white rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">References</h3>
                 <p className="text-sm text-gray-600">References available upon request.</p>
               </div>
