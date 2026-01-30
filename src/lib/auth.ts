@@ -69,8 +69,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
-    // Don't set maxAge - NextAuth will use default 30 days
-    // But we override it in cookies config to make it session-only
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
   },
   cookies: {
     sessionToken: {
@@ -80,9 +79,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        // Explicitly remove maxAge to make it a session cookie
-        // This will make the cookie expire when browser closes
-        maxAge: undefined as any,
+        maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
       },
     },
     callbackUrl: {
@@ -92,7 +89,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        // Remove maxAge for session cookie
+        maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
       },
     },
     csrfToken: {
@@ -102,7 +99,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        // Remove maxAge for session cookie
+        maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
       },
     },
   },
