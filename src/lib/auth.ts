@@ -245,8 +245,8 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
+        token.email = user.email ?? undefined;
+        token.name = user.name ?? undefined;
       }
 
       // For OAuth providers, fetch user from DB
@@ -270,7 +270,7 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.role = dbUser.role;
           token.id = dbUser.id;
-          token.name = dbUser.name;
+          token.name = dbUser.name ?? undefined;
         }
       }
 
@@ -282,5 +282,4 @@ export const authOptions: NextAuthOptions = {
     error: "/login",
   },
   debug: process.env.NODE_ENV === 'development',
-  trustHost: true, // Important for production with custom domain/IP
 };
