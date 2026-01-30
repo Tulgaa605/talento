@@ -6,6 +6,7 @@ import { BookmarkIcon as BookmarkSolid } from "@heroicons/react/24/solid";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import JobDetails from "./JobDetails";
+import { useNotification } from "@/providers/NotificationProvider";
 
 interface Job {
   id: string;
@@ -65,6 +66,7 @@ interface JobsListProps {
 }
 
 export default function JobsList({ onJobSelect }: JobsListProps) {
+  const { addNotification } = useNotification();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -144,7 +146,7 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
       if (!response.ok) {
         const data = await response.json();
         if (response.status === 401) {
-          alert("Та нэвтрээгүй байна. Хадгалахын тулд нэвтрэх хэрэгтэй.");
+          addNotification("Та нэвтрээгүй байна. Хадгалахын тулд нэвтрэх хэрэгтэй.", "info");
           return;
         }
         throw new Error(data.error || "Алдаа гарлаа");
@@ -159,7 +161,7 @@ export default function JobsList({ onJobSelect }: JobsListProps) {
       });
     } catch (err) {
       console.error("Error saving job:", err);
-      alert(err instanceof Error ? err.message : "Алдаа гарлаа");
+      addNotification(err instanceof Error ? err.message : "Алдаа гарлаа", "error");
     } finally {
       setSavingJobId(null);
     }

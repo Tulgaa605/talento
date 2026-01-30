@@ -5,6 +5,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { useNotification } from '@/providers/NotificationProvider';
 
 interface Employee {
   id: string;
@@ -53,6 +54,7 @@ interface DecisionModalProps {
 }
 
 export default function DecisionModal({ isOpen, onClose, onSuccess, decisionId }: DecisionModalProps) {
+  const { addNotification } = useNotification();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -126,7 +128,7 @@ export default function DecisionModal({ isOpen, onClose, onSuccess, decisionId }
       }
     } catch (error) {
       console.error('Error fetching decision:', error);
-      alert('Шийдвэрийн мэдээлэл авахад алдаа гарлаа');
+      addNotification('Шийдвэрийн мэдээлэл авахад алдаа гарлаа', 'error');
     } finally {
       setLoading(false);
     }
@@ -411,7 +413,7 @@ export default function DecisionModal({ isOpen, onClose, onSuccess, decisionId }
       pdf.save(fileName);
     } catch (error) {
       console.error('PDF generation error:', error);
-      alert('PDF үүсгэхэд алдаа гарлаа');
+      addNotification('PDF үүсгэхэд алдаа гарлаа', 'error');
     } finally {
       setGeneratingPDF(false);
     }
@@ -450,11 +452,11 @@ export default function DecisionModal({ isOpen, onClose, onSuccess, decisionId }
         }
       } else {
         const error = await response.json();
-        alert(`Алдаа: ${error.message || error.error || 'Алдаа гарлаа'}`);
+        addNotification(`Алдаа: ${error.message || error.error || 'Алдаа гарлаа'}`, 'error');
       }
     } catch (error) {
       console.error('Error saving decision:', error);
-      alert(isEditMode ? 'Шийдвэр засахдаа алдаа гарлаа' : 'Шийдвэр үүсгэхэд алдаа гарлаа');
+      addNotification(isEditMode ? 'Шийдвэр засахдаа алдаа гарлаа' : 'Шийдвэр үүсгэхэд алдаа гарлаа', 'error');
     } finally {
       setSubmitting(false);
     }

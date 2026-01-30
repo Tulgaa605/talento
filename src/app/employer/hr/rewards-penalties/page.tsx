@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useRef } from "react";
 import { StatsSkeleton, PageHeaderSkeleton, CardSkeleton } from "@/components/Skeletons";
+import { useNotification } from "@/providers/NotificationProvider";
 
 type Reward = {
   id: number;
@@ -32,6 +33,7 @@ type Penalty = {
 };
 
 export default function RewardsPenaltiesPage() {
+  const { addNotification } = useNotification();
   const [activeTab, setActiveTab] = useState("overview");
   const [currentDate, setCurrentDate] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -200,7 +202,7 @@ export default function RewardsPenaltiesPage() {
   const handleDownloadRewardsReport = () => {
     try {
       if (rewards.length === 0) {
-        alert('Татах шагнал байхгүй байна');
+        addNotification('Татах шагнал байхгүй байна', 'info');
         return;
       }
 
@@ -239,14 +241,14 @@ export default function RewardsPenaltiesPage() {
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error('Error downloading rewards report:', error);
-      alert('Шагналын тайлан татахад алдаа гарлаа');
+      addNotification('Шагналын тайлан татахад алдаа гарлаа', 'error');
     }
   };
 
   const handleDownloadPenaltiesReport = () => {
     try {
       if (penalties.length === 0) {
-        alert('Татах шийтгэл байхгүй байна');
+        addNotification('Татах шийтгэл байхгүй байна', 'info');
         return;
       }
 
@@ -285,7 +287,7 @@ export default function RewardsPenaltiesPage() {
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error('Error downloading penalties report:', error);
-      alert('Шийтгэлийн тайлан татахад алдаа гарлаа');
+      addNotification('Шийтгэлийн тайлан татахад алдаа гарлаа', 'error');
     }
   };
 

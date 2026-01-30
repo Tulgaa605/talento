@@ -18,6 +18,7 @@ import { TableSkeleton, PageHeaderSkeleton, SearchBarSkeleton, ListSkeleton } fr
 import DecisionModal from '@/components/DecisionModal';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { useNotification } from '@/providers/NotificationProvider';
 
 interface Decision {
   id: string;
@@ -47,6 +48,7 @@ interface Decision {
 }
 
 export default function DecisionsPage() {
+  const { addNotification } = useNotification();
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -104,15 +106,15 @@ export default function DecisionsPage() {
         });
 
         if (response.ok) {
-          alert('Шийдвэр амжилттай устгагдлаа');
+          addNotification('Шийдвэр амжилттай устгагдлаа', 'success');
           fetchDecisions();
         } else {
           const error = await response.json();
-          alert(error.error || 'Алдаа гарлаа');
+          addNotification(error.error || 'Алдаа гарлаа', 'error');
         }
       } catch (error) {
         console.error('Шийдвэр устгахад алдаа гарлаа:', error);
-        alert('Алдаа гарлаа');
+        addNotification('Алдаа гарлаа', 'error');
       }
     }
   };
@@ -181,12 +183,12 @@ export default function DecisionsPage() {
         const data = await response.json();
         setSelectedDecision(data);
       } else {
-        alert('Шийдвэрийн мэдээлэл авахад алдаа гарлаа');
+        addNotification('Шийдвэрийн мэдээлэл авахад алдаа гарлаа', 'error');
         setShowDetailModal(false);
       }
     } catch (error) {
       console.error('Error fetching decision:', error);
-      alert('Шийдвэрийн мэдээлэл авахад алдаа гарлаа');
+      addNotification('Шийдвэрийн мэдээлэл авахад алдаа гарлаа', 'error');
       setShowDetailModal(false);
     } finally {
       setLoadingDetail(false);
@@ -419,7 +421,7 @@ export default function DecisionsPage() {
       pdf.save(fileName);
     } catch (error) {
       console.error('PDF generation error:', error);
-      alert('PDF үүсгэхэд алдаа гарлаа');
+      addNotification('PDF үүсгэхэд алдаа гарлаа', 'error');
     } finally {
       setGeneratingPDF(false);
     }
@@ -574,11 +576,11 @@ export default function DecisionsPage() {
                             const decisionData = await response.json();
                             await generatePDFForDecision(decisionData);
                           } else {
-                            alert('Шийдвэрийн мэдээлэл авахад алдаа гарлаа');
+                            addNotification('Шийдвэрийн мэдээлэл авахад алдаа гарлаа', 'error');
                           }
                         } catch (error) {
                           console.error('Error fetching decision for PDF:', error);
-                          alert('PDF үүсгэхэд алдаа гарлаа');
+                          addNotification('PDF үүсгэхэд алдаа гарлаа', 'error');
                         }
                       }}
                       className="text-purple-600 hover:text-purple-900 p-1"

@@ -411,10 +411,10 @@ export default function EmployerProfile() {
       setLogoFile(null);
       setLogoPreview(null);
 
-      alert("Профайл амжилттай шинэчлэгдлээ");
+      addNotification("Профайл амжилттай шинэчлэгдлээ", "success");
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert("Профайл шинэчлэхэд алдаа гарлаа. Дараа дахин оролдоно уу.");
+      addNotification("Профайл шинэчлэхэд алдаа гарлаа. Дараа дахин оролдоно уу.", "error");
     }
   };
 
@@ -430,13 +430,13 @@ export default function EmployerProfile() {
         });
         if (response.ok) {
           setJobs(jobs.filter((job) => job.id !== jobId));
-          alert("Ажлын байр амжилттай устгагдлаа");
+          addNotification("Ажлын байр амжилттай устгагдлаа", "success");
         } else {
-          alert("Ажлын байрыг устгахад алдаа гарлаа");
+          addNotification("Ажлын байрыг устгахад алдаа гарлаа", "error");
         }
       } catch (error) {
         console.error("Error deleting job:", error);
-        alert("Ажлын байрыг устгахад алдаа гарлаа");
+        addNotification("Ажлын байрыг устгахад алдаа гарлаа", "error");
       }
     }
   };
@@ -457,7 +457,7 @@ export default function EmployerProfile() {
       setCompany(updated);
       setIsEditingAbout(false);
     } catch {
-      alert("Шинэчлэхэд алдаа гарлаа");
+      addNotification("Шинэчлэхэд алдаа гарлаа", "error");
     }
   };
 
@@ -1543,7 +1543,7 @@ export default function EmployerProfile() {
                         <button
                           onClick={async () => {
                             if (!userEmail || userEmail === session?.user?.email) {
-                              alert("Одоогийн имэйл хаягаас өөр имэйл оруулна уу");
+                              addNotification("Одоогийн имэйл хаягаас өөр имэйл оруулна уу", "info");
                               return;
                             }
                             
@@ -1563,12 +1563,12 @@ export default function EmployerProfile() {
                               
                               setIsVerificationSent(true);
                               if (data.devMode && data.code) {
-                                alert(`Баталгаажуулах код: ${data.code} (Development mode)`);
+                                addNotification(`Баталгаажуулах код: ${data.code} (Development mode)`, "info");
                               } else {
-                                alert(data.message || "Баталгаажуулах код имэйлдээ илгээгдлээ");
+                                addNotification(data.message || "Баталгаажуулах код имэйлдээ илгээгдлээ", "success");
                               }
                             } catch (error: any) {
-                              alert(error.message || "Код илгээхэд алдаа гарлаа");
+                              addNotification(error.message || "Код илгээхэд алдаа гарлаа", "error");
                             } finally {
                               setIsSendingCode(false);
                             }
@@ -1604,7 +1604,7 @@ export default function EmployerProfile() {
                         <button
                           onClick={async () => {
                             if (verificationCode.length !== 6) {
-                              alert("6 оронтой код оруулна уу");
+                              addNotification("6 оронтой код оруулна уу", "info");
                               return;
                             }
                             
@@ -1625,13 +1625,13 @@ export default function EmployerProfile() {
                                 throw new Error(data.error || "Код баталгаажуулах үед алдаа гарлаа");
                               }
                               
-                              alert(data.message || "Имэйл амжилттай шинэчлэгдлээ");
+                              addNotification(data.message || "Имэйл амжилттай шинэчлэгдлээ", "success");
                               
                               // Force full page reload to refresh NextAuth session
                               // This ensures the new email is loaded from the database
                               window.location.reload();
                             } catch (error: any) {
-                              alert(error.message || "Код баталгаажуулах үед алдаа гарлаа");
+                              addNotification(error.message || "Код баталгаажуулах үед алдаа гарлаа", "error");
                             } finally {
                               setIsVerifying(false);
                             }
@@ -1817,17 +1817,17 @@ export default function EmployerProfile() {
                       <button
                         onClick={async () => {
                           if (!currentPassword || !newPassword || !confirmPassword) {
-                            alert("Бүх талбарыг бөглөнө үү");
+                            addNotification("Бүх талбарыг бөглөнө үү", "info");
                             return;
                           }
                           
                           if (newPassword.length < 6) {
-                            alert("Шинэ нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой");
+                            addNotification("Шинэ нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой", "info");
                             return;
                           }
                           
                           if (newPassword !== confirmPassword) {
-                            alert("Нууц үг таарахгүй байна");
+                            addNotification("Нууц үг таарахгүй байна", "info");
                             return;
                           }
                           
@@ -1848,13 +1848,13 @@ export default function EmployerProfile() {
                               throw new Error(data.error || "Нууц үг солих үед алдаа гарлаа");
                             }
                             
-                            alert(data.message || "Нууц үг амжилттай солигдлоо");
+                            addNotification(data.message || "Нууц үг амжилттай солигдлоо", "success");
                             setIsEditingPassword(false);
                             setCurrentPassword("");
                             setNewPassword("");
                             setConfirmPassword("");
                           } catch (error: any) {
-                            alert(error.message || "Нууц үг солих үед алдаа гарлаа");
+                            addNotification(error.message || "Нууц үг солих үед алдаа гарлаа", "error");
                           } finally {
                             setIsChangingPassword(false);
                           }

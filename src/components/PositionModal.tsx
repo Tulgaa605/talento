@@ -3,6 +3,7 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useNotification } from '@/providers/NotificationProvider';
 
 interface Department {
   id: string;
@@ -28,6 +29,7 @@ interface PositionModalProps {
 }
 
 export default function PositionModal({ isOpen, onClose, onSuccess, positionId }: PositionModalProps) {
+  const { addNotification } = useNotification();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -104,7 +106,7 @@ export default function PositionModal({ isOpen, onClose, onSuccess, positionId }
       }
     } catch (error) {
       console.error('Error fetching position:', error);
-      alert('Албан тушаалын мэдээлэл авахад алдаа гарлаа');
+      addNotification('Албан тушаалын мэдээлэл авахад алдаа гарлаа', 'error');
     } finally {
       setLoading(false);
     }
@@ -191,11 +193,11 @@ export default function PositionModal({ isOpen, onClose, onSuccess, positionId }
         }
       } else {
         const error = await response.json();
-        alert(`Алдаа: ${error.message || error.error || 'Алдаа гарлаа'}`);
+        addNotification(`Алдаа: ${error.message || error.error || 'Алдаа гарлаа'}`, 'error');
       }
     } catch (error) {
       console.error('Error saving position:', error);
-      alert(isEditMode ? 'Албан тушаал засахдаа алдаа гарлаа' : 'Албан тушаал үүсгэхэд алдаа гарлаа');
+      addNotification(isEditMode ? 'Албан тушаал засахдаа алдаа гарлаа' : 'Албан тушаал үүсгэхэд алдаа гарлаа', 'error');
     } finally {
       setSubmitting(false);
     }

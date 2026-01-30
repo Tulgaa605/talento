@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { StatsSkeleton, PageHeaderSkeleton, CardSkeleton } from "@/components/Skeletons";
+import { useNotification } from "@/providers/NotificationProvider";
 
 type Training = {
   id: number;
@@ -22,6 +23,7 @@ type Training = {
 };
 
 export default function TrainingPage() {
+  const { addNotification } = useNotification();
   const [activeTab, setActiveTab] = useState("overview");
   const [currentDate, setCurrentDate] = useState('');
   const [selectedTraining, setSelectedTraining] = useState<Training | null>(null);
@@ -274,11 +276,11 @@ export default function TrainingPage() {
           closeDetail();
         }
       } else {
-        alert('Сургалт устгахад алдаа гарлаа');
+        addNotification('Сургалт устгахад алдаа гарлаа', 'error');
       }
     } catch (error) {
       console.error('Error deleting training:', error);
-      alert('Сургалт устгахад алдаа гарлаа');
+      addNotification('Сургалт устгахад алдаа гарлаа', 'error');
     }
   };
 
@@ -304,18 +306,18 @@ export default function TrainingPage() {
           closeParticipant();
         }
       } else {
-        alert('Оролцогч устгахад алдаа гарлаа');
+        addNotification('Оролцогч устгахад алдаа гарлаа', 'error');
       }
     } catch (error) {
       console.error('Error deleting participant:', error);
-      alert('Оролцогч устгахад алдаа гарлаа');
+      addNotification('Оролцогч устгахад алдаа гарлаа', 'error');
     }
   };
 
   const handleExportExcel = async () => {
     try {
       if (trainings.length === 0) {
-        alert('Татах сургалт байхгүй байна');
+        addNotification('Татах сургалт байхгүй байна', 'info');
         return;
       }
 
@@ -360,7 +362,7 @@ export default function TrainingPage() {
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error('Error exporting Excel:', error);
-      alert('Excel файл татахад алдаа гарлаа');
+      addNotification('Excel файл татахад алдаа гарлаа', 'error');
     }
   };
 

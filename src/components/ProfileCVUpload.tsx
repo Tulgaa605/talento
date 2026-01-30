@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { DocumentArrowUpIcon, EyeIcon } from "@heroicons/react/24/outline";
 import { TrashIcon } from "@heroicons/react/24/solid";
+import { useNotification } from "@/providers/NotificationProvider";
 
 interface CV {
   id: string;
@@ -13,6 +14,7 @@ interface CV {
 
 export default function ProfileCVUpload() {
   const { data: session } = useSession();
+  const { addNotification } = useNotification();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,10 +110,11 @@ export default function ProfileCVUpload() {
       setViewingCVUrl(url);
     } catch (error) {
       console.error('CV харахад алдаа гарлаа:', error);
-      alert(
+      addNotification(
         error instanceof Error 
           ? error.message 
-          : 'CV харахад алдаа гарлаа. Дахин оролдоно уу.'
+          : 'CV харахад алдаа гарлаа. Дахин оролдоно уу.',
+        'error'
       );
     } finally {
       setIsViewing(null);
@@ -148,10 +151,11 @@ export default function ProfileCVUpload() {
       document.body.removeChild(a);
     } catch (error) {
       console.error('CV татахад алдаа гарлаа:', error);
-      alert(
+      addNotification(
         error instanceof Error 
           ? error.message 
-          : 'CV татахад алдаа гарлаа. Дахин оролдоно уу.'
+          : 'CV татахад алдаа гарлаа. Дахин оролдоно уу.',
+        'error'
       );
     } finally {
       setIsDownloading(null);
@@ -173,10 +177,12 @@ export default function ProfileCVUpload() {
       }
 
       setCVs(cvs.filter((cv) => cv.id !== cvId));
+      addNotification("CV амжилттай устгагдлаа", 'success');
     } catch (error) {
       console.error("Error deleting CV:", error);
-      alert(
-        error instanceof Error ? error.message : "CV устгахад алдаа гарлаа"
+      addNotification(
+        error instanceof Error ? error.message : "CV устгахад алдаа гарлаа",
+        'error'
       );
     } finally {
       setIsDeleting(null);

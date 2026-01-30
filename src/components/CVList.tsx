@@ -2,6 +2,7 @@
 
 import { TrashIcon, EyeIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
+import { useNotification } from "@/providers/NotificationProvider";
 
 interface CV {
   id: string;
@@ -15,6 +16,7 @@ interface CVListProps {
 }
 
 export default function CVList({ cvs: initialCvs }: CVListProps) {
+  const { addNotification } = useNotification();
   const [cvs, setCVs] = useState(initialCvs);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [isViewing, setIsViewing] = useState<string | null>(null);
@@ -38,10 +40,11 @@ export default function CVList({ cvs: initialCvs }: CVListProps) {
       setTimeout(() => window.URL.revokeObjectURL(url), 100);
     } catch (error) {
       console.error('CV харахад алдаа гарлаа:', error);
-      alert(
+      addNotification(
         error instanceof Error 
           ? error.message 
-          : 'CV харахад алдаа гарлаа. Дахин оролдоно уу.'
+          : 'CV харахад алдаа гарлаа. Дахин оролдоно уу.',
+        'error'
       );
     } finally {
       setIsViewing(null);
@@ -70,10 +73,11 @@ export default function CVList({ cvs: initialCvs }: CVListProps) {
       document.body.removeChild(a);
     } catch (error) {
       console.error('CV татахад алдаа гарлаа:', error);
-      alert(
+      addNotification(
         error instanceof Error 
           ? error.message 
-          : 'CV татахад алдаа гарлаа. Дахин оролдоно уу.'
+          : 'CV татахад алдаа гарлаа. Дахин оролдоно уу.',
+        'error'
       );
     } finally {
       setIsDownloading(null);
@@ -95,10 +99,12 @@ export default function CVList({ cvs: initialCvs }: CVListProps) {
       }
 
       setCVs(cvs.filter((cv) => cv.id !== cvId));
+      addNotification("CV амжилттай устгагдлаа", 'success');
     } catch (error) {
       console.error("Error deleting CV:", error);
-      alert(
-        error instanceof Error ? error.message : "CV устгахад алдаа гарлаа"
+      addNotification(
+        error instanceof Error ? error.message : "CV устгахад алдаа гарлаа",
+        'error'
       );
     } finally {
       setIsDeleting(null);

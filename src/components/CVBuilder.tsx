@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import {
   PlusIcon,
@@ -13,6 +13,9 @@ import {
 } from "@heroicons/react/24/outline";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Cropper from "react-easy-crop";
+import { Area } from "react-easy-crop";
+import { useNotification } from "@/providers/NotificationProvider";
 
 interface PersonalInfo {
   firstName: string;
@@ -23,6 +26,7 @@ interface PersonalInfo {
   summary: string;
   linkedin?: string;
   website?: string;
+  photo?: string; // Base64 image data
 }
 
 interface Experience {
@@ -84,12 +88,87 @@ interface CVBuilderProps {
 
 export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   const { data: session } = useSession();
+  const { addNotification } = useNotification();
   const [currentStep, setCurrentStep] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [showSidebarPreview, setShowSidebarPreview] = useState(false);
   const [template, setTemplate] = useState<Template>("modern");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string>("");
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+  // Helper function to create image from URL
+  const createImage = (url: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      image.addEventListener('load', () => resolve(image));
+      image.addEventListener('error', (error) => reject(error));
+      image.src = url;
+    });
+
+  // Handle crop complete
+  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  // Create cropped image in 3x4 ratio
+  const createCroppedImage = useCallback(async () => {
+    if (!imageToCrop || !croppedAreaPixels) return;
+
+    try {
+      const image = await createImage(imageToCrop);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) return;
+
+      // 3x4 ratio: 300x400 pixels
+      const targetWidth = 300;
+      const targetHeight = 400;
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+
+      ctx.drawImage(
+        image,
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height,
+        0,
+        0,
+        targetWidth,
+        targetHeight
+      );
+
+      const croppedImageUrl = canvas.toDataURL('image/jpeg', 0.9);
+      setPersonalInfo({ ...personalInfo, photo: croppedImageUrl });
+      setShowCropModal(false);
+      setImageToCrop("");
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+      if (errors.photo) {
+        setErrors({ ...errors, photo: "" });
+      }
+    } catch (error) {
+      console.error('Error creating cropped image:', error);
+      setErrors({ ...errors, photo: "Зураг crop хийхэд алдаа гарлаа" });
+    }
+  }, [imageToCrop, croppedAreaPixels, personalInfo, errors]);
+
+  const cancelCrop = () => {
+    setShowCropModal(false);
+    setImageToCrop("");
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    const input = document.getElementById("photo-upload") as HTMLInputElement;
+    if (input) input.value = "";
+  };
 
   const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
     firstName: "",
@@ -100,6 +179,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
     summary: "",
     linkedin: "",
     website: "",
+    photo: "",
   });
 
   const [experiences, setExperiences] = useState<Experience[]>([
@@ -633,13 +713,13 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       setGenerating(false);
       
       // Show success message
-      alert(`PDF амжилттай татагдлаа: ${fileName}`);
+      addNotification(`PDF амжилттай татагдлаа: ${fileName}`, 'success');
     } catch (error) {
       console.error("PDF generation error:", error);
       const errorMessage = error instanceof Error 
         ? error.message 
         : "PDF үүсгэхэд алдаа гарлаа. Дахин оролдоно уу.";
-      alert(`Алдаа: ${errorMessage}`);
+      addNotification(`Алдаа: ${errorMessage}`, 'error');
       setGenerating(false);
     }
   };
@@ -678,6 +758,16 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
           {/* Left Column - Dark Blue Background */}
           <div className="w-1/3" style={{ backgroundColor: "#1e3a5f", minHeight: "100%" }}>
             <div className="p-5 pb-4">
+              {personalInfo.photo && (
+                <div className="mb-4 flex justify-center">
+                  <img
+                    src={personalInfo.photo}
+                    alt="Profile"
+                    className="w-24 h-32 object-cover rounded border-2 border-white"
+                    style={{ aspectRatio: "3/4" }}
+                  />
+                </div>
+              )}
               <h1 className="text-xl font-bold leading-tight text-white" style={{ fontSize: "18px", lineHeight: "1.2" }}>
                 {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
               </h1>
@@ -850,6 +940,16 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
           {/* Left Column - Gray Background */}
           <div className="w-1/4 bg-gray-200 p-5">
             <div className="text-center mb-5">
+              {personalInfo.photo && (
+                <div className="mb-4 flex justify-center">
+                  <img
+                    src={personalInfo.photo}
+                    alt="Profile"
+                    className="w-20 h-28 object-cover rounded border-2 border-gray-400"
+                    style={{ aspectRatio: "3/4" }}
+                  />
+                </div>
+              )}
               <h1 className="text-xl font-bold text-gray-900 mb-2" style={{ fontSize: "18px", lineHeight: "1.2" }}>
                 {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
               </h1>
@@ -1001,9 +1101,21 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       >
         {/* Header - Dark gray background spanning full width */}
         <div className="p-5" style={{ backgroundColor: "#4a5568" }}>
-          <h1 className="text-xl font-bold mb-2 text-white" style={{ fontSize: "20px", lineHeight: "1.2" }}>
-            {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
-          </h1>
+          <div className="flex items-center gap-4 mb-2">
+            {personalInfo.photo && (
+              <img
+                src={personalInfo.photo}
+                alt="Profile"
+                className="w-20 h-28 object-cover rounded border-2 border-white"
+                style={{ aspectRatio: "3/4" }}
+              />
+            )}
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-white" style={{ fontSize: "20px", lineHeight: "1.2" }}>
+                {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
+              </h1>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-3 text-white" style={{ fontSize: "10px", lineHeight: "1.5" }}>
             {personalInfo.email && <span className="break-words">{personalInfo.email}</span>}
             {personalInfo.phone && <span>{personalInfo.phone}</span>}
@@ -1174,9 +1286,21 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
         }}
       >
         <div className="p-5 border-b-2 border-purple-500">
-          <h1 className="text-2xl font-bold mb-2 text-white" style={{ fontSize: "20px", color: "#a78bfa", lineHeight: "1.2" }}>
-            {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
-          </h1>
+          <div className="flex items-center gap-4 mb-2">
+            {personalInfo.photo && (
+              <img
+                src={personalInfo.photo}
+                alt="Profile"
+                className="w-20 h-28 object-cover rounded border-2 border-purple-400"
+                style={{ aspectRatio: "3/4" }}
+              />
+            )}
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-white" style={{ fontSize: "20px", color: "#a78bfa", lineHeight: "1.2" }}>
+                {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
+              </h1>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-3 text-purple-200" style={{ fontSize: "10px", lineHeight: "1.5" }}>
             {personalInfo.email && <span className="break-words">✨ {personalInfo.email}</span>}
             {personalInfo.phone && <span>✨ {personalInfo.phone}</span>}
@@ -1514,6 +1638,87 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                   className="w-full px-4 py-3 border-2 text-gray-700 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-400 resize-none"
                   placeholder="Өөрийн талаар товч танилцуулга..."
                 />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  3x4 Зураг
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          // Validate file size (max 5MB)
+                          if (file.size > 5 * 1024 * 1024) {
+                            setErrors({ ...errors, photo: "Зургийн хэмжээ 5MB-ээс хэтэрч байна" });
+                            return;
+                          }
+                          // Open crop modal
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            setImageToCrop(event.target?.result as string);
+                            setShowCropModal(true);
+                            setCrop({ x: 0, y: 0 });
+                            setZoom(1);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                      id="photo-upload"
+                    />
+                    <label
+                      htmlFor="photo-upload"
+                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-colors"
+                    >
+                      {personalInfo.photo ? (
+                        <div className="relative w-full h-full flex items-center justify-center">
+                          <img
+                            src={personalInfo.photo}
+                            alt="Profile"
+                            className="max-w-full max-h-full object-contain rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPersonalInfo({ ...personalInfo, photo: "" });
+                              const input = document.getElementById("photo-upload") as HTMLInputElement;
+                              if (input) input.value = "";
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                          >
+                            <XMarkIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-10 h-10 text-gray-400 mb-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                          <span className="text-sm text-gray-600">Зураг оруулах</span>
+                          <span className="text-xs text-gray-500">3x4 харьцаа (JPG, PNG)</span>
+                        </>
+                      )}
+                    </label>
+                    {errors.photo && (
+                      <p className="mt-1 text-xs text-red-600">{errors.photo}</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2322,6 +2527,65 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
           </div>
         )}
       </div>
+
+      {/* Crop Modal */}
+      {showCropModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900">3x4 Зураг Crop хийх</h3>
+              <button
+                onClick={cancelCrop}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="relative w-full" style={{ height: "400px", backgroundColor: "#333" }}>
+              <Cropper
+                image={imageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={3 / 4}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+                cropShape="rect"
+              />
+            </div>
+
+            <div className="mt-4 flex items-center gap-4">
+              <label className="text-sm font-medium text-gray-700">Zoom:</label>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="flex-1"
+              />
+              <span className="text-sm text-gray-600">{zoom.toFixed(1)}x</span>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={cancelCrop}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Цуцлах
+              </button>
+              <button
+                onClick={createCroppedImage}
+                className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Хадгалах
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

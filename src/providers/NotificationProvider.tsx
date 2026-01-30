@@ -224,7 +224,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           .map(notification => {
             setTimeout(() => {
               removeNotification(notification.id);
-            }, 3500);
+            }, 2000);
 
             return (
               <div

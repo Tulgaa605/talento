@@ -3,6 +3,7 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useNotification } from '@/providers/NotificationProvider';
 
 interface Department {
   id: string;
@@ -19,6 +20,7 @@ interface DepartmentModalProps {
 }
 
 export default function DepartmentModal({ isOpen, onClose, onSuccess, departmentId }: DepartmentModalProps) {
+  const { addNotification } = useNotification();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -75,7 +77,7 @@ export default function DepartmentModal({ isOpen, onClose, onSuccess, department
       }
     } catch (error) {
       console.error('Error fetching department:', error);
-      alert('Хэлтсийн мэдээлэл авахад алдаа гарлаа');
+      addNotification('Хэлтсийн мэдээлэл авахад алдаа гарлаа', 'error');
     } finally {
       setLoading(false);
     }
@@ -151,11 +153,11 @@ export default function DepartmentModal({ isOpen, onClose, onSuccess, department
         }
       } else {
         const error = await response.json();
-        alert(`Алдаа: ${error.message || error.error || 'Алдаа гарлаа'}`);
+        addNotification(`Алдаа: ${error.message || error.error || 'Алдаа гарлаа'}`, 'error');
       }
     } catch (error) {
       console.error('Error saving department:', error);
-      alert(isEditMode ? 'Хэлтэс засахдаа алдаа гарлаа' : 'Хэлтэс үүсгэхэд алдаа гарлаа');
+      addNotification(isEditMode ? 'Хэлтэс засахдаа алдаа гарлаа' : 'Хэлтэс үүсгэхэд алдаа гарлаа', 'error');
     } finally {
       setSubmitting(false);
     }

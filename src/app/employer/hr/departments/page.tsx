@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CardSkeleton, PageHeaderSkeleton, SearchBarSkeleton } from '@/components/Skeletons';
 import DepartmentModal from '@/components/DepartmentModal';
+import { useNotification } from '@/providers/NotificationProvider';
 
 interface DepartmentEmployee {
   id: string;
@@ -40,6 +41,7 @@ interface Department {
 }
 
 export default function DepartmentsPage() {
+  const { addNotification } = useNotification();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -85,15 +87,15 @@ export default function DepartmentsPage() {
         });
 
         if (response.ok) {
-          alert('Хэлтэс амжилттай устгагдлаа');
+          addNotification('Хэлтэс амжилттай устгагдлаа', 'success');
           loadDepartments();
         } else {
           const error = await response.json();
-          alert(error.error || 'Алдаа гарлаа');
+          addNotification(error.error || 'Алдаа гарлаа', 'error');
         }
       } catch (error) {
         console.error('Хэлтэс устгахад алдаа гарлаа:', error);
-        alert('Алдаа гарлаа');
+        addNotification('Алдаа гарлаа', 'error');
       }
     }
   };
@@ -128,12 +130,12 @@ export default function DepartmentsPage() {
         const data = await response.json();
         setSelectedDepartment(data);
       } else {
-        alert('Хэлтсийн мэдээлэл авахад алдаа гарлаа');
+        addNotification('Хэлтсийн мэдээлэл авахад алдаа гарлаа', 'error');
         setShowDetailModal(false);
       }
     } catch (error) {
       console.error('Error fetching department:', error);
-      alert('Хэлтсийн мэдээлэл авахад алдаа гарлаа');
+      addNotification('Хэлтсийн мэдээлэл авахад алдаа гарлаа', 'error');
       setShowDetailModal(false);
     } finally {
       setLoadingDetail(false);

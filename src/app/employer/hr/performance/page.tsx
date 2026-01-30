@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import { StatsSkeleton, PageHeaderSkeleton, CardSkeleton } from "@/components/Skeletons";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { useNotification } from "@/providers/NotificationProvider";
 
 type EvalStatus = "Дууссан" | "Хүлээгдэж буй" | "Эхлээгүй" | string;
 type EvalType =
@@ -45,6 +46,7 @@ type TopPerformer = {
 };
 
 export default function PerformancePage() {
+  const { addNotification } = useNotification();
   const [activeTab, setActiveTab] = useState<"overview" | "evaluations" | "criteria" | "reports">("overview");
   const [selectedPeriod, setSelectedPeriod] = useState("2024");
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -110,7 +112,7 @@ export default function PerformancePage() {
       pdf.save(fileName);
     } catch (error) {
       console.error("PDF generation error:", error);
-      alert("PDF үүсгэхэд алдаа гарлаа");
+      addNotification("PDF үүсгэхэд алдаа гарлаа", "error");
     } finally {
       setIsGeneratingPDF(false);
     }
