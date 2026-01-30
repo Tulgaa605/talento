@@ -101,6 +101,18 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    summary: "",
+    linkedin: "",
+    website: "",
+    photo: "",
+  });
+
   // Helper function to create image from URL
   const createImage = (url: string): Promise<HTMLImageElement> =>
     new Promise((resolve, reject) => {
@@ -169,18 +181,6 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
     const input = document.getElementById("photo-upload") as HTMLInputElement;
     if (input) input.value = "";
   };
-
-  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    address: "",
-    summary: "",
-    linkedin: "",
-    website: "",
-    photo: "",
-  });
 
   const [experiences, setExperiences] = useState<Experience[]>([
     {
@@ -682,7 +682,6 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, undefined, "FAST");
       heightLeft -= pageHeight;
 
-      // Add additional pages if needed
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
