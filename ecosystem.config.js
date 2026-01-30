@@ -12,7 +12,9 @@
       env: {
         NODE_ENV: "production",
         PORT: 3000,
-        HOST: "0.0.0.0"
+        HOST: "0.0.0.0",
+        // NEXTAUTH_URL and NEXTAUTH_SECRET should be set in .env file
+        // NEXTAUTH_URL should match your server URL (e.g., http://192.168.0.117:3000)
       }
     }
   ]

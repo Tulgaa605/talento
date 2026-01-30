@@ -74,19 +74,24 @@ export default function JobSeekerLoginPage() {
         password,
         expectedRoles: JSON.stringify(["USER"]),
         redirect: false,
+        callbackUrl: "/",
       });
 
       if (result?.error) {
         if (result.error === "No user found") {
           setError("Таны бүртгэл олдсонгүй. Эхлээд бүртгүүлнэ үү.");
         } else {
-          setError("Имэйл, нууц үг буруу эсвэл танд нэвтрэх эрх байхгүй байна.");
+          setError(result.error || "Имэйл, нууц үг буруу эсвэл танд нэвтрэх эрх байхгүй байна.");
         }
       } else if (result?.ok) {
-        // Refresh session to ensure it's available
+        // Wait for cookie to be set
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Refresh session
         await update();
-        // Use window.location for full page reload to ensure session is loaded
-        window.location.href = "/";
+        // Additional wait to ensure everything is ready
+        await new Promise(resolve => setTimeout(resolve, 300));
+        // Use replace to avoid adding to history
+        window.location.replace("/");
       } else {
         setError("Нэвтрэхэд тодорхойгүй алдаа гарлаа.");
       }

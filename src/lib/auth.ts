@@ -5,8 +5,12 @@ import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+// Check if we're using HTTPS
+const isSecure = process.env.NEXTAUTH_URL?.startsWith('https://') ?? false;
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -78,7 +82,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
+        secure: isSecure, // Only secure if using HTTPS
         maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
       },
     },
@@ -88,7 +92,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
+        secure: isSecure, // Only secure if using HTTPS
         maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
       },
     },
@@ -98,7 +102,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
+        secure: isSecure, // Only secure if using HTTPS
         maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
       },
     },
@@ -195,8 +199,20 @@ export const authOptions: NextAuthOptions = {
 
       return baseUrl;
     },
-    async session({ session }) {
-      if (session.user) {
+    async session({ session, token }) {
+      if (session.user && token) {
+        // Use token data first (from JWT)
+        if (token.id) {
+          session.user.id = token.id as string;
+        }
+        if (token.role) {
+          session.user.role = token.role as string;
+        }
+        if (token.name) {
+          session.user.name = token.name as string;
+        }
+
+        // Optionally refresh from DB (but don't fail if DB is unavailable)
         try {
           const dbUser = await prisma.user.findUnique({
             where: { email: session.user.email! },
@@ -215,36 +231,25 @@ export const authOptions: NextAuthOptions = {
             session.user.name = dbUser.name || session.user.name;
             session.user.email = dbUser.email || session.user.email;
             session.user.image = dbUser.image || session.user.image;
-          } else {
-            return {
-              ...session,
-              user: {
-                ...session.user,
-                id: "",
-                role: "",
-              },
-            };
           }
-        } catch {
-          return {
-            ...session,
-            user: {
-              ...session.user,
-              id: "",
-              role: "",
-            },
-          };
+        } catch (error) {
+          // If DB query fails, use token data (already set above)
+          console.error("Session DB query error:", error);
         }
       }
 
       return session;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
+      // Initial sign in - user object is available
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
       }
 
+      // For OAuth providers, fetch user from DB
       if (account?.provider === "google") {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email! },
@@ -254,14 +259,18 @@ export const authOptions: NextAuthOptions = {
           token.role = dbUser.role;
           token.id = dbUser.id;
         }
-      } else if (account?.provider === "credentials") {
+      }
+
+      // Refresh token data if needed
+      if (trigger === "update" && token.email) {
         const dbUser = await prisma.user.findUnique({
-          where: { email: token.email! },
-          select: { id: true, role: true },
+          where: { email: token.email },
+          select: { id: true, role: true, name: true },
         });
         if (dbUser) {
           token.role = dbUser.role;
           token.id = dbUser.id;
+          token.name = dbUser.name;
         }
       }
 
@@ -272,5 +281,6 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
     error: "/login",
   },
-  debug: false,
+  debug: process.env.NODE_ENV === 'development',
+  trustHost: true, // Important for production with custom domain/IP
 };
