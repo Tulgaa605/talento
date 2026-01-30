@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
@@ -8,6 +8,7 @@ import gsap from "gsap";
 
 export default function JobSeekerLoginPage() {
   const router = useRouter();
+  const { update } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -71,7 +72,7 @@ export default function JobSeekerLoginPage() {
       const result = await signIn("credentials", {
         email,
         password,
-        expectedRole: "USER",
+        expectedRoles: JSON.stringify(["USER"]),
         redirect: false,
       });
 
@@ -82,7 +83,10 @@ export default function JobSeekerLoginPage() {
           setError("Имэйл, нууц үг буруу эсвэл танд нэвтрэх эрх байхгүй байна.");
         }
       } else if (result?.ok) {
-        router.push("/");
+        // Refresh session to ensure it's available
+        await update();
+        // Use window.location for full page reload to ensure session is loaded
+        window.location.href = "/";
       } else {
         setError("Нэвтрэхэд тодорхойгүй алдаа гарлаа.");
       }
@@ -180,7 +184,7 @@ export default function JobSeekerLoginPage() {
                       type="button"
                       className="flex items-center gap-2"
                       onClick={() =>
-                        signIn("google", { callbackUrl: "/", expectedRole: "USER" })
+                        signIn("google", { callbackUrl: "/" })
                       }
                     >
                       <Image
