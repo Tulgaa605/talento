@@ -31,6 +31,11 @@ export async function calculateJobMatches(
       include: {
         company: true,
       },
+      where: {
+        company: {
+          isNot: null,
+        },
+      },
     });
     console.log("Found jobs:", jobs.length);
 
@@ -40,8 +45,14 @@ export async function calculateJobMatches(
     }
 
     const matches = await Promise.all(
-      jobs.map(async (job: Job & { company: { name: string } }) => {
+      jobs.map(async (job: Job & { company: { name: string } | null }) => {
         try {
+          // Skip jobs without company
+          if (!job.company) {
+            console.log("Skipping job without company:", job.title);
+            return null;
+          }
+
           console.log("Processing job:", job.title);
           const matchDetails = calculateDetailedMatchScore(
             cvContent,

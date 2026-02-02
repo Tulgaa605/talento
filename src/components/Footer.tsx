@@ -17,6 +17,9 @@ export const Footer = () => {
             <h3 className="text-base font-semibold text-white mb-3">
               Холбоо барих
             </h3>
+            <div className="flex items-center gap-2">
+
+            </div>
             <ul className="text-sm space-y-3">
               <li>
                 📧 Email:{" "}

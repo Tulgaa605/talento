@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import {
   PlusIcon,
@@ -31,6 +31,9 @@ interface PersonalInfo {
   linkedin?: string;
   website?: string;
   photo?: string; // Base64 image data
+  dateOfBirth?: string;
+  nationality?: string;
+  github?: string;
 }
 
 interface Experience {
@@ -124,6 +127,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
     firstName: "",
@@ -135,6 +139,9 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
     linkedin: "",
     website: "",
     photo: "",
+    dateOfBirth: "",
+    nationality: "",
+    github: "",
   });
 
   // Helper function to create image from URL
@@ -190,7 +197,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       setErrors((prev) => {
         if (prev.photo) {
           return { ...prev, photo: "" };
-        }
+      }
         return prev;
       });
     } catch (error) {
@@ -422,7 +429,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   const toggleSection = (section: string) => {
     setCollapsedSections((prev) => {
       const wasCollapsed = prev[section];
-      // If section is being expanded, close all others and move this one to top
+      // If section is being expanded, close all others
       if (wasCollapsed) {
         // Close all sections first
         const allCollapsed = Object.keys(prev).reduce((acc, key) => {
@@ -430,15 +437,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
           return acc;
         }, {} as Record<string, boolean>);
         // Then expand only the clicked section
-        const newState = { ...allCollapsed, [section]: false };
-        
-        // Move expanded section to the top
-        setSectionOrder((order) => {
-          const newOrder = order.filter((s) => s !== section);
-          return [section, ...newOrder];
-        });
-        
-        return newState;
+        return { ...allCollapsed, [section]: false };
       } else {
         // If section is being collapsed, just close it
         return { ...prev, [section]: true };
@@ -476,6 +475,362 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       </div>
     );
   };
+
+  // Helper function to parse CV text and extract information
+  const parseCVText = useCallback((text: string) => {
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      console.log("parseCVText: Empty or invalid text");
+      return;
+    }
+    
+    console.log("parseCVText: Starting to parse, text length:", text.length);
+    console.log("parseCVText: First 200 chars:", text.substring(0, 200));
+    
+    // Extract name - more precise patterns
+    let nameFound = false;
+    
+    // Pattern 1: "Овог, Нэр: Бат-Эрдэнэ Мөнх-Оргил" format
+    const ovoogNerMatch = text.match(/(?:Овог|Last Name)[\s,]*Нэр|Name[:\s]+([А-Яа-яA-Za-z\s-]+?)(?:\n|Утас|Phone|Имэйл|Email|$)/i);
+    if (ovoogNerMatch && ovoogNerMatch[1]) {
+      const nameText = ovoogNerMatch[1].trim();
+      // Remove common prefixes/suffixes
+      const cleanName = nameText.replace(/^(Овог|Нэр|Name|Full Name)[:\s]*/i, '').trim();
+      const nameParts = cleanName.split(/\s+/).filter((p: string) => p.length > 1 && !p.match(/^(Овог|Нэр|Name)$/i));
+      
+      if (nameParts.length >= 2) {
+        console.log("parseCVText: Found name (Овог, Нэр format):", nameParts);
+        setPersonalInfo(prev => {
+          const newInfo = {
+            ...prev,
+            firstName: nameParts[0],
+            lastName: nameParts.slice(1).join(" ")
+          };
+          console.log("parseCVText: Updated personalInfo with name:", newInfo.firstName, newInfo.lastName);
+          return newInfo;
+        });
+        nameFound = true;
+      }
+    }
+    
+    // Pattern 2: "Нэр: ..." or "Name: ..."
+    if (!nameFound) {
+      const nameMatch = text.match(/(?:^|\n)(?:Нэр|Name|Full Name)[:\s]+([А-Яа-яA-Za-z\s-]+?)(?:\n|Утас|Phone|Имэйл|Email|$)/i);
+      if (nameMatch && nameMatch[1]) {
+        const nameText = nameMatch[1].trim();
+        const nameParts = nameText.split(/\s+/).filter((p: string) => p.length > 1);
+        if (nameParts.length >= 2) {
+          console.log("parseCVText: Found name (Name format):", nameParts);
+          setPersonalInfo(prev => {
+            const newInfo = {
+              ...prev,
+              firstName: nameParts[0],
+              lastName: nameParts.slice(1).join(" ")
+            };
+            return newInfo;
+          });
+          nameFound = true;
+        }
+      }
+    }
+    
+    // Pattern 3: First line if it looks like a name (2-4 words, all caps or title case)
+    if (!nameFound) {
+      const firstLine = text.split('\n')[0].trim();
+      const namePattern = /^([А-ЯA-Z][а-яa-z]+(?:\s+[А-ЯA-Z][а-яa-z]+){1,3})$/;
+      if (namePattern.test(firstLine) && !firstLine.match(/(?:Овог|Нэр|Name|Утас|Phone|Имэйл|Email|Хаяг|Address)/i)) {
+        const nameParts = firstLine.split(/\s+/);
+        if (nameParts.length >= 2 && nameParts.length <= 4) {
+          console.log("parseCVText: Found name (first line):", nameParts);
+          setPersonalInfo(prev => {
+            const newInfo = {
+              ...prev,
+              firstName: nameParts[0],
+              lastName: nameParts.slice(1).join(" ")
+            };
+            return newInfo;
+          });
+          nameFound = true;
+        }
+      }
+    }
+    
+    // Extract email - more precise
+    const emailPatterns = [
+      /(?:Имэйл|Email|E-mail)[:\s]+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i,
+      /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/,
+    ];
+    
+    for (const pattern of emailPatterns) {
+      const emailMatch = text.match(pattern);
+      if (emailMatch && emailMatch[1]) {
+        const email = emailMatch[1].trim();
+        // Validate it's a real email format
+        if (email.includes('@') && email.includes('.') && !email.includes(' ')) {
+          console.log("parseCVText: Found email:", email);
+          setPersonalInfo(prev => {
+            const newInfo = { ...prev, email: email };
+            return newInfo;
+          });
+          break;
+        }
+      }
+    }
+    
+    // Extract phone - more precise patterns
+    const phonePatterns = [
+      /(?:Утас|Phone|Tel)[:\s]+([\d\s+-]{8,})/i,
+      /(?:Утас|Phone|Tel)[:\s]*(\d{8,})/i,
+    ];
+    
+    let phoneFound = false;
+    for (const pattern of phonePatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        const phone = match[1].trim().replace(/\s+/g, '').replace(/[^\d+]/g, '');
+        if (phone.length >= 8 && phone.length <= 12) {
+          console.log("parseCVText: Found phone:", phone);
+          setPersonalInfo(prev => {
+            const newInfo = { ...prev, phone: phone };
+            return newInfo;
+          });
+          phoneFound = true;
+          break;
+        }
+      }
+    }
+    
+    // Fallback: look for 8-10 digit numbers that aren't dates or other numbers
+    if (!phoneFound) {
+      const phoneMatch = text.match(/\b(\d{8,10})\b/);
+      if (phoneMatch && phoneMatch[1]) {
+        const phone = phoneMatch[1];
+        // Make sure it's not a year (1900-2100) or other common numbers
+        const year = parseInt(phone);
+        if (year < 1900 || year > 2100) {
+          console.log("parseCVText: Found phone (fallback):", phone);
+          setPersonalInfo(prev => {
+            const newInfo = { ...prev, phone: phone };
+            return newInfo;
+          });
+        }
+      }
+    }
+    
+    // Extract address - more precise
+    const addressPatterns = [
+      /(?:Хаяг|Address|Location)[:\s]+([^\n]+?)(?:\n|Утас|Phone|Имэйл|Email|Боловсрол|Education|$)/i,
+    ];
+    
+    for (const pattern of addressPatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        const address = match[1].trim();
+        // Validate it's not too short or too long, and doesn't contain other field labels
+        if (address.length > 5 && address.length < 100 && 
+            !address.match(/(?:Утас|Phone|Имэйл|Email|Нэр|Name|Боловсрол|Education)/i)) {
+          console.log("parseCVText: Found address:", address);
+          setPersonalInfo(prev => {
+            const newInfo = { ...prev, address: address };
+            return newInfo;
+          });
+          break;
+        }
+      }
+    }
+    
+    // Extract summary
+    const summaryPatterns = [
+      new RegExp("(?:Profile|Товч танилцуулга|Summary|About)[:\\s]+([^\\n]+(?:\\n(?!\\n)[^\\n]+)*?)(?=\\n\\n|\\n(?:Education|Боловсрол|Experience|Ажил|Skills|Ур чадвар)|$)", "is"),
+      new RegExp("(?:Profile|Товч танилцуулга|Summary)[:\\s]+(.{50,500})", "is"),
+    ];
+    
+    for (const pattern of summaryPatterns) {
+      const match = text.match(pattern);
+      if (match && match[1] && match[1].trim().length > 20) {
+        console.log("parseCVText: Found summary, length:", match[1].trim().length);
+        setPersonalInfo(prev => {
+          const newInfo = { ...prev, summary: match[1].trim().substring(0, 500) };
+          console.log("parseCVText: Updated summary:", newInfo.summary.substring(0, 50));
+          return newInfo;
+        });
+        break;
+      }
+    }
+    
+    // Extract Education
+    const educationSection = text.match(/(?:Боловсрол|Education|Боловсролын)[:\s]*([\s\S]*?)(?=\n\n|\n(?:Ажил|Employment|Experience|Туршлага|Skills|Ур чадвар|Languages|Хэл|Certificates|Гэрчилгээ|Projects|Төсөл)|$)/i);
+    if (educationSection && educationSection[1]) {
+      const eduText = educationSection[1].trim();
+      const eduLines = eduText.split('\n').filter(line => line.trim().length > 0);
+      
+      const newEducations: Education[] = [];
+      let currentEdu: Partial<Education> = {};
+      
+      for (const line of eduLines) {
+        // Look for degree/school patterns
+        const degreeMatch = line.match(/(?:Баклавр|Бакалавр|Магистр|Доктор|Bachelor|Master|PhD|Doctor|Боловсрол)[:\s]*([А-Яа-яA-Za-z\s-]+)/i);
+        const schoolMatch = line.match(/(?:Сургууль|University|College|Институт|School)[:\s]*([А-Яа-яA-Za-z\s-]+)/i);
+        const yearMatch = line.match(/(\d{4})\s*[-–]\s*(\d{4}|одоо|Present|Current)/i);
+        
+        if (degreeMatch) {
+          if (currentEdu.degree) {
+            newEducations.push(currentEdu as Education);
+          }
+          currentEdu = { degree: degreeMatch[1].trim() };
+        } else if (schoolMatch) {
+          currentEdu.school = schoolMatch[1].trim();
+        } else if (yearMatch) {
+          currentEdu.startDate = yearMatch[1];
+          currentEdu.endDate = yearMatch[2].toLowerCase().includes('одоо') || yearMatch[2].toLowerCase().includes('present') ? '' : yearMatch[2];
+          currentEdu.current = yearMatch[2].toLowerCase().includes('одоо') || yearMatch[2].toLowerCase().includes('present');
+        } else if (line.trim().length > 5 && !currentEdu.school) {
+          currentEdu.school = line.trim();
+        }
+      }
+      
+      if (currentEdu.degree || currentEdu.school) {
+        newEducations.push(currentEdu as Education);
+      }
+      
+      if (newEducations.length > 0) {
+        console.log("parseCVText: Found educations:", newEducations.length);
+        setEducations(newEducations.map((edu, idx) => ({
+          id: String(idx + 1),
+          school: edu.school || "",
+          degree: edu.degree || "",
+          field: edu.field || "",
+          startDate: edu.startDate || "",
+          endDate: edu.endDate || "",
+          current: edu.current || false,
+        })));
+      }
+    }
+    
+    // Extract Employment/Experience
+    const experienceSection = text.match(/(?:Ажил|Employment|Experience|Туршлага|Ажлын туршлага)[:\s]*([\s\S]*?)(?=\n\n|\n(?:Боловсрол|Education|Skills|Ур чадвар|Languages|Хэл|Certificates|Гэрчилгээ|Projects|Төсөл)|$)/i);
+    if (experienceSection && experienceSection[1]) {
+      const expText = experienceSection[1].trim();
+      const expLines = expText.split('\n').filter(line => line.trim().length > 0);
+      
+      const newExperiences: Experience[] = [];
+      let currentExp: Partial<Experience> = {};
+      
+      for (const line of expLines) {
+        const positionMatch = line.match(/(?:Албан тушаал|Position|Job Title|Ажил)[:\s]*([А-Яа-яA-Za-z\s-]+)/i);
+        const companyMatch = line.match(/(?:Компани|Company|Байгууллага|Organization)[:\s]*([А-Яа-яA-Za-z\s-]+)/i);
+        const yearMatch = line.match(/(\d{4})\s*[-–]\s*(\d{4}|одоо|Present|Current)/i);
+        
+        if (positionMatch) {
+          if (currentExp.position) {
+            newExperiences.push(currentExp as Experience);
+          }
+          currentExp = { position: positionMatch[1].trim() };
+        } else if (companyMatch) {
+          currentExp.company = companyMatch[1].trim();
+        } else if (yearMatch) {
+          currentExp.startDate = yearMatch[1];
+          currentExp.endDate = yearMatch[2].toLowerCase().includes('одоо') || yearMatch[2].toLowerCase().includes('present') ? '' : yearMatch[2];
+          currentExp.current = yearMatch[2].toLowerCase().includes('одоо') || yearMatch[2].toLowerCase().includes('present');
+        } else if (line.trim().length > 5 && !currentExp.company && !currentExp.position) {
+          if (!currentExp.position) {
+            currentExp.position = line.trim();
+          } else if (!currentExp.company) {
+            currentExp.company = line.trim();
+          }
+        }
+      }
+      
+      if (currentExp.position || currentExp.company) {
+        newExperiences.push(currentExp as Experience);
+      }
+      
+      if (newExperiences.length > 0) {
+        console.log("parseCVText: Found experiences:", newExperiences.length);
+        setExperiences(newExperiences.map((exp, idx) => ({
+          id: String(idx + 1),
+          company: exp.company || "",
+          position: exp.position || "",
+          location: exp.location || "",
+          startDate: exp.startDate || "",
+          endDate: exp.endDate || "",
+          current: exp.current || false,
+          description: exp.description || "",
+        })));
+      }
+    }
+    
+    // Extract Skills - more precise
+    const skillsSection = text.match(/(?:Ур чадвар|Skills|Чадвар)[:\s]*([\s\S]*?)(?=\n\n|\n(?:Боловсрол|Education|Ажил|Employment|Experience|Languages|Хэл|Certificates|Гэрчилгээ|Projects|Төсөл)|$)/i);
+    if (skillsSection && skillsSection[1]) {
+      const skillsText = skillsSection[1].trim();
+      // Split by common delimiters, but filter out invalid entries
+      const skillItems = skillsText
+        .split(/[,;\n•\-\*]/)
+        .map(s => s.trim())
+        .filter(s => {
+          // Filter out invalid skills
+          return s.length > 2 && 
+                 s.length < 50 && 
+                 !s.match(/^(Ур чадвар|Skills|Чадвар|Боловсрол|Education|Ажил|Employment)$/i) &&
+                 !s.match(/^\d+$/); // Not just numbers
+        });
+      
+      if (skillItems.length > 0) {
+        console.log("parseCVText: Found skills:", skillItems.length);
+        setSkills(skillItems.slice(0, 10).map((skill, idx) => ({
+          id: String(idx + 1),
+          name: skill,
+          level: "intermediate" as const,
+        })));
+      }
+    }
+    
+    // Extract Languages
+    const languagesSection = text.match(/(?:Хэл|Languages|Хэлний)[:\s]*([\s\S]*?)(?=\n\n|\n(?:Боловсрол|Education|Ажил|Employment|Experience|Skills|Ур чадвар|Certificates|Гэрчилгээ|Projects|Төсөл)|$)/i);
+    if (languagesSection && languagesSection[1]) {
+      const langText = languagesSection[1].trim();
+      const langLines = langText.split('\n').filter(line => line.trim().length > 0);
+      
+      const newLanguages: Language[] = [];
+      for (const line of langLines) {
+        const langMatch = line.match(/([А-Яа-яA-Za-z]+)[\s:]*[-–]?\s*(Энгийн|Ярилцлага|Чөлөөтэй|Эх хэл|basic|conversational|fluent|native)/i);
+        if (langMatch) {
+          const levelMap: Record<string, "basic" | "conversational" | "fluent" | "native"> = {
+            "энгийн": "basic",
+            "ярилцлага": "conversational",
+            "чөлөөтэй": "fluent",
+            "эх хэл": "native",
+            "basic": "basic",
+            "conversational": "conversational",
+            "fluent": "fluent",
+            "native": "native",
+          };
+          newLanguages.push({
+            id: String(newLanguages.length + 1),
+            name: langMatch[1].trim(),
+            level: levelMap[langMatch[2].toLowerCase()] || "conversational",
+          });
+        } else {
+          // Just the language name
+          const langName = line.split(/[-:]/)[0].trim();
+          if (langName.length > 0) {
+            newLanguages.push({
+              id: String(newLanguages.length + 1),
+              name: langName,
+              level: "conversational",
+            });
+          }
+        }
+      }
+      
+      if (newLanguages.length > 0) {
+        console.log("parseCVText: Found languages:", newLanguages.length);
+        setLanguages(newLanguages);
+      }
+    }
+    
+    console.log("parseCVText: Finished parsing");
+  }, []);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
@@ -829,94 +1184,136 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
     return (
       <div
         id="cv-preview"
-        className="bg-white p-0 mx-auto shadow-lg"
+        className="bg-white p-0 mx-auto shadow-2xl"
         style={{ 
-          fontFamily: "Arial, sans-serif", 
+          fontFamily: "'Segoe UI', 'Roboto', 'Arial', sans-serif", 
           fontSize: "10pt",
           width: "210mm",
           maxWidth: "210mm",
-          minHeight: "297mm"
+          minHeight: "297mm",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.15)"
         }}
       >
         <div className="flex">
           {/* Left Column - Dark Blue Background */}
-          <div className="w-1/3" style={{ backgroundColor: "#1e3a5f", minHeight: "100%" }}>
+          <div className="w-1/3" style={{ 
+            backgroundColor: "#1e3a5f",
+            minHeight: "100%",
+            position: "relative"
+          }}>
             <div className="p-5 pb-4">
               {personalInfo.photo && (
                 <div className="mb-4 flex justify-center">
-                  <img
-                    src={personalInfo.photo}
-                    alt="Profile"
-                    className="w-24 h-32 object-cover rounded border-2 border-white"
-                    style={{ aspectRatio: "3/4" }}
-                  />
+                  <div className="relative">
+                    <img
+                      src={personalInfo.photo}
+                      alt="Profile"
+                      className="w-24 h-32 object-cover rounded border-2 border-white shadow-md"
+                      style={{ aspectRatio: "3/4" }}
+                    />
+                  </div>
                 </div>
               )}
-              <h1 className="text-xl font-bold leading-tight text-white" style={{ fontSize: "18px", lineHeight: "1.2" }}>
+              <h1 className="text-xl font-bold leading-tight text-white mb-1" style={{ 
+                fontSize: "18px", 
+                lineHeight: "1.2",
+                letterSpacing: "0.3px"
+              }}>
                 {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
               </h1>
             </div>
             <div className="px-5 pb-4">
-              <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ color: "#d0d0d0", fontSize: "12px" }}>Personal details</h2>
-              <div className="space-y-2 text-white" style={{ fontSize: "10px", lineHeight: "1.5" }}>
+              <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ 
+                color: "#d0d0d0", 
+                fontSize: "12px",
+                letterSpacing: "0.5px"
+              }}>Personal details</h2>
+              <div className="space-y-2.5 text-white" style={{ fontSize: "10px", lineHeight: "1.6" }}>
+                {(personalInfo.firstName || personalInfo.lastName) && (
+                  <div className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex-shrink-0 text-white/90" style={{ fontSize: "12px" }}>👤</span>
+                    <span className="break-words text-white/95">{personalInfo.firstName || ""} {personalInfo.lastName || ""}</span>
+                  </div>
+                )}
                 {personalInfo.email && (
-                  <div className="flex items-start gap-2">
-                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "11px" }}>📧</span>
-                    <span className="break-words">{personalInfo.email}</span>
+                  <div className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex-shrink-0 text-white/90" style={{ fontSize: "12px" }}>📧</span>
+                    <span className="break-words text-white/95">{personalInfo.email}</span>
                   </div>
                 )}
                 {personalInfo.phone && (
-                  <div className="flex items-start gap-2">
-                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "11px" }}>📞</span>
-                    <span>{personalInfo.phone}</span>
+                  <div className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex-shrink-0 text-white/90" style={{ fontSize: "12px" }}>📞</span>
+                    <span className="text-white/95">{personalInfo.phone}</span>
                   </div>
                 )}
                 {personalInfo.address && (
-                  <div className="flex items-start gap-2">
-                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "11px" }}>🏠</span>
-                    <span className="break-words">{personalInfo.address}</span>
+                  <div className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex-shrink-0 text-white/90" style={{ fontSize: "12px" }}>🏠</span>
+                    <span className="break-words text-white/95">{personalInfo.address}</span>
                   </div>
                 )}
                 {personalInfo.linkedin && (
-                  <div className="flex items-start gap-2">
-                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "11px" }}>💼</span>
-                    <span className="break-words">{personalInfo.linkedin}</span>
+                  <div className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex-shrink-0 text-white/90" style={{ fontSize: "12px" }}>💼</span>
+                    <span className="break-words text-white/95">{personalInfo.linkedin}</span>
                   </div>
                 )}
               </div>
             </div>
             {skills.some((skill) => skill.name) && (
               <div className="px-5 pt-0 pb-5">
-                <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ color: "#d0d0d0", fontSize: "12px" }}>Skills</h2>
-                <div className="space-y-1.5 text-white" style={{ fontSize: "10px", lineHeight: "1.5" }}>
+                <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ 
+                  color: "#d0d0d0", 
+                  fontSize: "12px",
+                  letterSpacing: "0.5px"
+                }}>Skills</h2>
+                <div className="space-y-2 text-white" style={{ fontSize: "10px", lineHeight: "1.6" }}>
                   {skills.filter((skill) => skill.name).map((skill) => (
-                    <div key={skill.id}>{skill.name}</div>
+                    <div key={skill.id} className="text-white/95 flex items-center gap-2">
+                      <span className="text-white/70">•</span>
+                      <span>{skill.name}</span>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
           </div>
-          <div className="w-2/3 bg-white p-5">
+          <div className="w-2/3 bg-white p-6" style={{ backgroundColor: "#fafafa" }}>
             {personalInfo.summary && (
-              <div className="mb-5">
-                <h2 className="text-base font-bold mb-2 uppercase tracking-wide" style={{ color: "#2d3748", fontSize: "13px" }}>Profile</h2>
-                <p className="leading-relaxed" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.6" }}>{personalInfo.summary}</p>
+              <div className="mb-6">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+                  color: "#1e3a5f", 
+                  fontSize: "13px",
+                  letterSpacing: "0.8px",
+                  fontWeight: "700"
+                }}>Profile</h2>
+                <p className="leading-relaxed text-gray-700 pl-1" style={{ 
+                  fontSize: "10px", 
+                  lineHeight: "1.8",
+                  textAlign: "justify"
+                }}>{personalInfo.summary}</p>
               </div>
             )}
             {educations.some((edu) => edu.school || edu.degree) && (
-              <div className="mb-5">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-300 pb-1" style={{ color: "#2d3748", fontSize: "13px" }}>Education</h2>
-                <div className="space-y-2.5">
+              <div className="mb-6">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+                  color: "#1e3a5f", 
+                  fontSize: "13px",
+                  letterSpacing: "0.8px",
+                  fontWeight: "700"
+                }}>Education</h2>
+                <div className="space-y-3">
                   {educations.filter((edu) => edu.school || edu.degree).map((edu) => (
-                    <div key={edu.id} className="flex justify-between items-start">
+                    <div key={edu.id} className="flex justify-between items-start pb-2 border-b border-gray-100 last:border-0">
                       <div className="flex-1">
-                        <h3 className="font-semibold mb-1" style={{ color: "#2d3748", fontSize: "11px" }}>{edu.degree}</h3>
-                        <p className="mb-0.5" style={{ color: "#4a5568", fontSize: "10px" }}>{edu.school}</p>
+                        <h3 className="font-semibold mb-1 text-gray-900" style={{ fontSize: "11px", fontWeight: "600" }}>{edu.degree}</h3>
+                        <p className="mb-0.5 text-gray-700" style={{ fontSize: "10px" }}>{edu.school}</p>
                         {edu.field && (
-                          <p style={{ color: "#718096", fontSize: "9px" }}>{edu.field}</p>
+                          <p className="text-gray-600 italic" style={{ fontSize: "9px" }}>{edu.field}</p>
                         )}
                       </div>
-                      <p className="ml-3 whitespace-nowrap" style={{ color: "#718096", fontSize: "10px" }}>
+                      <p className="ml-3 whitespace-nowrap text-gray-600 font-medium" style={{ fontSize: "10px" }}>
                         {formatDate(edu.startDate)} - {edu.current ? "Present" : formatDate(edu.endDate) || ""}
                       </p>
                     </div>
@@ -925,25 +1322,30 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
               </div>
             )}
             {experiences.some((exp) => exp.company || exp.position) && (
-              <div className="mb-5">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-300 pb-1" style={{ color: "#2d3748", fontSize: "13px" }}>Employment</h2>
-                <div className="space-y-3">
+              <div className="mb-6">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+                  color: "#1e3a5f", 
+                  fontSize: "13px",
+                  letterSpacing: "0.8px",
+                  fontWeight: "700"
+                }}>Employment</h2>
+                <div className="space-y-4">
                   {experiences.filter((exp) => exp.company || exp.position).map((exp) => (
-                    <div key={exp.id}>
-                      <div className="flex justify-between items-start mb-1.5">
+                    <div key={exp.id} className="pb-3 border-b border-gray-100 last:border-0">
+                      <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
-                          <h3 className="font-semibold mb-0.5" style={{ color: "#2d3748", fontSize: "11px" }}>{exp.position}</h3>
-                          <p className="mb-0.5" style={{ color: "#4a5568", fontSize: "10px" }}>{exp.company}</p>
+                          <h3 className="font-semibold mb-0.5 text-gray-900" style={{ fontSize: "11px", fontWeight: "600" }}>{exp.position}</h3>
+                          <p className="mb-0.5 text-gray-700" style={{ fontSize: "10px" }}>{exp.company}</p>
                           {exp.location && (
-                            <p style={{ color: "#718096", fontSize: "9px" }}>{exp.location}</p>
+                            <p className="text-gray-600 italic" style={{ fontSize: "9px" }}>{exp.location}</p>
                           )}
                         </div>
-                        <p className="ml-3 whitespace-nowrap" style={{ color: "#718096", fontSize: "10px" }}>
+                        <p className="ml-3 whitespace-nowrap text-gray-600 font-medium" style={{ fontSize: "10px" }}>
                           {formatDate(exp.startDate)} - {exp.current ? "Present" : formatDate(exp.endDate) || ""}
                         </p>
                       </div>
                       {exp.description && (
-                        <ul className="list-disc list-inside ml-1 space-y-0.5 mt-1" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.5" }}>
+                        <ul className="list-disc list-inside ml-2 space-y-0.5 mt-1.5 text-gray-700" style={{ fontSize: "10px", lineHeight: "1.6" }}>
                           {exp.description.split('\n').filter(line => line.trim()).map((line, idx) => (
                             <li key={idx}>{line.trim()}</li>
                           ))}
@@ -955,44 +1357,69 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
               </div>
             )}
             {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name)) && (
-              <div className="mb-5">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-300 pb-1" style={{ color: "#2d3748", fontSize: "13px" }}>Additional Information</h2>
+              <div className="mb-7">
+                <h2 className="text-base font-bold mb-5 uppercase tracking-wide border-b-3 border-gray-400 pb-3" style={{ 
+                  color: "#1e3a5f", 
+                  fontSize: "15px", 
+                  letterSpacing: "1px", 
+                  fontWeight: "700",
+                  borderBottomWidth: "3px"
+                }}>Additional Information</h2>
                 {languages.some((lang) => lang.name) && (
-                  <div className="mb-3">
-                    <h3 className="font-semibold mb-1.5" style={{ color: "#2d3748", fontSize: "11px" }}>Languages</h3>
-                    <div className="space-y-1" style={{ fontSize: "10px", color: "#4a5568" }}>
+                  <div className="mb-4 pl-3" style={{ borderLeft: "3px solid #1e3a5f" }}>
+                    <h3 className="font-bold mb-2 text-gray-900" style={{ fontSize: "12px", fontWeight: "700" }}>Languages</h3>
+                    <div className="space-y-1.5" style={{ fontSize: "10.5px", color: "#4a5568" }}>
                       {languages.filter((lang) => lang.name).map((lang) => (
-                        <div key={lang.id}>
-                          {lang.name} - {lang.level === "basic" && "Энгийн"}
+                        <div key={lang.id} className="flex items-center gap-2">
+                          <span className="text-gray-400">•</span>
+                          <span className="font-semibold text-gray-700">{lang.name}</span>
+                          <span className="text-gray-500">-</span>
+                          <span className="text-gray-600">
+                            {lang.level === "basic" && "Энгийн"}
                           {lang.level === "conversational" && "Ярилцлага"}
                           {lang.level === "fluent" && "Чөлөөтэй"}
                           {lang.level === "native" && "Эх хэл"}
+                          </span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
                 {certificates.some((cert) => cert.name) && (
-                  <div className="mb-3">
-                    <h3 className="font-semibold mb-1.5" style={{ color: "#2d3748", fontSize: "11px" }}>Certificates</h3>
-                    <div className="space-y-1" style={{ fontSize: "10px", color: "#4a5568" }}>
+                  <div className="mb-4 pl-3" style={{ borderLeft: "3px solid #1e3a5f" }}>
+                    <h3 className="font-bold mb-2 text-gray-900" style={{ fontSize: "12px", fontWeight: "700" }}>Certificates</h3>
+                    <div className="space-y-2" style={{ fontSize: "10.5px", color: "#4a5568" }}>
                       {certificates.filter((cert) => cert.name).map((cert) => (
-                        <div key={cert.id}>
-                          <span className="font-medium">{cert.name}</span> - {cert.issuer} {cert.date && `(${formatDate(cert.date)})`}
+                        <div key={cert.id} className="flex items-start gap-2">
+                          <span className="text-gray-400 mt-0.5">▸</span>
+                          <div>
+                            <span className="font-semibold text-gray-700">{cert.name}</span>
+                            <span className="text-gray-600"> - {cert.issuer}</span>
+                            {cert.date && <span className="text-gray-500"> ({formatDate(cert.date)})</span>}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
                 {projects.some((proj) => proj.name) && (
-                  <div>
-                    <h3 className="font-semibold mb-1.5" style={{ color: "#2d3748", fontSize: "11px" }}>Projects</h3>
-                    <div className="space-y-2" style={{ fontSize: "10px", color: "#4a5568" }}>
+                  <div className="pl-3" style={{ borderLeft: "3px solid #1e3a5f" }}>
+                    <h3 className="font-bold mb-2 text-gray-900" style={{ fontSize: "12px", fontWeight: "700" }}>Projects</h3>
+                    <div className="space-y-3" style={{ fontSize: "10.5px", color: "#4a5568" }}>
                       {projects.filter((proj) => proj.name).map((proj) => (
-                        <div key={proj.id}>
-                          <span className="font-medium">{proj.name}</span>
-                          {proj.description && <p className="mt-0.5" style={{ fontSize: "9px" }}>{proj.description}</p>}
-                          {proj.technologies && <p className="mt-0.5" style={{ fontSize: "9px", color: "#718096" }}>Tech: {proj.technologies}</p>}
+                        <div key={proj.id} className="pb-2 border-b border-gray-100 last:border-0">
+                          <div className="flex items-start gap-2 mb-1">
+                            <span className="text-gray-400 mt-0.5">▸</span>
+                            <span className="font-semibold text-gray-700">{proj.name}</span>
+                          </div>
+                          {proj.description && (
+                            <p className="mt-1 ml-4 text-gray-600 italic" style={{ fontSize: "10px", lineHeight: "1.6" }}>{proj.description}</p>
+                          )}
+                          {proj.technologies && (
+                            <p className="mt-1 ml-4 text-gray-500" style={{ fontSize: "9.5px" }}>
+                              <span className="font-medium">Tech:</span> {proj.technologies}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1355,96 +1782,220 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   };
 
   const renderWizardTemplate = () => {
-    // Mystical, elegant design with dark theme - A4 optimized
+    // Beautiful two-column layout matching the image - A4 optimized
     return (
       <div
         id="cv-preview"
-        className="p-0 mx-auto shadow-2xl"
+        className="bg-white p-0 mx-auto shadow-2xl"
         style={{ 
-          fontFamily: "Georgia, serif", 
+          fontFamily: "'Segoe UI', 'Roboto', 'Arial', sans-serif", 
           fontSize: "10pt",
           width: "210mm",
           maxWidth: "210mm",
           minHeight: "297mm",
-          background: "linear-gradient(to bottom right, #1a202c, #4c1d95, #1a202c)"
+          boxShadow: "0 10px 40px rgba(0,0,0,0.15)"
         }}
       >
-        <div className="p-5 border-b-2 border-purple-500">
-          <div className="flex items-center gap-4 mb-2">
-            {personalInfo.photo && (
-              <img
-                src={personalInfo.photo}
-                alt="Profile"
-                className="w-20 h-28 object-cover rounded border-2 border-purple-400"
-                style={{ aspectRatio: "3/4" }}
-              />
-            )}
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-white" style={{ fontSize: "20px", color: "#a78bfa", lineHeight: "1.2" }}>
+        <div className="flex">
+          {/* Left Column */}
+          <div className="w-2/5" style={{ backgroundColor: "#f8f9fa" }}>
+            {/* Blue Header */}
+            <div className="p-5" style={{ backgroundColor: "#1e3a5f" }}>
+              <h1 className="text-xl font-bold text-white" style={{ 
+                fontSize: "18px", 
+                lineHeight: "1.2",
+                color: "#ffffff"
+              }}>
                 {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
               </h1>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-3 text-purple-200" style={{ fontSize: "10px", lineHeight: "1.5" }}>
-            {personalInfo.email && <span className="break-words">✨ {personalInfo.email}</span>}
-            {personalInfo.phone && <span>✨ {personalInfo.phone}</span>}
-            {personalInfo.address && <span className="break-words">✨ {personalInfo.address}</span>}
-            {personalInfo.linkedin && <span className="break-words">✨ {personalInfo.linkedin}</span>}
-          </div>
-        </div>
-        <div className="p-5 text-purple-100">
-          {personalInfo.summary && (
-            <div className="mb-5 p-4 rounded-lg border border-purple-500/30" style={{ backgroundColor: "rgba(88, 28, 135, 0.5)" }}>
-              <h2 className="text-base font-bold text-purple-300 mb-2" style={{ fontSize: "13px" }}>Profile</h2>
-              <p className="leading-relaxed" style={{ fontSize: "10px", lineHeight: "1.6" }}>{personalInfo.summary}</p>
+            
+            {/* Personal Details Section */}
+            <div className="p-5 bg-white">
+              <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ 
+                color: "#2d3748", 
+                fontSize: "12px",
+                letterSpacing: "0.5px"
+              }}>Personal details</h2>
+              
+              <div className="space-y-2.5 text-gray-700" style={{ fontSize: "10px", lineHeight: "1.6" }}>
+                {(personalInfo.firstName || personalInfo.lastName) && (
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "12px" }}>👤</span>
+                    <span className="break-words">{personalInfo.firstName || ""} {personalInfo.lastName || ""}</span>
+                  </div>
+                )}
+                {personalInfo.email && (
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "12px" }}>📧</span>
+                    <span className="break-words">{personalInfo.email}</span>
+                  </div>
+                )}
+                {personalInfo.phone && (
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "12px" }}>📞</span>
+                    <span>{personalInfo.phone}</span>
+                  </div>
+                )}
+                {personalInfo.address && (
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "12px" }}>🏠</span>
+                    <span className="break-words">{personalInfo.address}</span>
+                  </div>
+                )}
+                {personalInfo.dateOfBirth && (
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "12px" }}>📅</span>
+                    <span>{personalInfo.dateOfBirth}</span>
+                  </div>
+                )}
+                {personalInfo.nationality && (
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "12px" }}>🏳️</span>
+                    <span>{personalInfo.nationality}</span>
+                  </div>
+                )}
+                {personalInfo.github && (
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "12px" }}>🌐</span>
+                    <span className="break-words">{personalInfo.github}</span>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-          <div className="grid grid-cols-2 gap-5">
-            <div>
-              {educations.some((edu) => edu.school || edu.degree) && (
-                <div className="mb-5">
-                  <h2 className="text-sm font-bold text-purple-300 mb-3 border-l-4 border-purple-400 pl-2" style={{ fontSize: "12px" }}>Education</h2>
+            
+            {/* Skills Section */}
+            {skills.some((skill) => skill.name) && (
+              <div className="px-5 pt-0 pb-5 bg-white">
+                <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ 
+                  color: "#2d3748", 
+                  fontSize: "12px",
+                  letterSpacing: "0.5px"
+                }}>Skills</h2>
+                <div className="space-y-1.5 text-gray-700" style={{ fontSize: "10px", lineHeight: "1.5" }}>
+                  {skills.filter((skill) => skill.name).map((skill) => (
+                    <div key={skill.id}>{skill.name}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Languages Section */}
+            {languages.some((lang) => lang.name) && (
+              <div className="px-5 pt-0 pb-5 bg-white">
+                <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ 
+                  color: "#2d3748", 
+                  fontSize: "12px",
+                  letterSpacing: "0.5px"
+                }}>Languages</h2>
+                <div className="space-y-2 text-gray-700" style={{ fontSize: "10px", lineHeight: "1.5" }}>
+                  {languages.filter((lang) => lang.name).map((lang) => {
+                    const levelMap: Record<string, number> = {
+                      "basic": 2,
+                      "conversational": 3,
+                      "fluent": 4,
+                      "native": 5
+                    };
+                    const filledCircles = levelMap[lang.level] || 3;
+                    return (
+                      <div key={lang.id} className="flex items-center gap-2">
+                        <span className="font-medium">{lang.name}:</span>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <div
+                              key={i}
+                              style={{
+                                width: "8px",
+                                height: "8px",
+                                borderRadius: "50%",
+                                backgroundColor: i <= filledCircles ? "#1e3a5f" : "#e2e8f0"
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* Decorative Blue Footer */}
+            <div className="h-8" style={{ 
+              backgroundColor: "#1e3a5f",
+              borderTopLeftRadius: "50px",
+              borderTopRightRadius: "50px"
+            }}></div>
+          </div>
+          
+          {/* Right Column */}
+          <div className="w-3/5 bg-white p-6">
+            {/* Profile Section */}
+            {personalInfo.summary && (
+              <div className="mb-6">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+                  color: "#1e3a5f", 
+                  fontSize: "13px",
+                  letterSpacing: "0.8px",
+                  fontWeight: "700"
+                }}>Profile</h2>
+                <p className="leading-relaxed text-gray-700 pl-1" style={{ 
+                  fontSize: "10px", 
+                  lineHeight: "1.8",
+                  textAlign: "justify"
+                }}>{personalInfo.summary}</p>
+              </div>
+            )}
+            
+            {/* Education Section */}
+            {educations.some((edu) => edu.school || edu.degree) && (
+              <div className="mb-6">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+                  color: "#1e3a5f", 
+                  fontSize: "13px",
+                  letterSpacing: "0.8px",
+                  fontWeight: "700"
+                }}>Education</h2>
+                <div className="space-y-3">
                   {educations.filter((edu) => edu.school || edu.degree).map((edu) => (
-                    <div key={edu.id} className="mb-3 p-3 rounded border border-purple-500/20" style={{ backgroundColor: "rgba(88, 28, 135, 0.3)" }}>
-                      <h3 className="text-xs font-semibold text-purple-200 mb-0.5" style={{ fontSize: "11px" }}>{edu.degree}</h3>
-                      <p className="text-xs text-purple-300 mb-0.5" style={{ fontSize: "10px" }}>{edu.school}</p>
-                      {edu.field && (
-                        <p className="text-xs text-purple-400 mb-0.5" style={{ fontSize: "9px" }}>{edu.field}</p>
+                    <div key={edu.id} className="pb-2 border-b border-gray-100 last:border-0">
+                      <h3 className="font-semibold mb-1 text-gray-900" style={{ fontSize: "11px", fontWeight: "600" }}>{edu.degree}</h3>
+                      <p className="mb-0.5 text-gray-700" style={{ fontSize: "10px" }}>{edu.school}</p>
+                      {edu.gpa && (
+                        <p className="text-gray-600 italic mb-1" style={{ fontSize: "9px" }}>Голч дүн: {edu.gpa}</p>
                       )}
-                      <p className="text-xs text-purple-400 mt-1" style={{ fontSize: "10px" }}>
+                      <p className="text-gray-600 font-medium" style={{ fontSize: "10px" }}>
                         {formatDate(edu.startDate)} - {edu.current ? "Present" : formatDate(edu.endDate) || ""}
                       </p>
                     </div>
                   ))}
                 </div>
-              )}
-              {skills.some((skill) => skill.name) && (
-                <div className="mb-5">
-                  <h2 className="text-sm font-bold text-purple-300 mb-3 border-l-4 border-purple-400 pl-2" style={{ fontSize: "12px" }}>Skills</h2>
-                  <div className="space-y-1.5" style={{ fontSize: "10px", lineHeight: "1.5" }}>
-                    {skills.filter((skill) => skill.name).map((skill) => (
-                      <div key={skill.id} className="text-purple-200">🔮 {skill.name}</div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div>
-              {experiences.some((exp) => exp.company || exp.position) && (
-                <div className="mb-5">
-                  <h2 className="text-sm font-bold text-purple-300 mb-3 border-l-4 border-purple-400 pl-2" style={{ fontSize: "12px" }}>Employment</h2>
+              </div>
+            )}
+            
+            {/* Employment Section */}
+            {experiences.some((exp) => exp.company || exp.position) && (
+              <div className="mb-6">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+                  color: "#1e3a5f", 
+                  fontSize: "13px",
+                  letterSpacing: "0.8px",
+                  fontWeight: "700"
+                }}>Employment</h2>
+                <div className="space-y-4">
                   {experiences.filter((exp) => exp.company || exp.position).map((exp) => (
-                    <div key={exp.id} className="mb-3 p-3 rounded border border-purple-500/20" style={{ backgroundColor: "rgba(88, 28, 135, 0.3)" }}>
-                      <h3 className="text-xs font-semibold text-purple-200 mb-0.5" style={{ fontSize: "11px" }}>{exp.position}</h3>
-                      <p className="text-xs text-purple-300 mb-0.5" style={{ fontSize: "10px" }}>{exp.company}</p>
-                      {exp.location && (
-                        <p className="text-xs text-purple-400 mb-0.5" style={{ fontSize: "9px" }}>{exp.location}</p>
-                      )}
-                      <p className="text-xs text-purple-400 mt-1" style={{ fontSize: "10px" }}>
-                        {formatDate(exp.startDate)} - {exp.current ? "Present" : formatDate(exp.endDate) || ""}
-                      </p>
+                    <div key={exp.id} className="pb-3 border-b border-gray-100 last:border-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h3 className="font-semibold mb-0.5 text-gray-900" style={{ fontSize: "11px", fontWeight: "600" }}>{exp.position}</h3>
+                          <p className="mb-0.5 text-gray-700" style={{ fontSize: "10px" }}>{exp.company}</p>
+                        </div>
+                        <p className="ml-3 whitespace-nowrap text-gray-600 font-medium" style={{ fontSize: "10px" }}>
+                          {formatDate(exp.startDate)} - {exp.current ? "Present" : formatDate(exp.endDate) || ""}
+                        </p>
+                      </div>
                       {exp.description && (
-                        <ul className="text-xs text-purple-200 list-disc list-inside ml-2 mt-1.5 space-y-0.5" style={{ fontSize: "10px", lineHeight: "1.5" }}>
+                        <ul className="list-disc list-inside ml-2 space-y-0.5 mt-1.5 text-gray-700" style={{ fontSize: "10px", lineHeight: "1.6" }}>
                           {exp.description.split('\n').filter(line => line.trim()).map((line, idx) => (
                             <li key={idx}>{line.trim()}</li>
                           ))}
@@ -1453,54 +2004,36 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                     </div>
                   ))}
                 </div>
-              )}
-              {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name)) && (
-                <div className="mb-5">
-                  <h2 className="text-sm font-bold text-purple-300 mb-3 border-l-4 border-purple-400 pl-2" style={{ fontSize: "12px" }}>Additional</h2>
-                  {languages.some((lang) => lang.name) && (
-                    <div className="mb-3">
-                      <h3 className="text-xs font-semibold text-purple-200 mb-1.5" style={{ fontSize: "11px" }}>Languages</h3>
-                      <div className="space-y-1" style={{ fontSize: "10px", color: "#c084fc" }}>
-                        {languages.filter((lang) => lang.name).map((lang) => (
-                          <div key={lang.id}>
-                            {lang.name} - {lang.level === "basic" && "Энгийн"}
-                            {lang.level === "conversational" && "Ярилцлага"}
-                            {lang.level === "fluent" && "Чөлөөтэй"}
-                            {lang.level === "native" && "Эх хэл"}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {certificates.some((cert) => cert.name) && (
-                    <div className="mb-3">
-                      <h3 className="text-xs font-semibold text-purple-200 mb-1.5" style={{ fontSize: "11px" }}>Certificates</h3>
-                      <div className="space-y-1" style={{ fontSize: "10px", color: "#c084fc" }}>
-                        {certificates.filter((cert) => cert.name).map((cert) => (
-                          <div key={cert.id}>
-                            <span className="font-medium">{cert.name}</span> - {cert.issuer} {cert.date && `(${formatDate(cert.date)})`}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {projects.some((proj) => proj.name) && (
-                    <div>
-                      <h3 className="text-xs font-semibold text-purple-200 mb-1.5" style={{ fontSize: "11px" }}>Projects</h3>
-                      <div className="space-y-2" style={{ fontSize: "10px", color: "#c084fc" }}>
-                        {projects.filter((proj) => proj.name).map((proj) => (
-                          <div key={proj.id}>
-                            <span className="font-medium">{proj.name}</span>
-                            {proj.description && <p className="mt-0.5" style={{ fontSize: "9px" }}>{proj.description}</p>}
-                            {proj.technologies && <p className="mt-0.5" style={{ fontSize: "9px", color: "#a78bfa" }}>Tech: {proj.technologies}</p>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+            
+            {/* Additional Information Section */}
+            {(certificates.some((cert) => cert.name) || projects.some((proj) => proj.name)) && (
+              <div className="mb-6">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+                  color: "#1e3a5f", 
+                  fontSize: "13px",
+                  letterSpacing: "0.8px",
+                  fontWeight: "700"
+                }}>Нэмэлт мэдээлэл</h2>
+                {projects.some((proj) => proj.name) && (
+                  <div className="mb-3">
+                    <p className="font-semibold text-gray-900 mb-1" style={{ fontSize: "10px", fontWeight: "600" }}>Хувийн төслүүд:</p>
+                    <p className="text-gray-700" style={{ fontSize: "10px" }}>
+                      {projects.filter((proj) => proj.name).map((proj) => proj.name).join(", ")}
+                    </p>
+                  </div>
+                )}
+                {certificates.some((cert) => cert.name) && (
+                  <div className="mb-3">
+                    <p className="font-semibold text-gray-900 mb-1" style={{ fontSize: "10px", fontWeight: "600" }}>CV-т хавсаргасан:</p>
+                    <p className="text-gray-700" style={{ fontSize: "10px" }}>
+                      {certificates.filter((cert) => cert.name).map((cert) => cert.name).join(", ")}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -2363,17 +2896,17 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       {/* Header */}
       <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10 shadow-sm">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">CV</span>
-            </div>
-            <div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-lg">CV</span>
+              </div>
+              <div>
               <h2 className="text-xl font-bold text-gray-900">CV Builder</h2>
-              <p className="text-xs text-gray-500">Мэргэжлийн CV үүсгэх хэрэгсэл</p>
+                <p className="text-xs text-gray-500">Мэргэжлийн CV үүсгэх хэрэгсэл</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
+            <div className="flex items-center gap-2">
+                <button
               onClick={generatePDF}
               disabled={generating}
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-md disabled:opacity-50"
@@ -2394,18 +2927,18 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                   PDF татах
                 </>
               )}
-            </button>
-            {onClose && (
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <XMarkIcon className="w-6 h-6" />
               </button>
-            )}
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              )}
           </div>
-        </div>
-      </div>
+            </div>
+          </div>
 
       {/* Two Panel Layout */}
       <div className="flex flex-row flex-1 overflow-hidden" style={{ height: 'calc(100vh - 80px)' }}>
@@ -2414,17 +2947,147 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
           <div className="p-6 space-y-4">
             {/* Upload Buttons */}
             <div className="flex gap-3 mb-6">
-              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (file.size > 5 * 1024 * 1024) {
+                      addNotification("Файлын хэмжээ 5MB-ээс хэтэрч байна", "error");
+                      // Reset input
+                      if (e.target) {
+                        e.target.value = '';
+                      }
+                      return;
+                    }
+                    
+                    addNotification("Файл уншиж байна...", "info");
+                    
+                    try {
+                      const formData = new FormData();
+                      formData.append("file", file);
+                      
+                      const response = await fetch("/api/upload", {
+                        method: "POST",
+                        body: formData,
+                      });
+                      
+                      if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error || "Файл уншихад алдаа гарлаа");
+                      }
+                      
+                      const data = await response.json();
+                      
+                      console.log("API Response:", data); // Debug log
+                      
+                      // Try to get content from analysis or use raw content if available
+                      // The API returns the extracted text in the content variable before analysis
+                      let contentToParse = "";
+                      
+                      // First, try to get the raw extracted content (before AI analysis)
+                      // This is usually in the response but might be in different places
+                      if (data.content && typeof data.content === 'string') {
+                        contentToParse = data.content;
+                      } else if (data.analysis && typeof data.analysis === 'string') {
+                        // Use analysis if it contains the actual CV text
+                        contentToParse = data.analysis;
+                      } else if (data.cv?.analysis) {
+                        contentToParse = data.cv.analysis;
+                      }
+                      
+                      // If we still don't have content, try to extract from the file directly
+                      if (!contentToParse || contentToParse.trim().length === 0) {
+                        console.log("No content from API response, will try direct file parsing");
+                      }
+                      
+                      console.log("Content to parse length:", contentToParse?.length || 0);
+                      if (contentToParse) {
+                        console.log("Content to parse (first 200):", contentToParse.substring(0, 200));
+                      }
+                      
+                      // Always try direct file parsing first for better results
+                      let extractedText = "";
+                      
+                      try {
+                        // For Word files, extract text directly from file
+                        if (file.type.includes("word") || file.name.endsWith(".docx") || file.name.endsWith(".doc")) {
+                          console.log("Extracting text directly from Word file...");
+                          const mammoth = await import("mammoth");
+                          const arrayBuffer = await file.arrayBuffer();
+                          const result = await mammoth.extractRawText({ arrayBuffer });
+                          extractedText = result.value;
+                          console.log("Direct extracted text length:", extractedText.length);
+                          console.log("Direct extracted text (first 300):", extractedText.substring(0, 300));
+                        } else if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
+                          // For PDF, use content from API if available, otherwise show message
+                          if (contentToParse && contentToParse.trim().length > 0) {
+                            extractedText = contentToParse;
+                          } else {
+                            addNotification("PDF файлыг уншихад API-аас мэдээлэл ирээгүй. Дахин оролдоно уу.", "info");
+                          }
+                        }
+                      } catch (parseError) {
+                        console.error("Direct file parsing error:", parseError);
+                        // Fall back to API content if direct parsing fails
+                        if (contentToParse && contentToParse.trim().length > 0) {
+                          extractedText = contentToParse;
+                        }
+                      }
+                      
+                      // Use API content if direct extraction didn't work
+                      if (!extractedText && contentToParse && contentToParse.trim().length > 0) {
+                        extractedText = contentToParse;
+                      }
+                      
+                      // Parse the extracted text
+                      if (extractedText && extractedText.trim().length > 0) {
+                        console.log("Calling parseCVText with extracted text...");
+                        parseCVText(extractedText);
+                        // Small delay to ensure state updates
+                        setTimeout(() => {
+                          addNotification("Файл амжилттай уншлаа. Мэдээлэл бөглөгдлөө.", "success");
+                        }, 300);
+                      } else {
+                        console.error("No text extracted from file or API");
+                        addNotification("Файл уншсан боловч мэдээлэл олдсонгүй. Файлын формат шалгана уу.", "info");
+                      }
+                    } catch (error) {
+                      console.error("File upload error:", error);
+                      const errorMessage = error instanceof Error ? error.message : "Файл уншихад алдаа гарлаа. Дахин оролдоно уу.";
+                      addNotification(`Алдаа: ${errorMessage}`, "error");
+                    } finally {
+                      // Reset input value to allow selecting the same file again
+                      if (e.target) {
+                        e.target.value = '';
+                      }
+                    }
+                  }
+                }}
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
                 <DocumentArrowUpIcon className="w-5 h-5 text-gray-600" />
                 <span className="text-sm font-medium text-gray-700">Upload existing resume</span>
               </button>
-              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <button 
+                onClick={() => {
+                  addNotification("LinkedIn profile import хөгжүүлэлт хийгдэж байна", "info");
+                  // TODO: Implement LinkedIn OAuth integration
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
                 <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                 </svg>
                 <span className="text-sm font-medium text-gray-700">Import LinkedIn profile</span>
               </button>
-            </div>
+                    </div>
 
             {/* Collapsible Sections */}
             <div className="bg-white rounded-lg shadow-sm">
@@ -2445,10 +3108,10 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           setErrors({ ...errors, firstName: "" });
                         }
                       }}
-                      className={`w-full px-3 py-2 border rounded-lg ${errors.firstName ? "border-red-400" : "border-gray-300"}`}
+                      className={`w-full px-3 py-2 text-gray-700 border rounded-lg ${errors.firstName ? "border-red-400" : "border-gray-300"}`}
                       placeholder="Нэр"
-                    />
-                  </div>
+                          />
+                        </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Овог *</label>
                     <input
@@ -2460,17 +3123,17 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                           setErrors({ ...errors, lastName: "" });
                         }
                       }}
-                      className={`w-full px-3 py-2 border rounded-lg ${errors.lastName ? "border-red-400" : "border-gray-300"}`}
+                      className={`w-full px-3 py-2 text-gray-700 border rounded-lg ${errors.lastName ? "border-red-400" : "border-gray-300"}`}
                       placeholder="Овог"
                     />
-                  </div>
+                      </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Имэйл</label>
                     <input
                       type="email"
                       value={personalInfo.email}
                       onChange={(e) => setPersonalInfo({ ...personalInfo, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                       placeholder="email@example.com"
                     />
                   </div>
@@ -2480,7 +3143,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                       type="tel"
                       value={personalInfo.phone}
                       onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                       placeholder="99112233"
                     />
                   </div>
@@ -2490,7 +3153,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                       type="text"
                       value={personalInfo.address}
                       onChange={(e) => setPersonalInfo({ ...personalInfo, address: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                       placeholder="Хаяг"
                     />
                   </div>
@@ -2548,10 +3211,10 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         value={personalInfo.summary}
                         onChange={(e) => setPersonalInfo({ ...personalInfo, summary: e.target.value })}
                         rows={4}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                         placeholder="Өөрийн талаар товч танилцуулга..."
                       />
-                    </div>
+              </div>
                   );
                 }
                 if (sectionKey === "education") {
@@ -2568,30 +3231,30 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                             type="text"
                             value={edu.degree}
                             onChange={(e) => updateEducation(edu.id, "degree", e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                             placeholder="Бакалавр"
                           />
-                        </div>
+                </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Сургууль *</label>
                           <input
                             type="text"
                             value={edu.school}
                             onChange={(e) => updateEducation(edu.id, "school", e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                             placeholder="Сургуулийн нэр"
                           />
-                        </div>
+              </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Эхлэх огноо</label>
                           <input
                             type="month"
                             value={edu.startDate}
                             onChange={(e) => updateEducation(edu.id, "startDate", e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                           />
-                        </div>
-                        <div>
+            </div>
+                  <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Дуусах огноо</label>
                           <div className="flex items-center gap-2">
                             <input
@@ -2599,7 +3262,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                               value={edu.endDate}
                               onChange={(e) => updateEducation(edu.id, "endDate", e.target.value)}
                               disabled={edu.current}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
+                              className="flex-1 px-3 py-2 text-gray-700 border border-gray-300 rounded-lg disabled:bg-gray-100"
                             />
                             <label className="flex items-center gap-2 text-sm">
                               <input
@@ -2610,18 +3273,18 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                               />
                               Одоо
                             </label>
-                          </div>
-                        </div>
+                  </div>
+                  </div>
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">Тайлбар</label>
                           <textarea
                             value={edu.field}
                             onChange={(e) => updateEducation(edu.id, "field", e.target.value)}
                             rows={2}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                             placeholder="Мэргэжлийн чиглэл"
                           />
-                        </div>
+                </div>
                       </div>
                       {educations.length > 1 && (
                         <button
@@ -2640,7 +3303,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                     <PlusIcon className="w-5 h-5 text-gray-400" />
                     <span className="text-sm text-gray-600">+ Add education</span>
                   </button>
-                </div>
+                      </div>
                   );
                 }
                 if (sectionKey === "experience") {
@@ -2657,29 +3320,29 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                             type="text"
                             value={exp.position}
                             onChange={(e) => updateExperience(exp.id, "position", e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                             placeholder="Албан тушаал"
                           />
-                        </div>
+                    </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Компани *</label>
                           <input
                             type="text"
                             value={exp.company}
                             onChange={(e) => updateExperience(exp.id, "company", e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                             placeholder="Компани"
                           />
-                        </div>
+                  </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Эхлэх огноо</label>
                           <input
                             type="month"
                             value={exp.startDate}
                             onChange={(e) => updateExperience(exp.id, "startDate", e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                           />
-                        </div>
+              </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Дуусах огноо</label>
                           <div className="flex items-center gap-2">
@@ -2688,7 +3351,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                               value={exp.endDate}
                               onChange={(e) => updateExperience(exp.id, "endDate", e.target.value)}
                               disabled={exp.current}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
+                              className="flex-1 px-3 py-2 text-gray-700 border border-gray-300 rounded-lg disabled:bg-gray-100"
                             />
                             <label className="flex items-center gap-2 text-sm">
                               <input
@@ -2699,7 +3362,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                               />
                               Одоо
                             </label>
-                          </div>
+              </div>
                         </div>
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">Тайлбар</label>
@@ -2707,18 +3370,18 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                             value={exp.description}
                             onChange={(e) => updateExperience(exp.id, "description", e.target.value)}
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                             placeholder="Ажлын тайлбар..."
                           />
                         </div>
                       </div>
                       {experiences.length > 1 && (
-                        <button
+                <button
                           onClick={() => removeExperience(exp.id)}
                           className="mt-2 text-red-600 hover:text-red-800 text-sm"
-                        >
+                >
                           Устгах
-                        </button>
+                </button>
                       )}
                     </div>
                   ))}
@@ -2743,13 +3406,13 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         type="text"
                         value={skill.name}
                         onChange={(e) => updateSkill(skill.id, "name", e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+                        className="flex-1 px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                         placeholder="Ур чадварын нэр"
                       />
                       <select
                         value={skill.level}
                         onChange={(e) => updateSkill(skill.id, "level", e.target.value as Skill["level"])}
-                        className="px-3 py-2 border border-gray-300 rounded-lg"
+                        className="px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                       >
                         <option value="beginner">Эхлэгч</option>
                         <option value="intermediate">Дунд</option>
@@ -2757,14 +3420,14 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         <option value="expert">Мэргэжилтэн</option>
                       </select>
                       {skills.length > 1 && (
-                        <button
+                  <button
                           onClick={() => removeSkill(skill.id)}
                           className="text-red-600 hover:text-red-800"
-                        >
+                  >
                           <TrashIcon className="w-5 h-5" />
-                        </button>
-                      )}
-                    </div>
+                  </button>
+                )}
+              </div>
                   ))}
                   <button
                     onClick={addSkill}
@@ -2773,7 +3436,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                     <PlusIcon className="w-5 h-5 text-gray-400" />
                     <span className="text-sm text-gray-600">+ Add skill</span>
                   </button>
-                </div>
+            </div>
                   );
                 }
                 if (sectionKey === "languages") {
@@ -2787,13 +3450,13 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         type="text"
                         value={lang.name}
                         onChange={(e) => updateLanguage(lang.id, "name", e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+                        className="flex-1 px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                         placeholder="Хэл"
                       />
                       <select
                         value={lang.level}
                         onChange={(e) => updateLanguage(lang.id, "level", e.target.value as Language["level"])}
-                        className="px-3 py-2 border border-gray-300 rounded-lg"
+                        className="px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
                       >
                         <option value="basic">Энгийн</option>
                         <option value="conversational">Ярилцлага</option>
@@ -2824,26 +3487,54 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
               })}
             </div>
           </div>
+        </div>
 
-          {/* Right Panel - Preview */}
-          <div className="w-1/2 overflow-y-auto bg-white border-l-2 border-gray-300 flex-shrink-0" style={{ minWidth: '400px', maxHeight: '100%' }}>
-            <div className="sticky top-0 bg-white border-b-2 border-gray-300 p-4 z-10 shadow-md">
-              <h2 className="text-lg font-bold text-gray-900">CV Preview</h2>
-              <p className="text-xs text-gray-500 mt-1">Real-time preview</p>
+        {/* Right Panel - Preview */}
+        <div className="w-1/2 overflow-y-auto bg-gray-50 border-l border-gray-200 flex-shrink-0" style={{ maxHeight: '100%' }}>
+          {/* Sticky Header */}
+          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">CV Preview</h2>
+                <p className="text-xs text-gray-500 mt-1">Real-time preview</p>
+              </div>
+              <div className="flex items-center gap-2">
+              <button
+                  onClick={() => setTemplate("modern")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    template === "modern"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  Modern
+                </button>
+                <button
+                  onClick={() => setTemplate("classic")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    template === "classic"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  Classic
+              </button>
             </div>
-            <div className="p-6 bg-gray-50">
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-t-lg p-4 shadow-lg">
-                <h2 className="text-2xl font-bold text-white">Resume</h2>
+            </div>
+          </div>
+
+          {/* Preview Content */}
+          <div className="p-6">
+            <div className="w-full max-w-4xl mx-auto">
+              {/* Main Preview Card */}
+              <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                {/* CV Content */}
+                <div className="bg-white overflow-auto">
+                  <div className="transform scale-[0.9] origin-top" style={{ transformOrigin: 'top center' }}>
+                {renderCVPreview()}
               </div>
-              <div className="bg-white border-2 border-gray-200 border-t-0 rounded-b-lg shadow-xl overflow-hidden">
-                <div className="p-6 min-h-[600px] bg-white">
-                  {renderCVPreview()}
-                </div>
-              </div>
-              <div className="mt-6 border-t-2 border-gray-300 pt-6 bg-white rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">References</h3>
-                <p className="text-sm text-gray-600">References available upon request.</p>
-              </div>
+            </div>
+          </div>
             </div>
           </div>
         </div>

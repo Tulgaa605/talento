@@ -347,6 +347,7 @@ export async function POST(req: Request) {
         success: true,
         cv,
         analysis,
+        content, // Return the raw extracted content for parsing
         matches,
       });
     } catch (error) {
