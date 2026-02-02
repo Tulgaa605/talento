@@ -31,11 +31,6 @@ export async function calculateJobMatches(
       include: {
         company: true,
       },
-      where: {
-        company: {
-          isNot: null,
-        },
-      },
     });
     console.log("Found jobs:", jobs.length);
 
