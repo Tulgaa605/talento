@@ -237,14 +237,14 @@ export default function EmployerRegister() {
                   <div className="flex flex-col gap-[5px]">
                     <div className="flex flex-col gap-[4px]">
                       <div className="h-[27px] text-[#0C213A] text-[14px] sm:text-[16px] font-poppins">
-                        Компанийн бүртгэлийн дугаар *
+                        Компанийн регистрийн дугаар *
                       </div>
                     </div>
                     <input
                       name="companyRegistrationNumber"
                       type="text"
                       required
-                      placeholder="Жишээ: 12345678"
+                      placeholder="12345678"
                       className="h-[50px] sm:h-[60px] rounded-xl bg-white border border-[#0C213A]/20 outline-none px-4 w-full text-[#0C213A] text-[16px] sm:text-[16px]"
                     />
                     <p className="text-[#0C213A] text-[12px] sm:text-[14px] font-poppins opacity-60">

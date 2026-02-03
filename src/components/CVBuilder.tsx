@@ -21,6 +21,24 @@ import Cropper from "react-easy-crop";
 import { Area } from "react-easy-crop";
 import { useNotification } from "@/providers/NotificationProvider";
 
+// Constants
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
+const TARGET_PHOTO_WIDTH = 300;
+const TARGET_PHOTO_HEIGHT = 400;
+
+// Helper function to generate unique IDs
+const generateId = (): string => {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+};
+
+// Helper function for confirmation dialogs
+const confirmDelete = (itemName: string): boolean => {
+  return window.confirm(`Та энэ ${itemName}-ийг устгахдаа итгэлтэй байна уу?`);
+};
+
 interface PersonalInfo {
   firstName: string;
   lastName: string;
@@ -67,7 +85,7 @@ interface Skill {
 interface Language {
   id: string;
   name: string;
-  level: "basic" | "conversational" | "fluent" | "native";
+  level: "Уншдаг" | "Бичдэг" | "Ярьдаг" | "";
 }
 
 interface Certificate {
@@ -84,6 +102,11 @@ interface Project {
   description: string;
   technologies: string;
   url?: string;
+}
+
+interface Hobby {
+  id: string;
+  name: string;
 }
 
 type Template = "modern" | "classic" | "creative" | "wizard";
@@ -111,6 +134,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
     languages: true,
     certificates: true,
     projects: true,
+    hobbies: true,
   });
   const [sectionOrder, setSectionOrder] = useState<string[]>([
     "personalDetails",
@@ -121,6 +145,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
     "languages",
     "certificates",
     "projects",
+    "hobbies",
   ]);
   const [showCropModal, setShowCropModal] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string>("");
@@ -169,11 +194,9 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
 
       if (!ctx) return;
 
-      // 3x4 ratio: 300x400 pixels
-      const targetWidth = 300;
-      const targetHeight = 400;
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
+      // 3x4 ratio
+      canvas.width = TARGET_PHOTO_WIDTH;
+      canvas.height = TARGET_PHOTO_HEIGHT;
 
       ctx.drawImage(
         image,
@@ -183,8 +206,8 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
         croppedAreaPixels.height,
         0,
         0,
-        targetWidth,
-        targetHeight
+        TARGET_PHOTO_WIDTH,
+        TARGET_PHOTO_HEIGHT
       );
 
       const croppedImageUrl = canvas.toDataURL('image/jpeg', 0.9);
@@ -244,13 +267,24 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
 
   const [skills, setSkills] = useState<Skill[]>([{ id: "1", name: "", level: "intermediate" }]);
   const [languages, setLanguages] = useState<Language[]>([
-    { id: "1", name: "", level: "fluent" },
+    { id: "1", name: "", level: "" },
   ]);
+  const [suggestedLanguages, setSuggestedLanguages] = useState<string[]>([
+    "English",
+    "Spanish",
+    "Mandarin",
+    "French",
+    "German"
+  ]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [certificates, setCertificates] = useState<Certificate[]>([
     { id: "1", name: "", issuer: "", date: "", url: "" },
   ]);
   const [projects, setProjects] = useState<Project[]>([
     { id: "1", name: "", description: "", technologies: "", url: "" },
+  ]);
+  const [hobbies, setHobbies] = useState<Hobby[]>([
+    { id: "1", name: "" },
   ]);
 
   const steps = [
@@ -274,7 +308,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       if (!personalInfo.lastName.trim()) {
         newErrors.lastName = "Овог оруулах шаардлагатай";
       }
-      if (personalInfo.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalInfo.email)) {
+      if (personalInfo.email && !EMAIL_REGEX.test(personalInfo.email)) {
         newErrors.email = "Зөв имэйл хаяг оруулна уу";
       }
     }
@@ -320,7 +354,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
     setExperiences([
       ...experiences,
       {
-        id: Date.now().toString(),
+        id: generateId(),
         company: "",
         position: "",
         startDate: "",
@@ -333,10 +367,12 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   };
 
   const removeExperience = (id: string) => {
-    setExperiences(experiences.filter((exp) => exp.id !== id));
+    if (confirmDelete("ажлын туршлага")) {
+      setExperiences(experiences.filter((exp) => exp.id !== id));
+    }
   };
 
-  const updateExperience = (id: string, field: keyof Experience, value: any) => {
+  const updateExperience = <K extends keyof Experience>(id: string, field: K, value: Experience[K]) => {
     setExperiences(
       experiences.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp))
     );
@@ -346,7 +382,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
     setEducations([
       ...educations,
       {
-        id: Date.now().toString(),
+        id: generateId(),
         school: "",
         degree: "",
         field: "",
@@ -359,53 +395,154 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   };
 
   const removeEducation = (id: string) => {
-    setEducations(educations.filter((edu) => edu.id !== id));
+    if (confirmDelete("боловсрол")) {
+      setEducations(educations.filter((edu) => edu.id !== id));
+    }
   };
 
-  const updateEducation = (id: string, field: keyof Education, value: any) => {
+  const updateEducation = <K extends keyof Education>(id: string, field: K, value: Education[K]) => {
     setEducations(
       educations.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu))
     );
   };
 
   const addSkill = () => {
-    setSkills([...skills, { id: Date.now().toString(), name: "", level: "intermediate" }]);
+    setSkills([...skills, { id: generateId(), name: "", level: "intermediate" }]);
   };
 
   const removeSkill = (id: string) => {
-    setSkills(skills.filter((skill) => skill.id !== id));
+    if (confirmDelete("ур чадвар")) {
+      setSkills(skills.filter((skill) => skill.id !== id));
+    }
   };
 
-  const updateSkill = (id: string, field: keyof Skill, value: any) => {
+  const updateSkill = <K extends keyof Skill>(id: string, field: K, value: Skill[K]) => {
     setSkills(skills.map((skill) => (skill.id === id ? { ...skill, [field]: value } : skill)));
   };
 
   const addLanguage = () => {
-    setLanguages([...languages, { id: Date.now().toString(), name: "", level: "fluent" }]);
+    setLanguages([{ id: generateId(), name: "", level: "" }, ...languages]);
   };
 
-  const removeLanguage = (id: string) => {
-    setLanguages(languages.filter((lang) => lang.id !== id));
+  const removeLanguage = (id: string, event?: React.MouseEvent<HTMLButtonElement>) => {
+    if (confirmDelete("хэлний мэдлэг")) {
+      // Prevent focus from moving to other inputs
+      if (event) {
+        event.preventDefault();
+        event.currentTarget.blur();
+      }
+      const removedLang = languages.find(lang => lang.id === id);
+      setLanguages(languages.filter((lang) => lang.id !== id));
+      
+      // If a language was removed, add it back to suggested languages if it's in the default list
+      if (removedLang && removedLang.name) {
+        const defaultLanguages = ["English", "Spanish", "Mandarin", "French", "German"];
+        if (defaultLanguages.some(defLang => defLang.toLowerCase() === removedLang.name.toLowerCase())) {
+          setSuggestedLanguages(prev => {
+            // Only add if not already in the list
+            if (!prev.some(lang => lang.toLowerCase() === removedLang.name.toLowerCase())) {
+              return [...prev, removedLang.name];
+            }
+            return prev;
+          });
+        }
+      }
+    }
   };
 
-  const updateLanguage = (id: string, field: keyof Language, value: any) => {
+  const updateLanguage = <K extends keyof Language>(id: string, field: K, value: Language[K]) => {
     setLanguages(
       languages.map((lang) => (lang.id === id ? { ...lang, [field]: value } : lang))
     );
   };
 
+  const fetchLanguageSuggestions = useCallback(async () => {
+    setLoadingSuggestions(true);
+    try {
+      // Get current CV data to provide context
+      const cvContext = {
+        skills: skills.map(s => s.name).join(", ") || "None",
+        experiences: experiences.map(e => `${e.position} at ${e.company}`).join(", ") || "None",
+        educations: educations.map(e => e.degree).join(", ") || "None",
+      };
+
+      // Try to fetch from API, but use fallback if it fails
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: `Suggest 5-8 relevant languages for a CV with these details:\nSkills: ${cvContext.skills}\nExperience: ${cvContext.experiences}\nEducation: ${cvContext.educations}\n\nReturn only a comma-separated list of language names in English (e.g., Chinese, Turkish, Swahili, Bengali, Thai). Do not include any explanations.`
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const suggestions = data.response?.trim() || "";
+          const langList = suggestions
+            .split(",")
+            .map((lang: string) => lang.trim())
+            .filter((lang: string) => lang.length > 0 && lang.length < 30)
+            .slice(0, 8);
+          
+          if (langList.length > 0) {
+            setSuggestedLanguages(langList);
+            return;
+          }
+        }
+      } catch (apiError) {
+        console.log("API call failed, using fallback suggestions");
+      }
+
+      // Fallback suggestions
+      const fallbackLanguages = ["Chinese", "Turkish", "Swahili", "Bengali", "Thai", "Japanese", "Korean", "Arabic"];
+      setSuggestedLanguages(fallbackLanguages);
+    } catch (error) {
+      console.error("Error fetching language suggestions:", error);
+      // Fallback suggestions
+      setSuggestedLanguages(["Chinese", "Turkish", "Swahili", "Bengali", "Thai", "Japanese", "Korean", "Arabic"]);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  }, [skills, experiences, educations]);
+
+  const addSuggestedLanguage = (langName: string) => {
+    // Check if language already exists
+    if (languages.some(lang => lang.name.toLowerCase() === langName.toLowerCase())) {
+      addNotification("Энэ хэл аль хэдийн нэмэгдсэн байна.", "info");
+      return;
+    }
+    
+    // Add new language at the top
+    const newLang: Language = {
+      id: generateId(),
+      name: langName,
+      level: "",
+    };
+    setLanguages([newLang, ...languages]);
+    
+    // Remove only the added language from suggested languages, keep others
+    setSuggestedLanguages(prev => prev.filter(lang => lang.toLowerCase() !== langName.toLowerCase()));
+    
+    addNotification(`${langName} хэл нэмэгдлээ.`, "success");
+  };
+
   const addCertificate = () => {
     setCertificates([
       ...certificates,
-      { id: Date.now().toString(), name: "", issuer: "", date: "", url: "" },
+      { id: generateId(), name: "", issuer: "", date: "", url: "" },
     ]);
   };
 
   const removeCertificate = (id: string) => {
-    setCertificates(certificates.filter((cert) => cert.id !== id));
+    if (confirmDelete("сертификат")) {
+      setCertificates(certificates.filter((cert) => cert.id !== id));
+    }
   };
 
-  const updateCertificate = (id: string, field: keyof Certificate, value: any) => {
+  const updateCertificate = <K extends keyof Certificate>(id: string, field: K, value: Certificate[K]) => {
     setCertificates(
       certificates.map((cert) => (cert.id === id ? { ...cert, [field]: value } : cert))
     );
@@ -414,16 +551,32 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
   const addProject = () => {
     setProjects([
       ...projects,
-      { id: Date.now().toString(), name: "", description: "", technologies: "", url: "" },
+      { id: generateId(), name: "", description: "", technologies: "", url: "" },
     ]);
   };
 
   const removeProject = (id: string) => {
-    setProjects(projects.filter((proj) => proj.id !== id));
+    if (confirmDelete("төсөл")) {
+      setProjects(projects.filter((proj) => proj.id !== id));
+    }
   };
 
-  const updateProject = (id: string, field: keyof Project, value: any) => {
+  const updateProject = <K extends keyof Project>(id: string, field: K, value: Project[K]) => {
     setProjects(projects.map((proj) => (proj.id === id ? { ...proj, [field]: value } : proj)));
+  };
+
+  const addHobby = () => {
+    setHobbies([{ id: generateId(), name: "" }, ...hobbies]);
+  };
+
+  const removeHobby = (id: string) => {
+    if (confirmDelete("хобби")) {
+      setHobbies(hobbies.filter((hobby) => hobby.id !== id));
+    }
+  };
+
+  const updateHobby = <K extends keyof Hobby>(id: string, field: K, value: Hobby[K]) => {
+    setHobbies(hobbies.map((hobby) => (hobby.id === id ? { ...hobby, [field]: value } : hobby)));
   };
 
   const toggleSection = (section: string) => {
@@ -795,20 +948,36 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       for (const line of langLines) {
         const langMatch = line.match(/([А-Яа-яA-Za-z]+)[\s:]*[-–]?\s*(Энгийн|Ярилцлага|Чөлөөтэй|Эх хэл|basic|conversational|fluent|native)/i);
         if (langMatch) {
-          const levelMap: Record<string, "basic" | "conversational" | "fluent" | "native"> = {
-            "энгийн": "basic",
-            "ярилцлага": "conversational",
-            "чөлөөтэй": "fluent",
-            "эх хэл": "native",
-            "basic": "basic",
-            "conversational": "conversational",
-            "fluent": "fluent",
-            "native": "native",
+          const levelMap: Record<string, "Уншдаг" | "Бичдэг" | "Ярьдаг" | ""> = {
+            "энгийн": "Уншдаг",
+            "ярилцлага": "Ярьдаг",
+            "дунд": "Бичдэг",
+            "сайн": "Ярьдаг",
+            "чөлөөтэй": "Ярьдаг",
+            "эх хэл": "Ярьдаг",
+            "basic": "Уншдаг",
+            "beginner": "Уншдаг",
+            "moderate": "Бичдэг",
+            "good": "Бичдэг",
+            "very good": "Ярьдаг",
+            "very-good": "Ярьдаг",
+            "fluent": "Ярьдаг",
+            "a1": "Уншдаг",
+            "a2": "Уншдаг",
+            "b1": "Бичдэг",
+            "b2": "Бичдэг",
+            "c1": "Ярьдаг",
+            "c2": "Ярьдаг",
+            "эхлэгч": "Уншдаг",
+            "дэвшилтэт": "Ярьдаг",
+            "уншдаг": "Уншдаг",
+            "бичдэг": "Бичдэг",
+            "ярьдаг": "Ярьдаг",
           };
           newLanguages.push({
             id: String(newLanguages.length + 1),
             name: langMatch[1].trim(),
-            level: levelMap[langMatch[2].toLowerCase()] || "conversational",
+            level: levelMap[langMatch[2].toLowerCase()] || "",
           });
         } else {
           // Just the language name
@@ -817,7 +986,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
             newLanguages.push({
               id: String(newLanguages.length + 1),
               name: langName,
-              level: "conversational",
+              level: "",
             });
           }
         }
@@ -1109,8 +1278,8 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       console.log("Creating PDF...");
       const pdf = new jsPDF("p", "mm", "a4");
 
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
+      const imgWidth = A4_WIDTH_MM;
+      const pageHeight = A4_HEIGHT_MM;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       console.log("Image dimensions:", imgWidth, imgHeight);
@@ -1195,125 +1364,131 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
         }}
       >
         <div className="flex">
-          {/* Left Column - Dark Blue Background */}
+          {/* Left Column - Dark Blue Background with gradient */}
           <div className="w-1/3" style={{ 
-            backgroundColor: "#1e3a5f",
+            background: "linear-gradient(180deg, #1e3a5f 0%, #2d4a6f 100%)",
             minHeight: "100%",
             position: "relative"
           }}>
-            <div className="p-5 pb-4">
+            <div className="p-6 pb-5">
               {personalInfo.photo && (
-                <div className="mb-4 flex justify-center">
+                <div className="mb-5 flex justify-center">
                   <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg"></div>
                     <img
                       src={personalInfo.photo}
                       alt="Profile"
-                      className="w-24 h-32 object-cover rounded border-2 border-white shadow-md"
-                      style={{ aspectRatio: "3/4" }}
+                      className="w-28 h-36 object-cover rounded-lg border-3 border-white shadow-xl"
+                      style={{ aspectRatio: "3/4", borderWidth: "3px" }}
                     />
                   </div>
                 </div>
               )}
-              <h1 className="text-xl font-bold leading-tight text-white mb-1" style={{ 
-                fontSize: "18px", 
-                lineHeight: "1.2",
-                letterSpacing: "0.3px"
+              <h1 className="text-xl font-bold leading-tight text-white mb-2" style={{ 
+                fontSize: "20px", 
+                lineHeight: "1.3",
+                letterSpacing: "0.5px",
+                textShadow: "0 2px 4px rgba(0,0,0,0.2)"
               }}>
                 {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
               </h1>
             </div>
-            <div className="px-5 pb-4">
-              <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ 
-                color: "#d0d0d0", 
+            <div className="px-6 pb-5">
+              <h2 className="text-sm font-bold mb-4 uppercase tracking-wide border-b border-white/20 pb-2" style={{ 
+                color: "#e8e8e8", 
                 fontSize: "12px",
-                letterSpacing: "0.5px"
+                letterSpacing: "0.8px",
+                fontWeight: "700"
               }}>Personal details</h2>
-              <div className="space-y-2.5 text-white" style={{ fontSize: "10px", lineHeight: "1.6" }}>
+              <div className="space-y-3 text-white" style={{ fontSize: "10px", lineHeight: "1.7" }}>
                 {(personalInfo.firstName || personalInfo.lastName) && (
-                  <div className="flex items-start gap-2.5">
-                    <span className="mt-0.5 flex-shrink-0 text-white/90" style={{ fontSize: "12px" }}>👤</span>
-                    <span className="break-words text-white/95">{personalInfo.firstName || ""} {personalInfo.lastName || ""}</span>
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex-shrink-0 text-white/80" style={{ fontSize: "13px" }}>👤</span>
+                    <span className="break-words text-white/95 font-medium">{personalInfo.firstName || ""} {personalInfo.lastName || ""}</span>
                   </div>
                 )}
                 {personalInfo.email && (
-                  <div className="flex items-start gap-2.5">
-                    <span className="mt-0.5 flex-shrink-0 text-white/90" style={{ fontSize: "12px" }}>📧</span>
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex-shrink-0 text-white/80" style={{ fontSize: "13px" }}>📧</span>
                     <span className="break-words text-white/95">{personalInfo.email}</span>
                   </div>
                 )}
                 {personalInfo.phone && (
-                  <div className="flex items-start gap-2.5">
-                    <span className="mt-0.5 flex-shrink-0 text-white/90" style={{ fontSize: "12px" }}>📞</span>
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex-shrink-0 text-white/80" style={{ fontSize: "13px" }}>📞</span>
                     <span className="text-white/95">{personalInfo.phone}</span>
                   </div>
                 )}
                 {personalInfo.address && (
-                  <div className="flex items-start gap-2.5">
-                    <span className="mt-0.5 flex-shrink-0 text-white/90" style={{ fontSize: "12px" }}>🏠</span>
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex-shrink-0 text-white/80" style={{ fontSize: "13px" }}>🏠</span>
                     <span className="break-words text-white/95">{personalInfo.address}</span>
                   </div>
                 )}
                 {personalInfo.linkedin && (
-                  <div className="flex items-start gap-2.5">
-                    <span className="mt-0.5 flex-shrink-0 text-white/90" style={{ fontSize: "12px" }}>💼</span>
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex-shrink-0 text-white/80" style={{ fontSize: "13px" }}>💼</span>
                     <span className="break-words text-white/95">{personalInfo.linkedin}</span>
                   </div>
                 )}
               </div>
             </div>
             {skills.some((skill) => skill.name) && (
-              <div className="px-5 pt-0 pb-5">
-                <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ 
-                  color: "#d0d0d0", 
+              <div className="px-6 pt-0 pb-6">
+                <h2 className="text-sm font-bold mb-4 uppercase tracking-wide border-b border-white/20 pb-2" style={{ 
+                  color: "#e8e8e8", 
                   fontSize: "12px",
-                  letterSpacing: "0.5px"
+                  letterSpacing: "0.8px",
+                  fontWeight: "700"
                 }}>Skills</h2>
-                <div className="space-y-2 text-white" style={{ fontSize: "10px", lineHeight: "1.6" }}>
+                <div className="space-y-2.5 text-white" style={{ fontSize: "10px", lineHeight: "1.7" }}>
                   {skills.filter((skill) => skill.name).map((skill) => (
-                    <div key={skill.id} className="text-white/95 flex items-center gap-2">
-                      <span className="text-white/70">•</span>
-                      <span>{skill.name}</span>
+                    <div key={skill.id} className="text-white/95 flex items-center gap-2.5">
+                      <span className="text-white/60 text-xs">▸</span>
+                      <span className="font-medium">{skill.name}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
           </div>
-          <div className="w-2/3 bg-white p-6" style={{ backgroundColor: "#fafafa" }}>
+          <div className="w-2/3 bg-white p-7" style={{ backgroundColor: "#fafafa" }}>
             {personalInfo.summary && (
-              <div className="mb-6">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+              <div className="mb-7">
+                <h2 className="text-base font-bold mb-4 uppercase tracking-wide border-b-3 border-blue-600 pb-2.5" style={{ 
                   color: "#1e3a5f", 
-                  fontSize: "13px",
-                  letterSpacing: "0.8px",
-                  fontWeight: "700"
+                  fontSize: "14px",
+                  letterSpacing: "1px",
+                  fontWeight: "700",
+                  borderBottomWidth: "3px"
                 }}>Profile</h2>
-                <p className="leading-relaxed text-gray-700 pl-1" style={{ 
-                  fontSize: "10px", 
-                  lineHeight: "1.8",
+                <p className="leading-relaxed text-gray-700 pl-2" style={{ 
+                  fontSize: "10.5px", 
+                  lineHeight: "1.9",
                   textAlign: "justify"
                 }}>{personalInfo.summary}</p>
               </div>
             )}
             {educations.some((edu) => edu.school || edu.degree) && (
-              <div className="mb-6">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+              <div className="mb-7">
+                <h2 className="text-base font-bold mb-4 uppercase tracking-wide border-b-3 border-blue-600 pb-2.5" style={{ 
                   color: "#1e3a5f", 
-                  fontSize: "13px",
-                  letterSpacing: "0.8px",
-                  fontWeight: "700"
+                  fontSize: "14px",
+                  letterSpacing: "1px",
+                  fontWeight: "700",
+                  borderBottomWidth: "3px"
                 }}>Education</h2>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {educations.filter((edu) => edu.school || edu.degree).map((edu) => (
-                    <div key={edu.id} className="flex justify-between items-start pb-2 border-b border-gray-100 last:border-0">
+                    <div key={edu.id} className="flex justify-between items-start pb-3 border-b border-gray-200 last:border-0">
                       <div className="flex-1">
-                        <h3 className="font-semibold mb-1 text-gray-900" style={{ fontSize: "11px", fontWeight: "600" }}>{edu.degree}</h3>
-                        <p className="mb-0.5 text-gray-700" style={{ fontSize: "10px" }}>{edu.school}</p>
+                        <h3 className="font-semibold mb-1.5 text-gray-900" style={{ fontSize: "11.5px", fontWeight: "600" }}>{edu.degree}</h3>
+                        <p className="mb-1 text-gray-700" style={{ fontSize: "10.5px" }}>{edu.school}</p>
                         {edu.field && (
-                          <p className="text-gray-600 italic" style={{ fontSize: "9px" }}>{edu.field}</p>
+                          <p className="text-gray-600 italic" style={{ fontSize: "9.5px" }}>{edu.field}</p>
                         )}
                       </div>
-                      <p className="ml-3 whitespace-nowrap text-gray-600 font-medium" style={{ fontSize: "10px" }}>
+                      <p className="ml-4 whitespace-nowrap text-gray-600 font-semibold" style={{ fontSize: "10px" }}>
                         {formatDate(edu.startDate)} - {edu.current ? "Present" : formatDate(edu.endDate) || ""}
                       </p>
                     </div>
@@ -1322,30 +1497,31 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
               </div>
             )}
             {experiences.some((exp) => exp.company || exp.position) && (
-              <div className="mb-6">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+              <div className="mb-7">
+                <h2 className="text-base font-bold mb-4 uppercase tracking-wide border-b-3 border-blue-600 pb-2.5" style={{ 
                   color: "#1e3a5f", 
-                  fontSize: "13px",
-                  letterSpacing: "0.8px",
-                  fontWeight: "700"
+                  fontSize: "14px",
+                  letterSpacing: "1px",
+                  fontWeight: "700",
+                  borderBottomWidth: "3px"
                 }}>Employment</h2>
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {experiences.filter((exp) => exp.company || exp.position).map((exp) => (
-                    <div key={exp.id} className="pb-3 border-b border-gray-100 last:border-0">
-                      <div className="flex justify-between items-start mb-2">
+                    <div key={exp.id} className="pb-4 border-b border-gray-200 last:border-0">
+                      <div className="flex justify-between items-start mb-2.5">
                         <div className="flex-1">
-                          <h3 className="font-semibold mb-0.5 text-gray-900" style={{ fontSize: "11px", fontWeight: "600" }}>{exp.position}</h3>
-                          <p className="mb-0.5 text-gray-700" style={{ fontSize: "10px" }}>{exp.company}</p>
+                          <h3 className="font-semibold mb-1 text-gray-900" style={{ fontSize: "11.5px", fontWeight: "600" }}>{exp.position}</h3>
+                          <p className="mb-1 text-gray-700" style={{ fontSize: "10.5px" }}>{exp.company}</p>
                           {exp.location && (
-                            <p className="text-gray-600 italic" style={{ fontSize: "9px" }}>{exp.location}</p>
+                            <p className="text-gray-600 italic" style={{ fontSize: "9.5px" }}>{exp.location}</p>
                           )}
                         </div>
-                        <p className="ml-3 whitespace-nowrap text-gray-600 font-medium" style={{ fontSize: "10px" }}>
+                        <p className="ml-4 whitespace-nowrap text-gray-600 font-semibold" style={{ fontSize: "10px" }}>
                           {formatDate(exp.startDate)} - {exp.current ? "Present" : formatDate(exp.endDate) || ""}
                         </p>
                       </div>
                       {exp.description && (
-                        <ul className="list-disc list-inside ml-2 space-y-0.5 mt-1.5 text-gray-700" style={{ fontSize: "10px", lineHeight: "1.6" }}>
+                        <ul className="list-disc list-inside ml-3 space-y-0.5 mt-2 text-gray-700" style={{ fontSize: "10px", lineHeight: "1.7" }}>
                           {exp.description.split('\n').filter(line => line.trim()).map((line, idx) => (
                             <li key={idx}>{line.trim()}</li>
                           ))}
@@ -1356,7 +1532,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 </div>
               </div>
             )}
-            {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name)) && (
+            {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name) || hobbies.some((hobby) => hobby.name)) && (
               <div className="mb-7">
                 <h2 className="text-base font-bold mb-5 uppercase tracking-wide border-b-3 border-gray-400 pb-3" style={{ 
                   color: "#1e3a5f", 
@@ -1373,13 +1549,25 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                         <div key={lang.id} className="flex items-center gap-2">
                           <span className="text-gray-400">•</span>
                           <span className="font-semibold text-gray-700">{lang.name}</span>
-                          <span className="text-gray-500">-</span>
-                          <span className="text-gray-600">
-                            {lang.level === "basic" && "Энгийн"}
-                          {lang.level === "conversational" && "Ярилцлага"}
-                          {lang.level === "fluent" && "Чөлөөтэй"}
-                          {lang.level === "native" && "Эх хэл"}
-                          </span>
+                          {lang.level && (
+                            <>
+                              <span className="text-gray-500">-</span>
+                              <span className="text-gray-600">{lang.level}</span>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {hobbies.some((hobby) => hobby.name) && (
+                  <div className="mb-4 pl-3" style={{ borderLeft: "3px solid #1e3a5f" }}>
+                    <h3 className="font-bold mb-2 text-gray-900" style={{ fontSize: "12px", fontWeight: "700" }}>Hobbies</h3>
+                    <div className="space-y-1.5" style={{ fontSize: "10.5px", color: "#4a5568" }}>
+                      {hobbies.filter((hobby) => hobby.name).map((hobby) => (
+                        <div key={hobby.id} className="flex items-center gap-2">
+                          <span className="text-gray-400">•</span>
+                          <span className="font-semibold text-gray-700">{hobby.name}</span>
                         </div>
                       ))}
                     </div>
@@ -1449,38 +1637,41 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
       >
         <div className="flex">
           {/* Left Column - Gray Background */}
-          <div className="w-1/4 bg-gray-200 p-5">
-            <div className="text-center mb-5">
+          <div className="w-1/4 bg-gradient-to-b from-gray-100 to-gray-200 p-6">
+            <div className="text-center mb-6">
               {personalInfo.photo && (
-                <div className="mb-4 flex justify-center">
+                <div className="mb-5 flex justify-center">
                   <img
                     src={personalInfo.photo}
                     alt="Profile"
-                    className="w-20 h-28 object-cover rounded border-2 border-gray-400"
-                    style={{ aspectRatio: "3/4" }}
+                    className="w-24 h-32 object-cover rounded-lg border-3 border-gray-500 shadow-lg"
+                    style={{ aspectRatio: "3/4", borderWidth: "3px" }}
                   />
                 </div>
               )}
-              <h1 className="text-xl font-bold text-gray-900 mb-2" style={{ fontSize: "18px", lineHeight: "1.2" }}>
+              <h1 className="text-xl font-bold text-gray-900 mb-2" style={{ fontSize: "19px", lineHeight: "1.3", letterSpacing: "0.3px" }}>
                 {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
               </h1>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <h2 className="text-xs font-bold text-gray-800 mb-2 uppercase tracking-wide border-b border-gray-600 pb-1" style={{ fontSize: "11px" }}>Contact</h2>
-                <div className="text-gray-700 space-y-1.5" style={{ fontSize: "10px", lineHeight: "1.5" }}>
-                  {personalInfo.email && <div className="break-words">📧 {personalInfo.email}</div>}
-                  {personalInfo.phone && <div>📞 {personalInfo.phone}</div>}
-                  {personalInfo.address && <div className="break-words">🏠 {personalInfo.address}</div>}
-                  {personalInfo.linkedin && <div className="break-words">💼 {personalInfo.linkedin}</div>}
+                <h2 className="text-xs font-bold text-gray-800 mb-3 uppercase tracking-wide border-b-2 border-gray-600 pb-2" style={{ fontSize: "11px", letterSpacing: "0.5px" }}>Contact</h2>
+                <div className="text-gray-700 space-y-2" style={{ fontSize: "10px", lineHeight: "1.6" }}>
+                  {personalInfo.email && <div className="break-words flex items-start gap-2"><span>📧</span><span>{personalInfo.email}</span></div>}
+                  {personalInfo.phone && <div className="flex items-start gap-2"><span>📞</span><span>{personalInfo.phone}</span></div>}
+                  {personalInfo.address && <div className="break-words flex items-start gap-2"><span>🏠</span><span>{personalInfo.address}</span></div>}
+                  {personalInfo.linkedin && <div className="break-words flex items-start gap-2"><span>💼</span><span>{personalInfo.linkedin}</span></div>}
                 </div>
               </div>
               {skills.some((skill) => skill.name) && (
                 <div>
-                  <h2 className="text-xs font-bold text-gray-800 mb-2 uppercase tracking-wide border-b border-gray-600 pb-1" style={{ fontSize: "11px" }}>Skills</h2>
-                  <div className="text-gray-700 space-y-1" style={{ fontSize: "10px", lineHeight: "1.5" }}>
+                  <h2 className="text-xs font-bold text-gray-800 mb-3 uppercase tracking-wide border-b-2 border-gray-600 pb-2" style={{ fontSize: "11px", letterSpacing: "0.5px" }}>Skills</h2>
+                  <div className="text-gray-700 space-y-1.5" style={{ fontSize: "10px", lineHeight: "1.6" }}>
                     {skills.filter((skill) => skill.name).map((skill) => (
-                      <div key={skill.id}>• {skill.name}</div>
+                      <div key={skill.id} className="flex items-center gap-2">
+                        <span className="text-gray-500">▸</span>
+                        <span className="font-medium">{skill.name}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -1488,27 +1679,27 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
             </div>
           </div>
           {/* Right Column - White Background */}
-          <div className="w-3/4 bg-white p-6">
+          <div className="w-3/4 bg-white p-7">
             {personalInfo.summary && (
-              <div className="mb-5">
-                <h2 className="text-base font-bold text-gray-900 mb-2 border-b-2 border-gray-800 pb-1" style={{ fontSize: "13px" }}>Profile</h2>
-                <p className="text-gray-700 leading-relaxed" style={{ fontSize: "10px", lineHeight: "1.6" }}>{personalInfo.summary}</p>
+              <div className="mb-6">
+                <h2 className="text-base font-bold text-gray-900 mb-3 border-b-3 border-gray-800 pb-2" style={{ fontSize: "14px", letterSpacing: "0.5px", borderBottomWidth: "3px" }}>Profile</h2>
+                <p className="text-gray-700 leading-relaxed pl-1" style={{ fontSize: "10.5px", lineHeight: "1.8", textAlign: "justify" }}>{personalInfo.summary}</p>
               </div>
             )}
             {educations.some((edu) => edu.school || edu.degree) && (
-              <div className="mb-5">
-                <h2 className="text-base font-bold text-gray-900 mb-2 border-b-2 border-gray-800 pb-1" style={{ fontSize: "13px" }}>Education</h2>
+              <div className="mb-6">
+                <h2 className="text-base font-bold text-gray-900 mb-3 border-b-3 border-gray-800 pb-2" style={{ fontSize: "14px", letterSpacing: "0.5px", borderBottomWidth: "3px" }}>Education</h2>
                 {educations.filter((edu) => edu.school || edu.degree).map((edu) => (
-                  <div key={edu.id} className="mb-3">
+                  <div key={edu.id} className="mb-4 pb-3 border-b border-gray-200 last:border-0">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-900 mb-0.5" style={{ fontSize: "11px" }}>{edu.degree}</h3>
-                        <p className="text-gray-700 mb-0.5" style={{ fontSize: "10px" }}>{edu.school}</p>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1" style={{ fontSize: "11.5px", fontWeight: "600" }}>{edu.degree}</h3>
+                        <p className="text-gray-700 mb-1" style={{ fontSize: "10.5px" }}>{edu.school}</p>
                         {edu.field && (
-                          <p className="text-gray-600" style={{ fontSize: "9px" }}>{edu.field}</p>
+                          <p className="text-gray-600 italic" style={{ fontSize: "9.5px" }}>{edu.field}</p>
                         )}
                       </div>
-                      <p className="text-gray-600 whitespace-nowrap ml-3" style={{ fontSize: "10px" }}>
+                      <p className="text-gray-600 whitespace-nowrap ml-4 font-semibold" style={{ fontSize: "10px" }}>
                         {formatDate(edu.startDate)} - {edu.current ? "Present" : formatDate(edu.endDate) || ""}
                       </p>
                     </div>
@@ -1517,24 +1708,24 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
               </div>
             )}
             {experiences.some((exp) => exp.company || exp.position) && (
-              <div className="mb-5">
-                <h2 className="text-base font-bold text-gray-900 mb-2 border-b-2 border-gray-800 pb-1" style={{ fontSize: "13px" }}>Employment</h2>
+              <div className="mb-6">
+                <h2 className="text-base font-bold text-gray-900 mb-3 border-b-3 border-gray-800 pb-2" style={{ fontSize: "14px", letterSpacing: "0.5px", borderBottomWidth: "3px" }}>Employment</h2>
                 {experiences.filter((exp) => exp.company || exp.position).map((exp) => (
-                  <div key={exp.id} className="mb-3">
-                    <div className="flex justify-between items-start mb-1">
+                  <div key={exp.id} className="mb-4 pb-3 border-b border-gray-200 last:border-0">
+                    <div className="flex justify-between items-start mb-2">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-900 mb-0.5" style={{ fontSize: "11px" }}>{exp.position}</h3>
-                        <p className="text-gray-700 mb-0.5" style={{ fontSize: "10px" }}>{exp.company}</p>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1" style={{ fontSize: "11.5px", fontWeight: "600" }}>{exp.position}</h3>
+                        <p className="text-gray-700 mb-1" style={{ fontSize: "10.5px" }}>{exp.company}</p>
                         {exp.location && (
-                          <p className="text-gray-600" style={{ fontSize: "9px" }}>{exp.location}</p>
+                          <p className="text-gray-600 italic" style={{ fontSize: "9.5px" }}>{exp.location}</p>
                         )}
                       </div>
-                      <p className="text-gray-600 whitespace-nowrap ml-3" style={{ fontSize: "10px" }}>
+                      <p className="text-gray-600 whitespace-nowrap ml-4 font-semibold" style={{ fontSize: "10px" }}>
                         {formatDate(exp.startDate)} - {exp.current ? "Present" : formatDate(exp.endDate) || ""}
                       </p>
                     </div>
                     {exp.description && (
-                      <ul className="text-gray-700 list-disc list-inside ml-4 space-y-0.5" style={{ fontSize: "10px", lineHeight: "1.5" }}>
+                      <ul className="text-gray-700 list-disc list-inside ml-4 space-y-0.5 mt-2" style={{ fontSize: "10px", lineHeight: "1.7" }}>
                         {exp.description.split('\n').filter(line => line.trim()).map((line, idx) => (
                           <li key={idx}>{line.trim()}</li>
                         ))}
@@ -1544,31 +1735,46 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 ))}
               </div>
             )}
-            {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name)) && (
-              <div className="mb-5">
-                <h2 className="text-base font-bold text-gray-900 mb-2 border-b-2 border-gray-800 pb-1" style={{ fontSize: "13px" }}>Additional Information</h2>
+            {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name) || hobbies.some((hobby) => hobby.name)) && (
+              <div className="mb-6">
+                <h2 className="text-base font-bold text-gray-900 mb-3 border-b-3 border-gray-800 pb-2" style={{ fontSize: "14px", letterSpacing: "0.5px", borderBottomWidth: "3px" }}>Additional Information</h2>
                 {languages.some((lang) => lang.name) && (
-                  <div className="mb-3">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1.5" style={{ fontSize: "11px" }}>Languages</h3>
-                    <div className="space-y-1" style={{ fontSize: "10px", color: "#4a5568" }}>
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2" style={{ fontSize: "11.5px", fontWeight: "600" }}>Languages</h3>
+                    <div className="space-y-1.5" style={{ fontSize: "10.5px", color: "#4a5568" }}>
                       {languages.filter((lang) => lang.name).map((lang) => (
-                        <div key={lang.id}>
-                          {lang.name} - {lang.level === "basic" && "Энгийн"}
-                          {lang.level === "conversational" && "Ярилцлага"}
-                          {lang.level === "fluent" && "Чөлөөтэй"}
-                          {lang.level === "native" && "Эх хэл"}
+                        <div key={lang.id} className="flex items-center gap-2">
+                          <span className="text-gray-400">•</span>
+                          <span className="font-medium">{lang.name}</span>
+                          {lang.level && <span className="text-gray-500">- {lang.level}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {hobbies.some((hobby) => hobby.name) && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2" style={{ fontSize: "11.5px", fontWeight: "600" }}>Hobbies</h3>
+                    <div className="space-y-1.5" style={{ fontSize: "10.5px", color: "#4a5568" }}>
+                      {hobbies.filter((hobby) => hobby.name).map((hobby) => (
+                        <div key={hobby.id} className="flex items-center gap-2">
+                          <span className="text-gray-400">•</span>
+                          <span className="font-medium">{hobby.name}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
                 {certificates.some((cert) => cert.name) && (
-                  <div className="mb-3">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1.5" style={{ fontSize: "11px" }}>Certificates</h3>
-                    <div className="space-y-1" style={{ fontSize: "10px", color: "#4a5568" }}>
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2" style={{ fontSize: "11.5px", fontWeight: "600" }}>Certificates</h3>
+                    <div className="space-y-1.5" style={{ fontSize: "10.5px", color: "#4a5568" }}>
                       {certificates.filter((cert) => cert.name).map((cert) => (
-                        <div key={cert.id}>
-                          <span className="font-medium">{cert.name}</span> - {cert.issuer} {cert.date && `(${formatDate(cert.date)})`}
+                        <div key={cert.id} className="flex items-start gap-2">
+                          <span className="text-gray-400 mt-0.5">▸</span>
+                          <div>
+                            <span className="font-medium">{cert.name}</span> - {cert.issuer} {cert.date && <span className="text-gray-500">({formatDate(cert.date)})</span>}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1576,13 +1782,16 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 )}
                 {projects.some((proj) => proj.name) && (
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1.5" style={{ fontSize: "11px" }}>Projects</h3>
-                    <div className="space-y-2" style={{ fontSize: "10px", color: "#4a5568" }}>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2" style={{ fontSize: "11.5px", fontWeight: "600" }}>Projects</h3>
+                    <div className="space-y-2.5" style={{ fontSize: "10.5px", color: "#4a5568" }}>
                       {projects.filter((proj) => proj.name).map((proj) => (
-                        <div key={proj.id}>
-                          <span className="font-medium">{proj.name}</span>
-                          {proj.description && <p className="mt-0.5" style={{ fontSize: "9px" }}>{proj.description}</p>}
-                          {proj.technologies && <p className="mt-0.5" style={{ fontSize: "9px", color: "#718096" }}>Tech: {proj.technologies}</p>}
+                        <div key={proj.id} className="pb-2 border-b border-gray-200 last:border-0">
+                          <div className="flex items-start gap-2 mb-1">
+                            <span className="text-gray-400 mt-0.5">▸</span>
+                            <span className="font-semibold">{proj.name}</span>
+                          </div>
+                          {proj.description && <p className="mt-1 ml-4 text-gray-600 italic" style={{ fontSize: "10px", lineHeight: "1.6" }}>{proj.description}</p>}
+                          {proj.technologies && <p className="mt-1 ml-4 text-gray-500" style={{ fontSize: "9.5px" }}><span className="font-medium">Tech:</span> {proj.technologies}</p>}
                         </div>
                       ))}
                     </div>
@@ -1610,56 +1819,59 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
           minHeight: "297mm"
         }}
       >
-        {/* Header - Dark gray background spanning full width */}
-        <div className="p-5" style={{ backgroundColor: "#4a5568" }}>
-          <div className="flex items-center gap-4 mb-2">
+        {/* Header - Dark gray background with gradient spanning full width */}
+        <div className="p-6" style={{ background: "linear-gradient(135deg, #4a5568 0%, #2d3748 100%)" }}>
+          <div className="flex items-center gap-5 mb-3">
             {personalInfo.photo && (
-              <img
-                src={personalInfo.photo}
-                alt="Profile"
-                className="w-20 h-28 object-cover rounded border-2 border-white"
-                style={{ aspectRatio: "3/4" }}
-              />
+              <div className="relative">
+                <div className="absolute inset-0 bg-white/10 rounded-lg blur-sm"></div>
+                <img
+                  src={personalInfo.photo}
+                  alt="Profile"
+                  className="w-24 h-32 object-cover rounded-lg border-3 border-white shadow-xl relative"
+                  style={{ aspectRatio: "3/4", borderWidth: "3px" }}
+                />
+              </div>
             )}
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-white" style={{ fontSize: "20px", lineHeight: "1.2" }}>
+              <h1 className="text-xl font-bold text-white mb-1" style={{ fontSize: "22px", lineHeight: "1.3", letterSpacing: "0.5px", textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}>
                 {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
               </h1>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3 text-white" style={{ fontSize: "10px", lineHeight: "1.5" }}>
-            {personalInfo.email && <span className="break-words">{personalInfo.email}</span>}
-            {personalInfo.phone && <span>{personalInfo.phone}</span>}
-            {personalInfo.address && <span className="break-words">{personalInfo.address}</span>}
-            {personalInfo.linkedin && <span className="break-words">💼 {personalInfo.linkedin}</span>}
+          <div className="flex flex-wrap gap-4 text-white/95" style={{ fontSize: "10.5px", lineHeight: "1.6" }}>
+            {personalInfo.email && <span className="break-words flex items-center gap-1.5"><span>📧</span><span>{personalInfo.email}</span></span>}
+            {personalInfo.phone && <span className="flex items-center gap-1.5"><span>📞</span><span>{personalInfo.phone}</span></span>}
+            {personalInfo.address && <span className="break-words flex items-center gap-1.5"><span>🏠</span><span>{personalInfo.address}</span></span>}
+            {personalInfo.linkedin && <span className="break-words flex items-center gap-1.5"><span>💼</span><span>{personalInfo.linkedin}</span></span>}
           </div>
         </div>
 
         {/* Two-column layout */}
         <div className="flex">
           {/* Left Column - Main content */}
-          <div className="w-2/3 bg-white p-5">
+          <div className="w-2/3 bg-white p-6">
           {personalInfo.summary && (
-              <div className="mb-5">
-                <h2 className="text-base font-bold mb-2 uppercase tracking-wide" style={{ color: "#2d3748", fontSize: "13px" }}>Profile</h2>
-                <p className="leading-relaxed" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.6" }}>{personalInfo.summary}</p>
+              <div className="mb-6">
+                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ color: "#2d3748", fontSize: "14px", letterSpacing: "0.8px", fontWeight: "700" }}>Profile</h2>
+                <p className="leading-relaxed pl-1" style={{ color: "#4a5568", fontSize: "10.5px", lineHeight: "1.8", textAlign: "justify" }}>{personalInfo.summary}</p>
             </div>
           )}
             
               {educations.some((edu) => edu.school || edu.degree) && (
-              <div className="mb-5">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-300 pb-1" style={{ color: "#2d3748", fontSize: "13px" }}>Education</h2>
-                <div className="space-y-2.5">
+              <div className="mb-6">
+                <h2 className="text-base font-bold mb-4 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ color: "#2d3748", fontSize: "14px", letterSpacing: "0.8px", fontWeight: "700" }}>Education</h2>
+                <div className="space-y-3">
                   {educations.filter((edu) => edu.school || edu.degree).map((edu) => (
-                    <div key={edu.id} className="flex justify-between items-start">
+                    <div key={edu.id} className="flex justify-between items-start pb-3 border-b border-gray-200 last:border-0">
                       <div className="flex-1">
-                        <h3 className="font-semibold mb-0.5" style={{ color: "#2d3748", fontSize: "11px" }}>{edu.degree}</h3>
-                        <p className="mb-0.5" style={{ color: "#4a5568", fontSize: "10px" }}>{edu.school}</p>
+                        <h3 className="font-semibold mb-1" style={{ color: "#2d3748", fontSize: "11.5px", fontWeight: "600" }}>{edu.degree}</h3>
+                        <p className="mb-1" style={{ color: "#4a5568", fontSize: "10.5px" }}>{edu.school}</p>
                         {edu.field && (
-                          <p style={{ color: "#718096", fontSize: "9px" }}>{edu.field}</p>
+                          <p style={{ color: "#718096", fontSize: "9.5px", fontStyle: "italic" }}>{edu.field}</p>
                         )}
                       </div>
-                      <p className="ml-3 whitespace-nowrap" style={{ color: "#718096", fontSize: "10px" }}>
+                      <p className="ml-4 whitespace-nowrap font-semibold" style={{ color: "#718096", fontSize: "10px" }}>
                         {formatDate(edu.startDate)} - {edu.current ? "Present" : formatDate(edu.endDate) || ""}
                       </p>
                     </div>
@@ -1669,25 +1881,25 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
               )}
 
               {experiences.some((exp) => exp.company || exp.position) && (
-              <div className="mb-5">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-300 pb-1" style={{ color: "#2d3748", fontSize: "13px" }}>Employment</h2>
-                <div className="space-y-3">
+              <div className="mb-6">
+                <h2 className="text-base font-bold mb-4 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ color: "#2d3748", fontSize: "14px", letterSpacing: "0.8px", fontWeight: "700" }}>Employment</h2>
+                <div className="space-y-4">
                   {experiences.filter((exp) => exp.company || exp.position).map((exp) => (
-                    <div key={exp.id}>
-                      <div className="flex justify-between items-start mb-1.5">
+                    <div key={exp.id} className="pb-4 border-b border-gray-200 last:border-0">
+                      <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
-                          <h3 className="font-semibold mb-0.5" style={{ color: "#2d3748", fontSize: "11px" }}>{exp.position}</h3>
-                          <p className="mb-0.5" style={{ color: "#4a5568", fontSize: "10px" }}>{exp.company}</p>
+                          <h3 className="font-semibold mb-1" style={{ color: "#2d3748", fontSize: "11.5px", fontWeight: "600" }}>{exp.position}</h3>
+                          <p className="mb-1" style={{ color: "#4a5568", fontSize: "10.5px" }}>{exp.company}</p>
                           {exp.location && (
-                            <p style={{ color: "#718096", fontSize: "9px" }}>{exp.location}</p>
+                            <p style={{ color: "#718096", fontSize: "9.5px", fontStyle: "italic" }}>{exp.location}</p>
                           )}
                         </div>
-                        <p className="ml-3 whitespace-nowrap" style={{ color: "#718096", fontSize: "10px" }}>
+                        <p className="ml-4 whitespace-nowrap font-semibold" style={{ color: "#718096", fontSize: "10px" }}>
                         {formatDate(exp.startDate)} - {exp.current ? "Present" : formatDate(exp.endDate) || ""}
                       </p>
                       </div>
                       {exp.description && (
-                        <ul className="list-disc list-inside ml-1 space-y-0.5 mt-1" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.5" }}>
+                        <ul className="list-disc list-inside ml-2 space-y-0.5 mt-2" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.7" }}>
                           {exp.description.split('\n').filter(line => line.trim()).map((line, idx) => (
                             <li key={idx}>{line.trim()}</li>
                           ))}
@@ -1699,31 +1911,46 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 </div>
               )}
 
-            {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name)) && (
-              <div className="mb-5">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-300 pb-1" style={{ color: "#2d3748", fontSize: "13px" }}>Additional Information</h2>
+            {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name) || hobbies.some((hobby) => hobby.name)) && (
+              <div className="mb-6">
+                <h2 className="text-base font-bold mb-4 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ color: "#2d3748", fontSize: "14px", letterSpacing: "0.8px", fontWeight: "700" }}>Additional Information</h2>
                 {languages.some((lang) => lang.name) && (
-                  <div className="mb-3">
-                    <h3 className="font-semibold mb-1.5" style={{ color: "#2d3748", fontSize: "11px" }}>Languages</h3>
-                    <div className="space-y-1" style={{ fontSize: "10px", color: "#4a5568" }}>
+                  <div className="mb-4">
+                    <h3 className="font-semibold mb-2" style={{ color: "#2d3748", fontSize: "11.5px", fontWeight: "600" }}>Languages</h3>
+                    <div className="space-y-1.5" style={{ fontSize: "10.5px", color: "#4a5568" }}>
                       {languages.filter((lang) => lang.name).map((lang) => (
-                        <div key={lang.id}>
-                          {lang.name} - {lang.level === "basic" && "Энгийн"}
-                          {lang.level === "conversational" && "Ярилцлага"}
-                          {lang.level === "fluent" && "Чөлөөтэй"}
-                          {lang.level === "native" && "Эх хэл"}
-            </div>
+                        <div key={lang.id} className="flex items-center gap-2">
+                          <span className="text-gray-400">•</span>
+                          <span className="font-medium">{lang.name}</span>
+                          {lang.level && <span className="text-gray-500">- {lang.level}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {hobbies.some((hobby) => hobby.name) && (
+                  <div className="mb-4">
+                    <h3 className="font-semibold mb-2" style={{ color: "#2d3748", fontSize: "11.5px", fontWeight: "600" }}>Hobbies</h3>
+                    <div className="space-y-1.5" style={{ fontSize: "10.5px", color: "#4a5568" }}>
+                      {hobbies.filter((hobby) => hobby.name).map((hobby) => (
+                        <div key={hobby.id} className="flex items-center gap-2">
+                          <span className="text-gray-400">•</span>
+                          <span className="font-medium">{hobby.name}</span>
+                        </div>
                       ))}
                     </div>
                   </div>
                 )}
                 {certificates.some((cert) => cert.name) && (
-                  <div className="mb-3">
-                    <h3 className="font-semibold mb-1.5" style={{ color: "#2d3748", fontSize: "11px" }}>Certificates</h3>
-                    <div className="space-y-1" style={{ fontSize: "10px", color: "#4a5568" }}>
+                  <div className="mb-4">
+                    <h3 className="font-semibold mb-2" style={{ color: "#2d3748", fontSize: "11.5px", fontWeight: "600" }}>Certificates</h3>
+                    <div className="space-y-1.5" style={{ fontSize: "10.5px", color: "#4a5568" }}>
                       {certificates.filter((cert) => cert.name).map((cert) => (
-                        <div key={cert.id}>
-                          <span className="font-medium">{cert.name}</span> - {cert.issuer} {cert.date && `(${formatDate(cert.date)})`}
+                        <div key={cert.id} className="flex items-start gap-2">
+                          <span className="text-gray-400 mt-0.5">▸</span>
+                          <div>
+                            <span className="font-medium">{cert.name}</span> - {cert.issuer} {cert.date && <span className="text-gray-500">({formatDate(cert.date)})</span>}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1731,13 +1958,16 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 )}
                 {projects.some((proj) => proj.name) && (
                   <div>
-                    <h3 className="font-semibold mb-1.5" style={{ color: "#2d3748", fontSize: "11px" }}>Projects</h3>
-                    <div className="space-y-2" style={{ fontSize: "10px", color: "#4a5568" }}>
+                    <h3 className="font-semibold mb-2" style={{ color: "#2d3748", fontSize: "11.5px", fontWeight: "600" }}>Projects</h3>
+                    <div className="space-y-2.5" style={{ fontSize: "10.5px", color: "#4a5568" }}>
                       {projects.filter((proj) => proj.name).map((proj) => (
-                        <div key={proj.id}>
-                          <span className="font-medium">{proj.name}</span>
-                          {proj.description && <p className="mt-0.5" style={{ fontSize: "9px" }}>{proj.description}</p>}
-                          {proj.technologies && <p className="mt-0.5" style={{ fontSize: "9px", color: "#718096" }}>Tech: {proj.technologies}</p>}
+                        <div key={proj.id} className="pb-2 border-b border-gray-200 last:border-0">
+                          <div className="flex items-start gap-2 mb-1">
+                            <span className="text-gray-400 mt-0.5">▸</span>
+                            <span className="font-semibold">{proj.name}</span>
+                          </div>
+                          {proj.description && <p className="mt-1 ml-4 text-gray-600 italic" style={{ fontSize: "10px", lineHeight: "1.6" }}>{proj.description}</p>}
+                          {proj.technologies && <p className="mt-1 ml-4 text-gray-500" style={{ fontSize: "9.5px" }}><span className="font-medium">Tech:</span> {proj.technologies}</p>}
                         </div>
                       ))}
                     </div>
@@ -1748,18 +1978,18 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
           </div>
 
           {/* Right Column - Sidebar */}
-          <div className="w-1/3 bg-white p-5" style={{ backgroundColor: "#f7fafc" }}>
-            <div className="mb-5">
-              <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ color: "#2d3748", fontSize: "12px" }}>Personal details</h2>
-              <div className="space-y-2 text-xs" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.5" }}>
+          <div className="w-1/3 bg-white p-6" style={{ backgroundColor: "#f7fafc" }}>
+            <div className="mb-6">
+              <h2 className="text-sm font-bold mb-4 uppercase tracking-wide border-b-2 border-gray-300 pb-2" style={{ color: "#2d3748", fontSize: "12px", letterSpacing: "0.5px", fontWeight: "700" }}>Personal details</h2>
+              <div className="space-y-2.5 text-xs" style={{ color: "#4a5568", fontSize: "10.5px", lineHeight: "1.6" }}>
                 {personalInfo.address && (
                   <div>
-                    <span className="font-semibold">Үндэс угсаа:</span> {personalInfo.address}
+                    <span className="font-semibold text-gray-800">Үндэс угсаа:</span> <span className="text-gray-700">{personalInfo.address}</span>
                   </div>
                 )}
                 {!personalInfo.address && (
                   <div>
-                    <span className="font-semibold">Үндэс угсаа:</span> Монгол Улс
+                    <span className="font-semibold text-gray-800">Үндэс угсаа:</span> <span className="text-gray-700">Монгол Улс</span>
                   </div>
                 )}
               </div>
@@ -1767,10 +1997,13 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
 
             {skills.some((skill) => skill.name) && (
               <div>
-                <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ color: "#2d3748", fontSize: "12px" }}>Skills</h2>
-                <div className="space-y-1.5 text-xs leading-relaxed" style={{ color: "#4a5568", fontSize: "10px", lineHeight: "1.5" }}>
+                <h2 className="text-sm font-bold mb-4 uppercase tracking-wide border-b-2 border-gray-300 pb-2" style={{ color: "#2d3748", fontSize: "12px", letterSpacing: "0.5px", fontWeight: "700" }}>Skills</h2>
+                <div className="space-y-2 text-xs leading-relaxed" style={{ color: "#4a5568", fontSize: "10.5px", lineHeight: "1.6" }}>
                   {skills.filter((skill) => skill.name).map((skill) => (
-                    <div key={skill.id}>{skill.name}</div>
+                    <div key={skill.id} className="flex items-center gap-2">
+                      <span className="text-gray-400">▸</span>
+                      <span className="font-medium">{skill.name}</span>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1799,26 +2032,37 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
         <div className="flex">
           {/* Left Column */}
           <div className="w-2/5" style={{ backgroundColor: "#f8f9fa" }}>
-            {/* Blue Header */}
-            <div className="p-5" style={{ backgroundColor: "#1e3a5f" }}>
-              <h1 className="text-xl font-bold text-white" style={{ 
-                fontSize: "18px", 
-                lineHeight: "1.2",
-                color: "#ffffff"
+            {/* Blue Header with gradient */}
+            <div className="p-6" style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%)" }}>
+              {personalInfo.photo && (
+                <div className="mb-4 flex justify-center">
+                  <img
+                    src={personalInfo.photo}
+                    alt="Profile"
+                    className="w-20 h-28 object-cover rounded-lg border-3 border-white shadow-xl"
+                    style={{ aspectRatio: "3/4", borderWidth: "3px" }}
+                  />
+                </div>
+              )}
+              <h1 className="text-xl font-bold text-white text-center" style={{ 
+                fontSize: "20px", 
+                lineHeight: "1.3",
+                letterSpacing: "0.5px",
+                textShadow: "0 2px 4px rgba(0,0,0,0.2)"
               }}>
                 {personalInfo.firstName || "Нэр"} {personalInfo.lastName || "Овог"}
               </h1>
             </div>
             
-            {/* Personal Details Section */}
-            <div className="p-5 bg-white">
-              <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ 
+            <div className="p-6 bg-white">
+              <h2 className="text-sm font-bold mb-4 uppercase tracking-wide border-b-2 border-gray-300 pb-2" style={{ 
                 color: "#2d3748", 
                 fontSize: "12px",
-                letterSpacing: "0.5px"
+                letterSpacing: "0.8px",
+                fontWeight: "700"
               }}>Personal details</h2>
               
-              <div className="space-y-2.5 text-gray-700" style={{ fontSize: "10px", lineHeight: "1.6" }}>
+              <div className="space-y-3 text-gray-700" style={{ fontSize: "10.5px", lineHeight: "1.7" }}>
                 {(personalInfo.firstName || personalInfo.lastName) && (
                   <div className="flex items-start gap-2">
                     <span className="mt-0.5 flex-shrink-0" style={{ fontSize: "12px" }}>👤</span>
@@ -1866,15 +2110,19 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
             
             {/* Skills Section */}
             {skills.some((skill) => skill.name) && (
-              <div className="px-5 pt-0 pb-5 bg-white">
-                <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ 
+              <div className="px-6 pt-0 pb-6 bg-white">
+                <h2 className="text-sm font-bold mb-4 uppercase tracking-wide border-b-2 border-gray-300 pb-2" style={{ 
                   color: "#2d3748", 
                   fontSize: "12px",
-                  letterSpacing: "0.5px"
+                  letterSpacing: "0.8px",
+                  fontWeight: "700"
                 }}>Skills</h2>
-                <div className="space-y-1.5 text-gray-700" style={{ fontSize: "10px", lineHeight: "1.5" }}>
+                <div className="space-y-2 text-gray-700" style={{ fontSize: "10.5px", lineHeight: "1.6" }}>
                   {skills.filter((skill) => skill.name).map((skill) => (
-                    <div key={skill.id}>{skill.name}</div>
+                    <div key={skill.id} className="flex items-center gap-2">
+                      <span className="text-gray-400">▸</span>
+                      <span className="font-medium">{skill.name}</span>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1882,37 +2130,43 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
             
             {/* Languages Section */}
             {languages.some((lang) => lang.name) && (
-              <div className="px-5 pt-0 pb-5 bg-white">
-                <h2 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ 
+              <div className="px-6 pt-0 pb-6 bg-white">
+                <h2 className="text-sm font-bold mb-4 uppercase tracking-wide border-b-2 border-gray-300 pb-2" style={{ 
                   color: "#2d3748", 
                   fontSize: "12px",
-                  letterSpacing: "0.5px"
+                  letterSpacing: "0.8px",
+                  fontWeight: "700"
                 }}>Languages</h2>
-                <div className="space-y-2 text-gray-700" style={{ fontSize: "10px", lineHeight: "1.5" }}>
+                <div className="space-y-3 text-gray-700" style={{ fontSize: "10.5px", lineHeight: "1.6" }}>
                   {languages.filter((lang) => lang.name).map((lang) => {
+                    // Map language levels to visual indicators
                     const levelMap: Record<string, number> = {
-                      "basic": 2,
-                      "conversational": 3,
-                      "fluent": 4,
-                      "native": 5
+                      "Уншдаг": 2,
+                      "Бичдэг": 3,
+                      "Ярьдаг": 5,
+                      "": 0
                     };
-                    const filledCircles = levelMap[lang.level] || 3;
+                    const filledCircles = levelMap[lang.level] || 0;
                     return (
-                      <div key={lang.id} className="flex items-center gap-2">
-                        <span className="font-medium">{lang.name}:</span>
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <div
-                              key={i}
-                              style={{
-                                width: "8px",
-                                height: "8px",
-                                borderRadius: "50%",
-                                backgroundColor: i <= filledCircles ? "#1e3a5f" : "#e2e8f0"
-                              }}
-                            />
-                          ))}
-                        </div>
+                      <div key={lang.id} className="flex items-center gap-3">
+                        <span className="font-semibold text-gray-800">{lang.name}:</span>
+                        {filledCircles > 0 ? (
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <div
+                                key={i}
+                                style={{
+                                  width: "9px",
+                                  height: "9px",
+                                  borderRadius: "50%",
+                                  backgroundColor: i <= filledCircles ? "#1e3a5f" : "#e2e8f0"
+                                }}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-500 text-xs">{lang.level || ""}</span>
+                        )}
                       </div>
                     );
                   })}
@@ -1929,19 +2183,20 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
           </div>
           
           {/* Right Column */}
-          <div className="w-3/5 bg-white p-6">
+          <div className="w-3/5 bg-white p-7">
             {/* Profile Section */}
             {personalInfo.summary && (
-              <div className="mb-6">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+              <div className="mb-7">
+                <h2 className="text-base font-bold mb-4 uppercase tracking-wide border-b-3 border-blue-600 pb-2.5" style={{ 
                   color: "#1e3a5f", 
-                  fontSize: "13px",
-                  letterSpacing: "0.8px",
-                  fontWeight: "700"
+                  fontSize: "14px",
+                  letterSpacing: "1px",
+                  fontWeight: "700",
+                  borderBottomWidth: "3px"
                 }}>Profile</h2>
-                <p className="leading-relaxed text-gray-700 pl-1" style={{ 
-                  fontSize: "10px", 
-                  lineHeight: "1.8",
+                <p className="leading-relaxed text-gray-700 pl-2" style={{ 
+                  fontSize: "10.5px", 
+                  lineHeight: "1.9",
                   textAlign: "justify"
                 }}>{personalInfo.summary}</p>
               </div>
@@ -1949,22 +2204,23 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
             
             {/* Education Section */}
             {educations.some((edu) => edu.school || edu.degree) && (
-              <div className="mb-6">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+              <div className="mb-7">
+                <h2 className="text-base font-bold mb-4 uppercase tracking-wide border-b-3 border-blue-600 pb-2.5" style={{ 
                   color: "#1e3a5f", 
-                  fontSize: "13px",
-                  letterSpacing: "0.8px",
-                  fontWeight: "700"
+                  fontSize: "14px",
+                  letterSpacing: "1px",
+                  fontWeight: "700",
+                  borderBottomWidth: "3px"
                 }}>Education</h2>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {educations.filter((edu) => edu.school || edu.degree).map((edu) => (
-                    <div key={edu.id} className="pb-2 border-b border-gray-100 last:border-0">
-                      <h3 className="font-semibold mb-1 text-gray-900" style={{ fontSize: "11px", fontWeight: "600" }}>{edu.degree}</h3>
-                      <p className="mb-0.5 text-gray-700" style={{ fontSize: "10px" }}>{edu.school}</p>
+                    <div key={edu.id} className="pb-3 border-b border-gray-200 last:border-0">
+                      <h3 className="font-semibold mb-1.5 text-gray-900" style={{ fontSize: "11.5px", fontWeight: "600" }}>{edu.degree}</h3>
+                      <p className="mb-1 text-gray-700" style={{ fontSize: "10.5px" }}>{edu.school}</p>
                       {edu.gpa && (
-                        <p className="text-gray-600 italic mb-1" style={{ fontSize: "9px" }}>Голч дүн: {edu.gpa}</p>
+                        <p className="text-gray-600 italic mb-1.5" style={{ fontSize: "9.5px" }}>Голч дүн: {edu.gpa}</p>
                       )}
-                      <p className="text-gray-600 font-medium" style={{ fontSize: "10px" }}>
+                      <p className="text-gray-600 font-semibold" style={{ fontSize: "10px" }}>
                         {formatDate(edu.startDate)} - {edu.current ? "Present" : formatDate(edu.endDate) || ""}
                       </p>
                     </div>
@@ -1975,27 +2231,28 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
             
             {/* Employment Section */}
             {experiences.some((exp) => exp.company || exp.position) && (
-              <div className="mb-6">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+              <div className="mb-7">
+                <h2 className="text-base font-bold mb-4 uppercase tracking-wide border-b-3 border-blue-600 pb-2.5" style={{ 
                   color: "#1e3a5f", 
-                  fontSize: "13px",
-                  letterSpacing: "0.8px",
-                  fontWeight: "700"
+                  fontSize: "14px",
+                  letterSpacing: "1px",
+                  fontWeight: "700",
+                  borderBottomWidth: "3px"
                 }}>Employment</h2>
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {experiences.filter((exp) => exp.company || exp.position).map((exp) => (
-                    <div key={exp.id} className="pb-3 border-b border-gray-100 last:border-0">
-                      <div className="flex justify-between items-start mb-2">
+                    <div key={exp.id} className="pb-4 border-b border-gray-200 last:border-0">
+                      <div className="flex justify-between items-start mb-2.5">
                         <div className="flex-1">
-                          <h3 className="font-semibold mb-0.5 text-gray-900" style={{ fontSize: "11px", fontWeight: "600" }}>{exp.position}</h3>
-                          <p className="mb-0.5 text-gray-700" style={{ fontSize: "10px" }}>{exp.company}</p>
+                          <h3 className="font-semibold mb-1 text-gray-900" style={{ fontSize: "11.5px", fontWeight: "600" }}>{exp.position}</h3>
+                          <p className="mb-1 text-gray-700" style={{ fontSize: "10.5px" }}>{exp.company}</p>
                         </div>
-                        <p className="ml-3 whitespace-nowrap text-gray-600 font-medium" style={{ fontSize: "10px" }}>
+                        <p className="ml-4 whitespace-nowrap text-gray-600 font-semibold" style={{ fontSize: "10px" }}>
                           {formatDate(exp.startDate)} - {exp.current ? "Present" : formatDate(exp.endDate) || ""}
                         </p>
                       </div>
                       {exp.description && (
-                        <ul className="list-disc list-inside ml-2 space-y-0.5 mt-1.5 text-gray-700" style={{ fontSize: "10px", lineHeight: "1.6" }}>
+                        <ul className="list-disc list-inside ml-3 space-y-0.5 mt-2 text-gray-700" style={{ fontSize: "10px", lineHeight: "1.7" }}>
                           {exp.description.split('\n').filter(line => line.trim()).map((line, idx) => (
                             <li key={idx}>{line.trim()}</li>
                           ))}
@@ -2008,28 +2265,85 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
             )}
             
             {/* Additional Information Section */}
-            {(certificates.some((cert) => cert.name) || projects.some((proj) => proj.name)) && (
-              <div className="mb-6">
-                <h2 className="text-base font-bold mb-3 uppercase tracking-wide border-b-2 border-gray-400 pb-2" style={{ 
+            {(languages.some((lang) => lang.name) || certificates.some((cert) => cert.name) || projects.some((proj) => proj.name) || hobbies.some((hobby) => hobby.name)) && (
+              <div className="mb-7">
+                <h2 className="text-base font-bold mb-4 uppercase tracking-wide border-b-3 border-blue-600 pb-2.5" style={{ 
                   color: "#1e3a5f", 
-                  fontSize: "13px",
-                  letterSpacing: "0.8px",
-                  fontWeight: "700"
-                }}>Нэмэлт мэдээлэл</h2>
-                {projects.some((proj) => proj.name) && (
-                  <div className="mb-3">
-                    <p className="font-semibold text-gray-900 mb-1" style={{ fontSize: "10px", fontWeight: "600" }}>Хувийн төслүүд:</p>
-                    <p className="text-gray-700" style={{ fontSize: "10px" }}>
-                      {projects.filter((proj) => proj.name).map((proj) => proj.name).join(", ")}
-                    </p>
+                  fontSize: "14px",
+                  letterSpacing: "1px",
+                  fontWeight: "700",
+                  borderBottomWidth: "3px"
+                }}>Additional Information</h2>
+                {languages.some((lang) => lang.name) && (
+                  <div className="mb-4 pl-3" style={{ borderLeft: "3px solid #1e3a5f" }}>
+                    <h3 className="font-bold mb-2 text-gray-900" style={{ fontSize: "12px", fontWeight: "700" }}>Languages</h3>
+                    <div className="space-y-1.5" style={{ fontSize: "10.5px", color: "#4a5568" }}>
+                      {languages.filter((lang) => lang.name).map((lang) => (
+                        <div key={lang.id} className="flex items-center gap-2">
+                          <span className="text-gray-400">•</span>
+                          <span className="font-semibold text-gray-700">{lang.name}</span>
+                          {lang.level && (
+                            <>
+                              <span className="text-gray-500">-</span>
+                              <span className="text-gray-600">{lang.level}</span>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {hobbies.some((hobby) => hobby.name) && (
+                  <div className="mb-4 pl-3" style={{ borderLeft: "3px solid #1e3a5f" }}>
+                    <h3 className="font-bold mb-2 text-gray-900" style={{ fontSize: "12px", fontWeight: "700" }}>Hobbies</h3>
+                    <div className="space-y-1.5" style={{ fontSize: "10.5px", color: "#4a5568" }}>
+                      {hobbies.filter((hobby) => hobby.name).map((hobby) => (
+                        <div key={hobby.id} className="flex items-center gap-2">
+                          <span className="text-gray-400">•</span>
+                          <span className="font-semibold text-gray-700">{hobby.name}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
                 {certificates.some((cert) => cert.name) && (
-                  <div className="mb-3">
-                    <p className="font-semibold text-gray-900 mb-1" style={{ fontSize: "10px", fontWeight: "600" }}>CV-т хавсаргасан:</p>
-                    <p className="text-gray-700" style={{ fontSize: "10px" }}>
-                      {certificates.filter((cert) => cert.name).map((cert) => cert.name).join(", ")}
-                    </p>
+                  <div className="mb-4 pl-3" style={{ borderLeft: "3px solid #1e3a5f" }}>
+                    <h3 className="font-bold mb-2 text-gray-900" style={{ fontSize: "12px", fontWeight: "700" }}>Certificates</h3>
+                    <div className="space-y-2" style={{ fontSize: "10.5px", color: "#4a5568" }}>
+                      {certificates.filter((cert) => cert.name).map((cert) => (
+                        <div key={cert.id} className="flex items-start gap-2">
+                          <span className="text-gray-400 mt-0.5">▸</span>
+                          <div>
+                            <span className="font-semibold text-gray-700">{cert.name}</span>
+                            <span className="text-gray-600"> - {cert.issuer}</span>
+                            {cert.date && <span className="text-gray-500"> ({formatDate(cert.date)})</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {projects.some((proj) => proj.name) && (
+                  <div className="pl-3" style={{ borderLeft: "3px solid #1e3a5f" }}>
+                    <h3 className="font-bold mb-2 text-gray-900" style={{ fontSize: "12px", fontWeight: "700" }}>Projects</h3>
+                    <div className="space-y-3" style={{ fontSize: "10.5px", color: "#4a5568" }}>
+                      {projects.filter((proj) => proj.name).map((proj) => (
+                        <div key={proj.id} className="pb-2 border-b border-gray-100 last:border-0">
+                          <div className="flex items-start gap-2 mb-1">
+                            <span className="text-gray-400 mt-0.5">▸</span>
+                            <span className="font-semibold text-gray-700">{proj.name}</span>
+                          </div>
+                          {proj.description && (
+                            <p className="mt-1 ml-4 text-gray-600 italic" style={{ fontSize: "10px", lineHeight: "1.6" }}>{proj.description}</p>
+                          )}
+                          {proj.technologies && (
+                            <p className="mt-1 ml-4 text-gray-500" style={{ fontSize: "9.5px" }}>
+                              <span className="font-medium">Tech:</span> {proj.technologies}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -2704,7 +3018,11 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                     </select>
                     {languages.length > 1 && (
                       <button
-                        onClick={() => removeLanguage(lang.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          removeLanguage(lang.id, e);
+                        }}
+                        onMouseDown={(e) => e.preventDefault()}
                         className="text-red-600 hover:text-red-800"
                       >
                         <TrashIcon className="w-5 h-5" />
@@ -2945,17 +3263,35 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
         {/* Left Panel - Input Forms */}
         <div className="w-1/2 border-r border-gray-200 overflow-y-auto bg-gray-50 flex-shrink-0" style={{ maxHeight: '100%' }}>
           <div className="p-6 space-y-4">
-            {/* Upload Buttons */}
-            <div className="flex gap-3 mb-6">
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept=".pdf,.doc,.docx"
-                className="hidden"
-                onChange={async (e) => {
+            {/* Preview Toggle */}
+            <div className="flex items-center justify-between mb-6 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-gray-700">CV Preview</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showSidebarPreview}
+                    onChange={(e) => setShowSidebarPreview(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+              {showSidebarPreview && (
+                <span className="text-xs text-gray-500">Preview идэвхтэй</span>
+              )}
+            </div>
+
+            {/* Hidden file input for future use */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".pdf,.doc,.docx"
+              className="hidden"
+              onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    if (file.size > 5 * 1024 * 1024) {
+                    if (file.size > MAX_FILE_SIZE) {
                       addNotification("Файлын хэмжээ 5MB-ээс хэтэрч байна", "error");
                       // Reset input
                       if (e.target) {
@@ -3068,26 +3404,6 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                   }
                 }}
               />
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <DocumentArrowUpIcon className="w-5 h-5 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">Upload existing resume</span>
-              </button>
-              <button 
-                onClick={() => {
-                  addNotification("LinkedIn profile import хөгжүүлэлт хийгдэж байна", "info");
-                  // TODO: Implement LinkedIn OAuth integration
-                }}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-                <span className="text-sm font-medium text-gray-700">Import LinkedIn profile</span>
-              </button>
-                    </div>
 
             {/* Collapsible Sections */}
             <div className="bg-white rounded-lg shadow-sm">
@@ -3095,7 +3411,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 if (sectionKey === "personalDetails") {
                   return renderCollapsibleSection(
                     "personalDetails",
-                    "Personal details",
+                    "Хувийн мэдээлэл",
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Нэр *</label>
@@ -3165,7 +3481,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          if (file.size > 5 * 1024 * 1024) {
+                          if (file.size > MAX_FILE_SIZE) {
                             setErrors((prev) => ({ ...prev, photo: "Зургийн хэмжээ 5MB-ээс хэтэрч байна" }));
                             return;
                           }
@@ -3204,7 +3520,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 if (sectionKey === "profile") {
                   return renderCollapsibleSection(
                     "profile",
-                    "Profile",
+                    "Танилцуулга",
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Товч танилцуулга</label>
                       <textarea
@@ -3220,7 +3536,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 if (sectionKey === "education") {
                   return renderCollapsibleSection(
                     "education",
-                        "Education",
+                        "Боловсрол",
                 <div className="space-y-4">
                   {educations.map((edu) => (
                     <div key={edu.id} className="border border-gray-200 rounded-lg p-4">
@@ -3309,7 +3625,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 if (sectionKey === "experience") {
                   return renderCollapsibleSection(
                     "experience",
-                    "Employment",
+                    "Ажлын туршлага",
                 <div className="space-y-4">
                   {experiences.map((exp) => (
                     <div key={exp.id} className="border border-gray-200 rounded-lg p-4">
@@ -3398,7 +3714,7 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 if (sectionKey === "skills") {
                   return renderCollapsibleSection(
                     "skills",
-                    "Skills",
+                    "Ур чадвар",
                 <div className="space-y-3">
                   {skills.map((skill) => (
                     <div key={skill.id} className="flex items-center gap-3">
@@ -3442,45 +3758,161 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 if (sectionKey === "languages") {
                   return renderCollapsibleSection(
                     "languages",
-                    "Languages",
-                    <div className="space-y-3">
-                  {languages.map((lang) => (
-                    <div key={lang.id} className="flex items-center gap-3">
-                      <input
-                        type="text"
-                        value={lang.name}
-                        onChange={(e) => updateLanguage(lang.id, "name", e.target.value)}
-                        className="flex-1 px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
-                        placeholder="Хэл"
-                      />
-                      <select
-                        value={lang.level}
-                        onChange={(e) => updateLanguage(lang.id, "level", e.target.value as Language["level"])}
-                        className="px-3 py-2 text-gray-700 border border-gray-300 rounded-lg"
-                      >
-                        <option value="basic">Энгийн</option>
-                        <option value="conversational">Ярилцлага</option>
-                        <option value="fluent">Чөлөөтэй</option>
-                        <option value="native">Эх хэл</option>
-                      </select>
-                      {languages.length > 1 && (
+                    "Хэлний мэдлэг",
+                    <div className="space-y-4">
+                      {/* AI Suggestions Header */}
+                      <div className="flex items-center justify-end gap-2 mb-3">
                         <button
-                          onClick={() => removeLanguage(lang.id)}
-                          className="text-red-600 hover:text-red-800"
+                          onClick={fetchLanguageSuggestions}
+                          disabled={loadingSuggestions}
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <TrashIcon className="w-5 h-5" />
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                          </svg>
+                          AI Suggestions
                         </button>
-                      )}
+                        {suggestedLanguages.length > 0 && (
+                          <button
+                            onClick={fetchLanguageSuggestions}
+                            disabled={loadingSuggestions}
+                            className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                            title="Refresh suggestions"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+
+                        {(() => {
+                         const sortedLangs = [...languages].sort((a, b) => {
+                           // Filled languages go to top, empty ones to bottom
+                           const aFilled = a.name.trim().length > 0 ? 1 : 0;
+                           const bFilled = b.name.trim().length > 0 ? 1 : 0;
+                           return bFilled - aFilled;
+                         });
+                        const emptyLangs = sortedLangs.filter(l => !l.name.trim());
+                        const lastEmptyId = emptyLangs.length > 0 ? emptyLangs[emptyLangs.length - 1].id : null;
+                        
+                        return sortedLangs.map((lang) => {
+                          const isEmpty = !lang.name.trim();
+                          // Check if this is the last empty language field
+                          const isLastEmpty = isEmpty && lastEmptyId === lang.id;
+                          
+                          return (
+                            <div key={lang.id} className="space-y-3">
+                              <div className="flex items-end gap-4">
+                                <div className="flex-1">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Хэл</label>
+                                  <input
+                                    type="text"
+                                    value={lang.name}
+                                    onChange={(e) => updateLanguage(lang.id, "name", e.target.value)}
+                                    className="w-full px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                    placeholder="Хэл"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Түвшин</label>
+                                  <select
+                                    value={lang.level}
+                                    onChange={(e) => updateLanguage(lang.id, "level", e.target.value as Language["level"])}
+                                    className="w-full px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                  >
+                                    <option value="">Сонгох</option>
+                                    <option value="Уншдаг">Уншдаг</option>
+                                    <option value="Бичдэг">Бичдэг</option>
+                                    <option value="Ярьдаг">Ярьдаг</option>
+                                  </select>
+                                </div>
+                                {languages.length > 1 && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      removeLanguage(lang.id, e);
+                                    }}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    className="text-red-600 hover:text-red-800 transition-colors mb-1.5"
+                                    title="Устгах"
+                                  >
+                                    <TrashIcon className="w-5 h-5" />
+                                  </button>
+                                )}
+                              </div>
+                              
+                              {/* Suggested Languages below input - only show for the last empty language field */}
+                              {isEmpty && isLastEmpty && suggestedLanguages.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {suggestedLanguages
+                                    .filter(suggestedLang => !languages.some(l => l.name.toLowerCase() === suggestedLang.toLowerCase()))
+                                    .map((suggestedLang, index) => (
+                                    <button
+                                      key={index}
+                                      onClick={() => addSuggestedLanguage(suggestedLang)}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-full text-sm font-medium transition-colors border border-gray-200 hover:border-blue-300"
+                                    >
+                                      <span className="text-blue-600">+</span>
+                                      {suggestedLang}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        });
+                      })()}
+
+                      {/* Add Language Button */}
+                      <button
+                        onClick={addLanguage}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <PlusIcon className="w-5 h-5 text-gray-400" />
+                        <span className="text-sm text-gray-600">+ Add language</span>
+                      </button>
                     </div>
-                  ))}
-                  <button
-                    onClick={addLanguage}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    <PlusIcon className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm text-gray-600">+ Add language</span>
-                  </button>
-                </div>
+                  );
+                }
+                if (sectionKey === "hobbies") {
+                  return renderCollapsibleSection(
+                    "hobbies",
+                    "Хобби",
+                    <div className="space-y-3">
+                      {[...hobbies]
+                        .sort((a, b) => {
+                          const aFilled = a.name.trim().length > 0 ? 1 : 0;
+                          const bFilled = b.name.trim().length > 0 ? 1 : 0;
+                          return bFilled - aFilled;
+                        })
+                        .map((hobby) => (
+                          <div key={hobby.id} className="flex items-center gap-3">
+                            <input
+                              type="text"
+                              value={hobby.name}
+                              onChange={(e) => updateHobby(hobby.id, "name", e.target.value)}
+                              className="flex-1 px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                              placeholder="Хобби"
+                            />
+                            {hobbies.length > 1 && (
+                              <button
+                                onClick={() => removeHobby(hobby.id)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <TrashIcon className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      <button
+                        onClick={addHobby}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <PlusIcon className="w-5 h-5 text-gray-400" />
+                        <span className="text-sm text-gray-600">+ Add hobby</span>
+                      </button>
+                    </div>
                   );
                 }
                 return null;
@@ -3490,7 +3922,8 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
         </div>
 
         {/* Right Panel - Preview */}
-        <div className="w-1/2 overflow-y-auto bg-gray-50 border-l border-gray-200 flex-shrink-0" style={{ maxHeight: '100%' }}>
+        {showSidebarPreview && (
+          <div className="w-1/2 overflow-y-auto bg-gray-50 border-l border-gray-200 flex-shrink-0" style={{ maxHeight: '100%' }}>
           {/* Sticky Header */}
           <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10 shadow-sm">
             <div className="flex items-center justify-between">
@@ -3531,14 +3964,14 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
                 {/* CV Content */}
                 <div className="bg-white overflow-auto">
                   <div className="transform scale-[0.9] origin-top" style={{ transformOrigin: 'top center' }}>
-                {renderCVPreview()}
+                    {renderCVPreview()}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-            </div>
-          </div>
         </div>
-      </div>
+        )}
 
       {/* Crop Modal */}
       {showCropModal && (
@@ -3597,7 +4030,8 @@ export default function CVBuilder({ onCVGenerated, onClose }: CVBuilderProps) {
             </div>
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
